@@ -1,0 +1,22 @@
+{
+  "name": "tectangle-gesture-keyboard-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Tectangle gesture keyboard mobile - package-level scripts for standalone usage",
+  "scripts": {
+    "test": "npx mocha \"tests/unit/**/*.mjs\" --exit --reporter spec",
+    "smoke": "npx mocha \"tests/smoke/**/*.mjs\" --exit --reporter spec",
+    "test:mocha": "npx mocha \"tests/unit/**/*.mjs\" --exit --reporter spec",
+    "generate:meta": "node scripts/generate_meta.js",
+    "check:meta": "node scripts/check_meta.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "mocha": "^10.2.0",
+    "@babel/parser": "^7.22.0",
+    "@babel/traverse": "^7.22.0"
+  }
+}
