@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2025-09-22T19:00:02.966Z",
+  "generatedAt": "2025-09-22T20:00:02.951Z",
   "canonical": {
     "path": "docs/knowledge/scribe_notes/Tectangle_consolidated_pinch_report_20250906.md",
     "title": "Exploit first: guard bootstrap + pinch→keypress bridge; capture goldens; CI gate regressions",
