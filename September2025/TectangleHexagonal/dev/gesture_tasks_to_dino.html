@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Gesture Tasks → Dino (Closed Fist = Space)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style> html,body{height:100%} body{background:#0b1020;color:#e5e7eb} .card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px} </style>
+</head>
+<body class="h-full">
+  <div class="max-w-5xl mx-auto p-4 space-y-3">
+    <h1 class="text-xl font-semibold">Gesture Tasks → Dino</h1>
+    <p class="opacity-80 text-sm">Closed Fist triggers Space in the Dino game. Uses MediaPipe Tasks Gesture Recognizer via CDN.</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="card p-3 space-y-2">
+        <div class="flex items-center justify-between"><div class="font-semibold">Camera</div><span id="status" class="text-xs opacity-75">idle</span></div>
+        <video id="cam" playsinline muted autoplay class="w-full rounded bg-black"></video>
+        <div class="flex items-center gap-2 text-sm flex-wrap">
+          <span class="px-2 py-1 rounded-full border" id="chipLabel">Label: –</span>
+          <span class="px-2 py-1 rounded-full border" id="chipScore">Score: –</span>
+          <span class="px-2 py-1 rounded-full border" id="chipSelect">Selects: 0</span>
+        </div>
+      </div>
+      <div class="card p-3 space-y-2">
+        <div class="flex items-center justify-between"><div class="font-semibold">T‑Rex Runner</div><button id="btnFocus" class="px-2 py-1 text-xs rounded border">Focus</button></div>
+        <div id="gameWrap" class="aspect-video bg-black rounded overflow-hidden">
+          <iframe id="game" title="T‑Rex Runner" src="./vendor/dino/index.html" style="width:100%;height:100%;border:0"></iframe>
+        </div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="btnStart" class="px-3 py-1 rounded bg-emerald-600">Start</button>
+      <button id="btnStop" class="px-3 py-1 rounded bg-rose-600">Stop</button>
+    </div>
+  </div>
+
+  <!-- WEBWAY:ww-2025-085: Standalone demo using MediaPipe Tasks Gesture Recognizer via CDN -->
+  <script type="module">
+    // Minimal standalone: no SDK wiring; direct camera + recognizer → game iframe.
+    const video = document.getElementById('cam');
+    const statusEl = document.getElementById('status');
+    const chipLabel = document.getElementById('chipLabel');
+    const chipScore = document.getElementById('chipScore');
+    const chipSelect = document.getElementById('chipSelect');
+    const btnStart = document.getElementById('btnStart');
+    const btnStop = document.getElementById('btnStop');
+    const gameIframe = document.getElementById('game');
+    const btnFocus = document.getElementById('btnFocus');
+
+    let selects = 0;
+    const bumpSelect = () => { selects++; chipSelect.textContent = `Selects: ${selects}`; };
+
+    const sendSpaceDownUp = () => {
+      try {
+        const w = gameIframe?.contentWindow; if(!w) return;
+        w.postMessage({ type:'dino:key', action:'down', code:'Space', key:' ' }, '*');
+        setTimeout(()=>{ try{ w.postMessage({ type:'dino:key', action:'up', code:'Space', key:' ' }, '*'); }catch{} }, 60);
+      } catch {}
+    };
+
+    btnFocus.addEventListener('click', ()=>{ try{ const w=gameIframe.contentWindow; w?.focus?.(); const c=w?.document?.querySelector?.('canvas'); c?.focus?.(); c?.click?.(); }catch{} });
+
+    let stream; let running=false; let lastFireTs=0;
+    const MIN_GAP_MS = 350; // crude refractory to avoid repeats
+
+    // Load MediaPipe Tasks Gesture Recognizer via ESM CDN
+    const tasksBase = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3';
+    const visionPkg = await import(`${tasksBase}/vision_bundle.mjs`);
+    const { FilesetResolver, GestureRecognizer, GestureRecognizerResult } = visionPkg;
+    const filesetResolver = await FilesetResolver.forVisionTasks(`${tasksBase}/wasm`);
+    const recognizer = await GestureRecognizer.createFromOptions(filesetResolver, {
+      baseOptions: {
+        modelAssetPath: `${tasksBase}/gesture_recognizer.task`,
+      },
+      runningMode: 'VIDEO'
+    });
+
+    async function start(){
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} }, audio:false });
+        video.srcObject = stream; await video.play();
+        running = true; statusEl.textContent = 'camera on';
+        loop();
+      } catch (e) { console.error(e); statusEl.textContent = 'error'; }
+    }
+    function stop(){ try{ running=false; statusEl.textContent='stopped'; video.pause(); if(stream){ stream.getTracks().forEach(t=>t.stop()); } }catch{} }
+
+    btnStart.addEventListener('click', start);
+    btnStop.addEventListener('click', stop);
+
+    function onResults(res){
+      try{
+        // Extract top gesture label
+        const g = res?.gestures?.[0]?.[0];
+        const label = g?.categoryName || '—';
+        const score = typeof g?.score==='number' ? g.score : NaN;
+        chipLabel.textContent = `Label: ${label}`;
+        chipScore.textContent = `Score: ${isNaN(score)?'–':score.toFixed(2)}`;
+        const now = performance.now();
+        if(label === 'Closed_Fist' && score >= 0.70){
+          if(now - lastFireTs > MIN_GAP_MS){
+            // WEBWAY:ww-2025-085: fire Space
+            bumpSelect();
+            sendSpaceDownUp();
+            lastFireTs = now;
+          }
+        }
+      }catch{}
+    }
+
+    async function loop(){
+      while(running){
+        const ts = performance.now();
+        const res = await recognizer.recognizeForVideo(video, ts);
+        onResults(res);
+        await new Promise(r=>setTimeout(r, 16));
+      }
+    }
+
+    // Expose a tiny test hook to simulate a closed fist (useful for a smoke later)
+    window.__gtSim = {
+      fireOnce(){ bumpSelect(); sendSpaceDownUp(); },
+    };
+  </script>
+</body>
+</html>

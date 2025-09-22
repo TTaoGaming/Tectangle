@@ -1,0 +1,39 @@
+name: Visual Snapshot Daily
+
+on:
+  schedule:
+    - cron: '17 12 * * *' # daily at 12:17 UTC
+  workflow_dispatch:
+
+jobs:
+  visual-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        run: npm ci
+      - name: Start static server
+        run: npx http-server . -p 8080 &
+      - name: Wait for server
+        run: npx wait-on http://127.0.0.1:8080
+      - name: Run visual snapshot
+        run: |
+          export HEADLESS=1
+          npm run -s hex:visual:snapshot
+      - name: Run P1+P2 seat screenshots
+        run: |
+          export HEADLESS=1
+          npm run -s hex:visual:screenshots
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-snapshots
+          path: |
+            September2025/TectangleHexagonal/out/visual/*.png
+            September2025/TectangleHexagonal/tests/screenshots/*.png
+            http-server-out.log
+            http-server-err.log

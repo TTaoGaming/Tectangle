@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>CameraManager — Phase 0 Prototype</title>
+    <style>
+      :root {
+        --gap: 10px;
+        --muted: #666;
+      }
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+        line-height: 1.3;
+        margin: 16px;
+        color: #111;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 20px;
+      }
+      p.help {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: var(--gap);
+        align-items: start;
+        margin-bottom: 12px;
+      }
+      .controls > div {
+        background: #fafafa;
+        padding: 10px;
+        border: 1px solid #eee;
+        border-radius: 6px;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      select,
+      input[type="number"] {
+        width: 100%;
+        padding: 6px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      button {
+        padding: 8px 10px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        background: #fff;
+        cursor: pointer;
+      }
+      #previewWrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #000;
+        border-radius: 6px;
+        padding: 8px;
+      }
+      #videoPreview,
+      #canvasPreview {
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #333;
+        background: #000;
+        display: block;
+      }
+      #previewWrapper.mirrored > video,
+      #previewWrapper.mirrored > canvas {
+        transform: scaleX(-1);
+      }
+      pre#logArea {
+        background: #111;
+        color: #0f0;
+        padding: 10px;
+        height: 220px;
+        overflow: auto;
+        border-radius: 6px;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      .small {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      @media (max-width: 480px) {
+        .controls {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>CameraManager — Phase 0 Prototype</h1>
+    <p class="help">
+      Run with Live Server (recommended) or open this file directly. If the
+      browser blocks camera permission, switch Source to "Synthetic".
+    </p>
+
+    <section class="controls" aria-label="controls">
+      <div>
+        <label for="deviceSelect">Device / Source</label>
+        <select id="deviceSelect" aria-label="Device or source">
+          <option value="synthetic">Synthetic</option>
+        </select>
+        <div style="margin-top: 8px" class="row">
+          <button id="refreshDevices" type="button">Refresh Devices</button>
+          <button id="enumerateWithPerm" type="button">
+            Request Permission + Enumerate
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label for="facingModeSelect">Facing Mode (quick)</label>
+        <select id="facingModeSelect">
+          <option value="">(none)</option>
+          <option value="user">Front (user)</option>
+          <option value="environment">Back (environment)</option>
+        </select>
+        <p class="small">
+          Facing mode is applied when no explicit device is chosen.
+        </p>
+      </div>
+
+      <div>
+        <label for="presetSelect">Resolution Presets</label>
+        <select id="presetSelect">
+          <option value="320x240">320x240</option>
+          <option value="640x480" selected>640x480</option>
+          <option value="1280x720">1280x720</option>
+          <option value="custom">Custom</option>
+        </select>
+        <div class="small" style="margin-top: 6px">
+          Choose a preset to populate the width/height inputs.
+        </div>
+      </div>
+
+      <div>
+        <label for="widthInput">Width</label>
+        <input id="widthInput" type="number" value="640" min="1" />
+      </div>
+
+      <div>
+        <label for="heightInput">Height</label>
+        <input id="heightInput" type="number" value="480" min="1" />
+      </div>
+
+      <div>
+        <label for="fpsInput">FPS</label>
+        <input id="fpsInput" type="number" value="30" min="1" max="60" />
+      </div>
+
+      <div>
+        <label for="mirrorCheckbox">Mirror preview</label>
+        <div class="row">
+          <input id="mirrorCheckbox" type="checkbox" />
+          <span class="small" style="margin-left: 6px"
+            >Apply horizontal mirror to preview</span
+          >
+        </div>
+      </div>
+
+      <div>
+        <label>Controls</label>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap">
+          <button id="startBtn" type="button">Start</button>
+          <button id="stopBtn" type="button" disabled>Stop</button>
+          <button id="reconfigBtn" type="button">Reconfigure</button>
+          <button id="copyLogBtn" type="button">Copy Log</button>
+        </div>
+      </div>
+    </section>
+
+    <section style="margin-top: 12px" id="exportSection">
+      <label>Export Logs</label>
+      <div style="margin-top: 8px; display: flex; gap: 12px; flex-wrap: wrap">
+        <div
+          style="
+            min-width: 260px;
+            background: #fafafa;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+          "
+        >
+          <label for="exportFormat">Format</label>
+          <select
+            id="exportFormat"
+            aria-label="Export format"
+            style="margin-bottom: 6px"
+          >
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+          </select>
+
+          <label for="decimateInput">Include every Nth frame</label>
+          <input
+            id="decimateInput"
+            type="number"
+            min="1"
+            value="10"
+            style="margin-bottom: 6px"
+          />
+
+          <label for="maxEntriesInput">Max entries (0 = unlimited)</label>
+          <input
+            id="maxEntriesInput"
+            type="number"
+            min="0"
+            value="0"
+            style="margin-bottom: 6px"
+          />
+
+          <div class="row" style="margin-top: 8px">
+            <button id="exportBtn" type="button">Export</button>
+          </div>
+
+          <div
+            id="exportSummary"
+            class="small"
+            style="margin-top: 8px"
+            aria-live="polite"
+          >
+            No log lines to export
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <label>Preview</label>
+      <div id="previewWrapper" aria-live="polite" style="margin-top: 8px">
+        <video id="videoPreview" playsinline autoplay muted></video>
+        <canvas id="canvasPreview" style="display: none"></canvas>
+      </div>
+    </section>
+
+    <section style="margin-top: 12px">
+      <label>Log (JSON lines)</label>
+      <pre id="logArea" aria-label="Log area" readonly></pre>
+    </section>
+
+    <section style="margin-top: 12px">
+      <h3>Manual verification</h3>
+      <ol>
+        <li>
+          Start → verify a <code>camera:params</code> log line with chosen
+          settings.
+        </li>
+        <li>
+          Toggle mirror → verify <code>camera.mirror.toggled</code> log and
+          visual mirror.
+        </li>
+        <li>
+          Change resolution/fps and click Reconfigure → verify
+          <code>camera:params</code> and an immediate
+          <code>camera:frame</code> reflecting new width/height/fps.
+        </li>
+        <li>
+          Switch source to "Synthetic" → confirm deterministic frames and
+          frameId increments visible in logs.
+        </li>
+      </ol>
+    </section>
+
+    <script type="module">
+      // CameraManager Phase-0 prototype — single-file
+
+      const $ = (id) => document.getElementById(id);
+
+      const deviceSelect = $("deviceSelect");
+      const refreshDevices = $("refreshDevices");
+      const enumerateWithPerm = $("enumerateWithPerm");
+      const facingModeSelect = $("facingModeSelect");
+      const presetSelect = $("presetSelect");
+      const widthInput = $("widthInput");
+      const heightInput = $("heightInput");
+      const fpsInput = $("fpsInput");
+      const mirrorCheckbox = $("mirrorCheckbox");
+      const startBtn = $("startBtn");
+      const stopBtn = $("stopBtn");
+      const reconfigBtn = $("reconfigBtn");
+      const copyLogBtn = $("copyLogBtn");
+      const videoPreview = $("videoPreview");
+      const canvasPreview = $("canvasPreview");
+      const previewWrapper = $("previewWrapper");
+      const logArea = $("logArea");
+
+      let currentStream = null;
+      let syntheticInterval = null;
+      let frameTimer = null;
+      let frameId = 0;
+      let isSynthetic = true;
+      // Context for logging & export
+      let currentSource = "synthetic";
+      let currentDeviceId = "";
+      let currentDeviceLabel = "";
+      let currentMirrored = false;
+
+      function appendLog(obj) {
+        const line = JSON.stringify(obj);
+        logArea.textContent += line + "\n";
+        logArea.scrollTop = logArea.scrollHeight;
+        console.log(obj);
+        // update export preview (non-intrusive if export UI exists)
+        try {
+          if (typeof updateExportPreview === "function") updateExportPreview();
+        } catch (e) {
+          // ignore errors from preview update
+        }
+      }
+
+      function clampFps(v) {
+        const n = Number(v) || 30;
+        return Math.min(60, Math.max(1, Math.round(n)));
+      }
+
+      async function enumerateDevices() {
+        deviceSelect.innerHTML = "";
+        const synth = document.createElement("option");
+        synth.value = "synthetic";
+        synth.textContent = "Synthetic";
+        deviceSelect.appendChild(synth);
+
+        if (
+          !navigator.mediaDevices ||
+          !navigator.mediaDevices.enumerateDevices
+        ) {
+          appendLog({
+            event: "devices:unsupported",
+            timestamp: new Date().toISOString(),
+          });
+          return;
+        }
+
+        try {
+          const list = await navigator.mediaDevices.enumerateDevices();
+          const videoInputs = list.filter((d) => d.kind === "videoinput");
+          videoInputs.forEach((d, i) => {
+            const o = document.createElement("option");
+            o.value = "device:" + d.deviceId;
+            o.textContent =
+              d.label && d.label.length
+                ? d.label
+                : `Camera ${i + 1} (${d.deviceId.slice(0, 6)})`;
+            deviceSelect.appendChild(o);
+          });
+        } catch (err) {
+          appendLog({
+            event: "devices:error",
+            message: err.message,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      }
+
+      function stopTracks() {
+        if (currentStream) {
+          currentStream.getTracks().forEach((t) => t.stop());
+          currentStream = null;
+        }
+      }
+
+      function stopCamera() {
+        stopTracks();
+        if (syntheticInterval) {
+          clearInterval(syntheticInterval);
+          syntheticInterval = null;
+        }
+        if (frameTimer) {
+          clearInterval(frameTimer);
+          frameTimer = null;
+        }
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        appendLog({
+          event: "camera:stopped",
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      function applyPreviewSize(w, h) {
+        w = Number(w) || 640;
+        h = Number(h) || 480;
+        canvasPreview.width = w;
+        canvasPreview.height = h;
+        canvasPreview.style.width = w + "px";
+        canvasPreview.style.height = h + "px";
+        videoPreview.style.width = w + "px";
+        videoPreview.style.height = h + "px";
+      }
+
+      function emitFrame() {
+        const ts = new Date().toISOString();
+        const width = isSynthetic
+          ? canvasPreview.width
+          : videoPreview.videoWidth || Number(widthInput.value) || 0;
+        const height = isSynthetic
+          ? canvasPreview.height
+          : videoPreview.videoHeight || Number(heightInput.value) || 0;
+        // Include runtime context with every frame so exports are self-contained
+        appendLog({
+          event: "camera:frame",
+          frameId: frameId,
+          timestamp: ts,
+          width,
+          height,
+          fps: Number(fpsInput.value) || null,
+          source: currentSource || (isSynthetic ? "synthetic" : ""),
+          deviceId: currentDeviceId || "",
+          label: currentDeviceLabel || "",
+          mirrored: currentMirrored || false,
+        });
+      }
+
+      function startFrameTimer(fps) {
+        if (frameTimer) clearInterval(frameTimer);
+        const fpsVal = clampFps(fps);
+        const intervalMs = Math.max(1, Math.round(1000 / fpsVal));
+        frameTimer = setInterval(() => {
+          frameId++;
+          emitFrame();
+        }, intervalMs);
+        // ensure immediate sample
+        frameId++;
+        emitFrame();
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+      }
+
+      function drawSyntheticFrame(id) {
+        const ctx = canvasPreview.getContext("2d");
+        const w = canvasPreview.width,
+          h = canvasPreview.height;
+        const hue = (id * 37) % 360;
+        ctx.fillStyle = `hsl(${hue} 60% 55%)`;
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = "#fff";
+        ctx.font = Math.max(12, Math.round(w / 10)) + "px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(`frame ${id}`, w / 2, h / 2);
+        ctx.font = "12px monospace";
+        ctx.fillText(new Date().toLocaleTimeString(), w / 2, h - 16);
+      }
+
+      function startSynthetic() {
+        stopCamera();
+        isSynthetic = true;
+        frameId = 0;
+        const w = Number(widthInput.value) || 640;
+        const h = Number(heightInput.value) || 480;
+        const fpsVal = clampFps(fpsInput.value);
+        applyPreviewSize(w, h);
+        canvasPreview.style.display = "";
+        videoPreview.style.display = "none";
+        // update runtime context for synthetic source
+        currentSource = "synthetic";
+        currentDeviceId = "";
+        currentDeviceLabel = "";
+        currentMirrored = mirrorCheckbox.checked;
+        appendLog({
+          event: "camera:params",
+          source: "synthetic",
+          width: w,
+          height: h,
+          fps: fpsVal,
+          timestamp: new Date().toISOString(),
+        });
+        // single interval: draw + emit (ensures frameId increments only once per frame)
+        syntheticInterval = setInterval(() => {
+          frameId++;
+          drawSyntheticFrame(frameId);
+          emitFrame();
+        }, Math.round(1000 / fpsVal));
+        // immediate first sample
+        frameId++;
+        drawSyntheticFrame(frameId);
+        emitFrame();
+        // update controls state
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+      }
+
+      async function startRealCamera(
+        preferredDeviceId = null,
+        facingMode = null
+      ) {
+        stopCamera();
+        isSynthetic = false;
+        const w = Number(widthInput.value) || undefined;
+        const h = Number(heightInput.value) || undefined;
+        const fpsVal = clampFps(fpsInput.value);
+        const constraints = { video: {} };
+        if (preferredDeviceId) {
+          constraints.video.deviceId = { exact: preferredDeviceId };
+        } else if (facingMode) {
+          constraints.video.facingMode = facingMode;
+        }
+        if (w) constraints.video.width = { ideal: w };
+        if (h) constraints.video.height = { ideal: h };
+        if (fpsVal) constraints.video.frameRate = { ideal: fpsVal };
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          currentStream = stream;
+          videoPreview.srcObject = stream;
+          videoPreview.style.display = "";
+          canvasPreview.style.display = "none";
+          applyPreviewSize(w || 640, h || 480);
+          // update context for real device / facing mode
+          currentSource = preferredDeviceId
+            ? `device:${preferredDeviceId}`
+            : `facing:${facingMode || "any"}`;
+          currentDeviceId = preferredDeviceId || "";
+          currentDeviceLabel =
+            preferredDeviceId &&
+            Array.from(deviceSelect.options).find(
+              (o) => o.value === "device:" + preferredDeviceId
+            )?.text !== undefined
+              ? Array.from(deviceSelect.options).find(
+                  (o) => o.value === "device:" + preferredDeviceId
+                )?.text
+              : "";
+          currentMirrored = mirrorCheckbox.checked;
+          appendLog({
+            event: "camera:params",
+            source: currentSource,
+            width: w || null,
+            height: h || null,
+            fps: fpsVal,
+            timestamp: new Date().toISOString(),
+          });
+          // start sampling frames at requested fps
+          startFrameTimer(fpsVal);
+        } catch (err) {
+          appendLog({
+            event: "camera:error",
+            message: err.message,
+            timestamp: new Date().toISOString(),
+          });
+          console.error("getUserMedia failed, falling back to synthetic", err);
+          startSynthetic();
+        }
+      }
+
+      // UI wiring
+      refreshDevices.addEventListener("click", enumerateDevices);
+      enumerateWithPerm.addEventListener("click", async () => {
+        try {
+          // Requesting a tiny stream to get device labels
+          const s = await navigator.mediaDevices.getUserMedia({ video: true });
+          s.getTracks().forEach((t) => t.stop());
+          await enumerateDevices();
+          appendLog({
+            event: "devices:granted",
+            timestamp: new Date().toISOString(),
+          });
+        } catch (err) {
+          appendLog({
+            event: "devices:perm_error",
+            message: err.message,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      });
+
+      deviceSelect.addEventListener("change", () => {
+        const v = deviceSelect.value;
+        if (v && v.startsWith("device:")) {
+          const deviceId = v.slice("device:".length);
+          const label =
+            deviceSelect.options[deviceSelect.selectedIndex]?.text || "";
+          // update current context
+          currentSource = `device:${deviceId}`;
+          currentDeviceId = deviceId;
+          currentDeviceLabel = label;
+          appendLog({
+            event: "camera.device.changed",
+            deviceId,
+            label,
+            timestamp: new Date().toISOString(),
+          });
+        } else {
+          // switched to synthetic
+          currentSource = "synthetic";
+          currentDeviceId = "";
+          currentDeviceLabel = "";
+          appendLog({
+            event: "camera.device.changed",
+            source: "synthetic",
+            timestamp: new Date().toISOString(),
+          });
+        }
+      });
+
+      presetSelect.addEventListener("change", () => {
+        const val = presetSelect.value;
+        if (val && val !== "custom") {
+          const [w, h] = val.split("x").map(Number);
+          widthInput.value = w;
+          heightInput.value = h;
+        }
+      });
+
+      mirrorCheckbox.addEventListener("change", () => {
+        const mirrored = mirrorCheckbox.checked;
+        previewWrapper.classList.toggle("mirrored", mirrored);
+        // update context mirror state
+        currentMirrored = mirrored;
+        appendLog({
+          event: "camera.mirror.toggled",
+          mirrored,
+          timestamp: new Date().toISOString(),
+        });
+      });
+
+      startBtn.addEventListener("click", () => {
+        const v = deviceSelect.value;
+        if (v === "synthetic") {
+          startSynthetic();
+          return;
+        }
+        const preferredDeviceId =
+          v && v.startsWith("device:") ? v.slice("device:".length) : null;
+        const facing = !preferredDeviceId
+          ? facingModeSelect.value || null
+          : null;
+        startRealCamera(preferredDeviceId, facing);
+      });
+
+      stopBtn.addEventListener("click", () => stopCamera());
+
+      reconfigBtn.addEventListener("click", () => {
+        // Reconfigure current source with new width/height/fps/mirror
+        previewWrapper.classList.toggle("mirrored", mirrorCheckbox.checked);
+        const v = deviceSelect.value;
+        if (v === "synthetic") {
+          startSynthetic();
+          return;
+        }
+        const preferredDeviceId =
+          v && v.startsWith("device:") ? v.slice("device:".length) : null;
+        const facing = !preferredDeviceId
+          ? facingModeSelect.value || null
+          : null;
+        startRealCamera(preferredDeviceId, facing);
+      });
+
+      copyLogBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(logArea.textContent);
+          copyLogBtn.textContent = "Copied";
+          setTimeout(() => (copyLogBtn.textContent = "Copy Log"), 1200);
+        } catch (err) {
+          appendLog({
+            event: "clipboard:error",
+            message: err.message,
+            timestamp: new Date().toISOString(),
+          });
+          alert(
+            "Copy failed: " + (err && err.message ? err.message : String(err))
+          );
+        }
+      });
+
+      // Export logs feature (decimation + max-rows)
+      const exportFormatEl = $("exportFormat");
+      const decimateEl = $("decimateInput");
+      const maxEntriesEl = $("maxEntriesInput");
+      const exportBtnEl = $("exportBtn");
+      const exportSummaryEl = $("exportSummary");
+
+      function csvEscape(field) {
+        if (field === null || field === undefined) return '""';
+        const s = String(field);
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+
+      function normalizeLogObject(obj) {
+        const epoch = obj.timestamp ? Date.parse(obj.timestamp) : NaN;
+        return {
+          event: obj.event || "",
+          timestamp: obj.timestamp || "",
+          epochMs: Number.isFinite(epoch) ? epoch : "",
+          frameId: obj.frameId !== undefined ? obj.frameId : "",
+          width: obj.width !== undefined ? obj.width : "",
+          height: obj.height !== undefined ? obj.height : "",
+          fps: obj.fps !== undefined ? obj.fps : Number(fpsInput.value) || "",
+          source: obj.source || "",
+          deviceId: obj.deviceId || "",
+          label: obj.label || "",
+          mirrored: obj.mirrored !== undefined ? String(obj.mirrored) : "",
+          frameIntervalMs: "",
+          message: obj.message || "",
+        };
+      }
+
+      function analyzeLogForPreview(decimate, maxEntries) {
+        const text = logArea.textContent || "";
+        const lines = text.split("\n");
+        let total = 0,
+          skipped = 0,
+          eligible = 0;
+        const dec = Math.max(1, Number(decimate) || 1);
+        const max = Number(maxEntries) || 0;
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          total++;
+          let obj;
+          try {
+            obj = JSON.parse(line);
+          } catch (err) {
+            skipped++;
+            continue;
+          }
+          if (obj.event === "camera:frame") {
+            const fid = Number(obj.frameId);
+            if (Number.isFinite(fid)) {
+              if (fid % dec === 0) eligible++;
+            } else {
+              if (dec <= 1) eligible++;
+            }
+          } else {
+            eligible++;
+          }
+        }
+        const willExport = max > 0 ? Math.min(eligible, max) : eligible;
+        return { total, skipped, eligible, willExport };
+      }
+
+      function buildExportRows(decimate, maxEntries) {
+        const text = logArea.textContent || "";
+        const lines = text.split("\n");
+        const dec = Math.max(1, Number(decimate) || 1);
+        const max = Number(maxEntries) || 0;
+        const maxLimit = max > 0 ? max : Infinity;
+        let total = 0,
+          skipped = 0,
+          exported = 0;
+        let framesTotal = 0,
+          framesExported = 0;
+        const rows = [];
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          total++;
+          let obj;
+          try {
+            obj = JSON.parse(line);
+          } catch (err) {
+            skipped++;
+            continue;
+          }
+          if (obj.event === "camera:frame") framesTotal++;
+          let include = false;
+          if (obj.event === "camera:frame") {
+            const fid = Number(obj.frameId);
+            if (Number.isFinite(fid)) {
+              include = fid % dec === 0;
+            } else {
+              include = dec <= 1;
+            }
+          } else {
+            include = true;
+          }
+
+          if (include) {
+            if (exported < maxLimit) {
+              rows.push(normalizeLogObject(obj));
+              exported++;
+              if (obj.event === "camera:frame") framesExported++;
+            }
+          }
+        }
+
+        // compute per-row frameIntervalMs and avg
+        let prevEpoch = null;
+        const intervals = [];
+        for (const r of rows) {
+          if (r.event === "camera:frame" && r.epochMs !== "") {
+            const epoch = Number(r.epochMs);
+            if (Number.isFinite(epoch)) {
+              if (prevEpoch !== null) {
+                const delta = epoch - prevEpoch;
+                r.frameIntervalMs = delta;
+                intervals.push(delta);
+              } else {
+                r.frameIntervalMs = "";
+              }
+              prevEpoch = epoch;
+            } else {
+              r.frameIntervalMs = "";
+            }
+          } else {
+            r.frameIntervalMs = "";
+          }
+        }
+
+        let avgFrameIntervalMs = null;
+        if (intervals.length > 0) {
+          avgFrameIntervalMs =
+            intervals.reduce((a, b) => a + b, 0) / intervals.length;
+        }
+
+        return {
+          rows,
+          total,
+          skipped,
+          exported,
+          framesTotal,
+          framesExported,
+          avgFrameIntervalMs,
+        };
+      }
+
+      function formatFilename(ext) {
+        const d = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        const ts = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(
+          d.getDate()
+        )}T${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+        return `camera-export-${ts}.${ext}`;
+      }
+
+      function buildCsv(rows) {
+        const header = [
+          "event",
+          "timestamp",
+          "epochMs",
+          "frameId",
+          "width",
+          "height",
+          "fps",
+          "source",
+          "deviceId",
+          "label",
+          "mirrored",
+          "frameIntervalMs",
+          "message",
+        ];
+        const lines = [header.join(",")];
+        for (const r of rows) {
+          const cols = header.map((k) => csvEscape(r[k]));
+          lines.push(cols.join(","));
+        }
+        return lines.join("\r\n");
+      }
+
+      function triggerDownload(filename, content, mime) {
+        const blob = new Blob([content], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      }
+
+      function updateExportPreview() {
+        try {
+          const dec = Number(decimateEl.value) || 1;
+          const max = Number(maxEntriesEl.value) || 0;
+          const info = analyzeLogForPreview(dec, max);
+          if (info.total === 0) {
+            exportSummaryEl.textContent = "No log lines to export";
+          } else {
+            exportSummaryEl.textContent = `Total lines: ${info.total} • Will export: ${info.willExport} (eligible ${info.eligible}) • Skipped: ${info.skipped} malformed`;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // Wire up preview updates
+      if (exportFormatEl) {
+        decimateEl.addEventListener("input", updateExportPreview);
+        maxEntriesEl.addEventListener("input", updateExportPreview);
+        exportFormatEl.addEventListener("change", updateExportPreview);
+        // initial preview
+        updateExportPreview();
+      }
+
+      exportBtnEl &&
+        exportBtnEl.addEventListener("click", () => {
+          const fmt = (exportFormatEl && exportFormatEl.value) || "csv";
+          const dec = Number(decimateEl.value) || 1;
+          const max = Number(maxEntriesEl.value) || 0;
+          const {
+            rows,
+            total,
+            skipped,
+            exported,
+            framesTotal,
+            framesExported,
+            avgFrameIntervalMs,
+          } = buildExportRows(dec, max);
+          if (total === 0) {
+            exportSummaryEl.textContent = "No log lines to export";
+            return;
+          }
+          if (rows.length === 0) {
+            exportSummaryEl.textContent = `No rows matched decimation (every ${dec}th frame). Skipped: ${skipped}`;
+            return;
+          }
+          const filename = formatFilename(fmt === "json" ? "json" : "csv");
+          exportSummaryEl.textContent = `Preparing ${rows.length} rows → downloading ${filename}`;
+          if (fmt === "json") {
+            const content = JSON.stringify(rows, null, 2);
+            triggerDownload(
+              filename,
+              content,
+              "application/json;charset=utf-8"
+            );
+          } else {
+            const csv = buildCsv(rows);
+            triggerDownload(filename, csv, "text/csv;charset=utf-8");
+          }
+          const avgDisplay = avgFrameIntervalMs
+            ? `${avgFrameIntervalMs.toFixed(1)} ms`
+            : "n/a";
+          exportSummaryEl.textContent = `Total lines: ${total} • Total frames: ${framesTotal} • Exported rows: ${rows.length} • Exported frames: ${framesExported} • Avg frame interval: ${avgDisplay} • Skipped: ${skipped}`;
+        });
+
+      // init
+      (async () => {
+        await enumerateDevices();
+        // ensure initial preview size matches inputs
+        applyPreviewSize(Number(widthInput.value), Number(heightInput.value));
+        // show synthetic by default (no permissions required)
+        startSynthetic();
+      })();
+    </script>
+  </body>
+</html>

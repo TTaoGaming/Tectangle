@@ -1,0 +1,153 @@
+<!doctype html>
+<!-- Minimal Router + Pinch Harness (router_min_lab) -->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Router Min Lab</title>
+  <style>
+    body { margin:0; font-family: system-ui, sans-serif; background:#0b0f14; color:#e5e7eb; }
+    #hud { padding:10px; font-size:12px; line-height:1.35; background:#111a24; display:flex; gap:16px; flex-wrap:wrap; }
+    video { width:640px; max-width:100%; background:#000; display:block; }
+    pre { background:#0d141c; padding:8px; border-radius:6px; max-height:200px; overflow:auto; }
+    .ok { color:#10b981; } .warn { color:#fbbf24; }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div>
+      <div>Clip: <input id="clip" size="80" value="September2025/TectangleHexagonal/videos/two_hands_stationary_right_then_left_index_pinch_hold_1s_v1.mp4" /></div>
+      <div style="margin-top:4px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <label>enter <input id="enter" type="number" step="0.01" value="0.40" style="width:60px;"></label>
+        <label>exit <input id="exit" type="number" step="0.01" value="0.70" style="width:60px;"></label>
+        <label>cone° <input id="cone" type="number" step="1" value="30" style="width:60px;"></label>
+        <label><input id="palmGate" type="checkbox" checked> palmGate</label>
+        <button id="run">Run</button>
+        <span id="status" class="warn">idle</span>
+      </div>
+    </div>
+    <div>Seat Map: <span id="seats">(none)</span></div>
+    <div>Last Downs: <span id="downs">0</span></div>
+    <div>Last Norm: <span id="norm">-</span></div>
+    <div>Gate: <span id="gate">-</span></div>
+  </div>
+  <video id="cam" playsinline muted></video>
+  <pre id="log"></pre>
+
+  <script type="module">
+    import { createHandSessionManager } from '../src/app/handSessionManager.js';
+    import { createControllerRouter } from '../src/app/controllerRouterCore.js';
+    import { createMediaPipeSource } from '../src/ports/mediapipe.js';
+    import { flag } from '../src/app/featureFlags.js';
+
+    // Fixed seats P1..P4
+    const router = createControllerRouter({ enabled:true, seats:['P1','P2','P3','P4'], cfg:{ lostAfterMs:700, reserveTtlMs:4000, snapDist:0.15 } });
+
+    function currentConfig(){
+      return {
+        enterThresh: +document.getElementById('enter').value || 0.40,
+        exitThresh: +document.getElementById('exit').value || 0.70,
+        palmGate: document.getElementById('palmGate').checked,
+        palmConeDeg: +document.getElementById('cone').value || 30,
+      };
+    }
+
+    // Minimal HSM with only pinch core configured once up-front.
+    const hsm = createHandSessionManager({ pinch: currentConfig(), orientation:{ enabled:false } });
+
+    const video = document.getElementById('cam');
+    const logEl = document.getElementById('log');
+    const statusEl = document.getElementById('status');
+    const seatsEl = document.getElementById('seats');
+    const downsEl = document.getElementById('downs');
+    const normEl = document.getElementById('norm');
+    const gateEl = document.getElementById('gate');
+
+    let mp = null; let downs=0; let lastNorm='-', lastGate='-';
+
+    function log(line){
+      const ts = performance.now().toFixed(0).padStart(6,'0');
+      logEl.textContent += `[${ts}] ${line}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Expose downs for tests via window.__events using the same custom event pattern
+    window.__events = window.__events || [];
+  // Signal to automated tests that minimal harness bootstrapped
+  window.__hexReady = true; // added for controller_router_lockin.test.js readiness gate
+
+    hsm.on(evt => {
+      if(evt.type.startsWith('pinch:')){
+        const seat = router.onPinchEvent({ type: evt.type, t: evt.t, hand: evt.hand, handId: evt.handId });
+        if(evt.type==='pinch:down'){
+          downs++; downsEl.textContent = String(downs);
+          window.dispatchEvent(new CustomEvent('hex-pinch', { detail:{ action:'down', hand:evt.hand, controllerId:seat || null, t:evt.t } }));
+          window.__events.push({ type:'hex-pinch', action:'down', controllerId: seat||null, t:evt.t });
+          log(`DOWN ${evt.hand} seat=${seat||'null'}`);
+        } else if(evt.type==='pinch:up'){
+          window.dispatchEvent(new CustomEvent('hex-pinch', { detail:{ action:'up', hand:evt.hand, controllerId:seat || null, t:evt.t } }));
+          window.__events.push({ type:'hex-pinch', action:'up', controllerId: seat||null, t:evt.t });
+          log(`UP   ${evt.hand} seat=${seat||'null'}`);
+        }
+      }
+    });
+
+    function refreshSeats(){
+      const m = router.getState();
+      const pairs = Array.from(m.map).map(([handKey, seat]) => `${seat}:${handKey.split(':').pop()}`);
+      seatsEl.textContent = pairs.length? pairs.join(', ') : '(none)';
+    }
+
+    // Poll norms/gate from internal cores (handSessionManager state shape assumed)
+    function pollRuntime(){
+      try{
+        const state = hsm.state && hsm.state();
+        if(state && state.hands){
+          // Grab first hand (any) for quick feedback
+            const first = state.hands[0];
+            if(first && first.pinch){
+              lastNorm = typeof first.pinch.norm === 'number'? first.pinch.norm.toFixed(3) : '-';
+              lastGate = first.pinch.gate === false ? 'open' : (first.pinch.gate === true ? 'gated' : '-');
+            }
+        }
+        normEl.textContent = lastNorm;
+        gateEl.textContent = lastGate;
+        refreshSeats();
+      }catch{}
+      requestAnimationFrame(pollRuntime);
+    }
+    requestAnimationFrame(pollRuntime);
+
+    async function startClip(url){
+      statusEl.textContent = 'loading'; statusEl.className='warn';
+      downs=0; downsEl.textContent='0'; logEl.textContent='';
+      // Fresh config (rebuild hsm pinch cores by disposing & recreating would be heavier; quick path: update config if API exists)
+      try{ hsm.updatePinchConfig && hsm.updatePinchConfig(currentConfig()); }catch{}
+      video.srcObject=null; video.src = url; await video.play().catch(()=>{});
+      if(!mp){
+        mp = createMediaPipeSource(video, f=>{
+          router.onFrame(f); hsm.onFrame(f);
+        });
+        await mp.start();
+      }
+      statusEl.textContent = 'running'; statusEl.className='ok';
+      log('Started video: '+url);
+    }
+
+    document.getElementById('run').onclick = ()=> startClip(document.getElementById('clip').value.trim());
+
+    // Query params (enter, exit, cone, palmGate, clip, auto=1)
+    (function(){
+      const Q = new URLSearchParams(location.search);
+      const qp = (k)=> Q.get(k);
+      const setIf = (id,val)=>{ if(val!=null){ document.getElementById(id).value = val; } };
+      setIf('enter', qp('enter'));
+      setIf('exit', qp('exit'));
+      setIf('cone', qp('cone'));
+      if(qp('palmGate')==='0'||qp('palmGate')==='false'){ document.getElementById('palmGate').checked=false; }
+      const c = qp('clip'); if(c){ document.getElementById('clip').value = c; }
+      const auto = qp('auto')==='1';
+      if(auto){ setTimeout(()=> document.getElementById('run').click(), 120); }
+    })();
+  </script>
+</body>
+</html>

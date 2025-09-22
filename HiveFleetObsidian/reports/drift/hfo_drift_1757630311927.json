@@ -1,0 +1,14 @@
+{
+  "when": "2025-09-11T22:38:31.925Z",
+  "deprecatedFiles": [
+    "HiveFleetObsidian\\ship\\GOLD_LOCAL_INDEX.md",
+    "HiveFleetObsidian\\ship\\health_report.json",
+    "HiveFleetObsidian\\ship\\orchestration_manifest.json",
+    "HiveFleetObsidian\\ship\\ORCHESTRATION_PORT.md",
+    "HiveFleetObsidian\\ship\\README.md",
+    "HiveFleetObsidian\\ship\\VERIFICATION_PORT.md",
+    "HiveFleetObsidian\\ship\\WORLD_LOCAL_INDEX.md",
+    "HiveFleetObsidian\\ship\\adapters\\crewai.mjs",
+    "HiveFleetObsidian\\ship\\adapters\\langgraph.mjs"
+  ]
+}

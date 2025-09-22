@@ -1,0 +1,234 @@
+<!doctype html>
+<!--
+WEBWAY:ww-2025-012 & ww-2025-014
+Hand Console V8 (Aligned Layout)
+Purpose: Match V7 two-column UX while surfacing rich telemetry (norm, gate, thresholds, velocity, acceleration, palmAngle, joint angles) primarily for P1 (Player 1). Seats: P1/P2.
+Revert: Disable FEATURE_HAND_CONSOLE_V8 and delete this file or rollback commit.
+-->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Hand Console V8</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin:0; font:12px system-ui,sans-serif; background:#0b1117; color:#e5e7eb; display:grid; grid-template-columns: 2fr 1fr; height:100vh; }
+    #left { position:relative; }
+    video { width:100%; height:100%; object-fit:cover; background:#000; }
+    canvas#ov { position:absolute; inset:0; pointer-events:none; }
+    #boot { position:absolute; top:10px; left:10px; background:rgba(0,0,0,.55); padding:6px 8px; border-radius:8px; font-size:12px; line-height:1.3; }
+    #right { display:flex; flex-direction:column; gap:12px; padding:12px; overflow:auto; }
+    h3 { margin:0 0 6px; font-size:12px; opacity:.8; letter-spacing:.5px; text-transform:uppercase; }
+    .panel { background:#131a23; border:1px solid #1e2833; border-radius:10px; padding:10px 12px; }
+    .mono { font-family:ui-monospace,Menlo,Consolas,monospace; }
+    button { font:inherit; padding:4px 10px; border-radius:6px; background:#0d141c; color:#e5e7eb; border:1px solid #1e2833; cursor:pointer; }
+    #log { font-size:11px; max-height:140px; overflow:auto; background:#0d141c; padding:6px; border-radius:8px; }
+  #p1Chart, #p2Chart { width:100%; display:block; background:#0d141c; border:1px solid #1e2833; }
+    .anglesRow { font-size:11px; }
+  </style>
+</head>
+<body>
+  <div id="left">
+    <video id="cam" playsinline muted></video>
+    <canvas id="ov"></canvas>
+    <div id="boot">Booting V8…<br><span style="opacity:.7">rich telemetry</span></div>
+  </div>
+  <div id="right">
+    <div class="panel">
+      <h3>Capture</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <button id="startCam">Camera</button>
+        <button id="runClip">Clip</button>
+        <select id="clipSel" style="font:inherit;font-size:11px;">
+          <!-- WEBWAY:ww-2025-015 baseline golden clips -->
+          <option value="../videos/two_hands_baseline_idle_v1.mp4">Idle</option>
+          <option value="../videos/two_hands_stationary_right_then_left_index_pinch_hold_1s_v1.mp4">Pinch Seq</option>
+        </select>
+        <button id="runSeq" title="Run Idle then Pinch sequence">Seq</button>
+        <input id="clipInput" class="mono" style="flex:1;min-width:180px;font-size:11px;" placeholder="videos/…mp4" />
+        <span id="capStatus" class="mono" style="font-size:11px;opacity:.7;">idle</span>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Seats</h3>
+      <div id="seatSummary" class="mono" style="font-size:12px;">P1=- | P2=-</div>
+    </div>
+    <div class="panel" id="panelP1">
+      <h3>P1 Telemetry</h3>
+      <canvas id="p1Chart" width="300" height="80"></canvas>
+      <div class="mono" style="font-size:11px;margin-top:4px;line-height:1.4;" id="p1Stats">(no data)</div>
+      <div class="anglesRow">Index MCP/PIP/DIP: <span id="idxAngles">-</span></div>
+      <div class="anglesRow">Thumb CMC/MCP/IP: <span id="thumbAngles">-</span></div>
+      <div class="anglesRow">Palm Angle: <span id="palmAngle">-</span> | Gate:<span id="p1Gate">-</span></div>
+    </div>
+    <!-- WEBWAY:ww-2025-015 dual-seat second panel -->
+    <div class="panel" id="panelP2" style="display:none;">
+      <h3>P2 Telemetry</h3>
+      <canvas id="p2Chart" width="300" height="80"></canvas>
+      <div class="mono" style="font-size:11px;margin-top:4px;line-height:1.4;" id="p2Stats">(no data)</div>
+      <div class="anglesRow">Index MCP/PIP/DIP: <span id="idxAnglesP2">-</span></div>
+      <div class="anglesRow">Thumb CMC/MCP/IP: <span id="thumbAnglesP2">-</span></div>
+      <div class="anglesRow">Palm Angle: <span id="palmAngleP2">-</span> | Gate:<span id="p2Gate">-</span></div>
+    </div>
+    <div class="panel">
+      <h3>Recent Events</h3>
+      <pre id="log" class="mono" style="font-size:11px;">(none)</pre>
+    </div>
+    <div class="panel">
+      <h3>Diag</h3>
+      <div id="diag" class="mono" style="font-size:11px;">frames=0 errors=0 rich=0</div>
+    </div>
+  </div>
+  <script type="module">
+    // WEBWAY:ww-2025-012/014 initialization & feature gating
+    globalThis.__flags = Object.assign({}, globalThis.__flags||{}, {
+      FEATURE_HAND_CONSOLE_V8:true,
+      FEATURE_HAND_CONSOLE_VM:true,
+      FEATURE_OVERLAY_REDO:true,
+      FEATURE_OVERLAY_DEBUG:true,
+      FEATURE_CAMERA_CONSTRAINTS:true,
+      FEATURE_RICH_TELEM_V1:true,
+      FEATURE_DUAL_SEAT_TELEM:true // WEBWAY:ww-2025-015 gating second panel
+    });
+
+  import { createAppShell } from '../src/app/appShell.js';
+  import { createHandConsoleViewModel } from '../src/ui/createHandConsoleViewModel.js'; // WEBWAY:ww-2025-015 vm bridge for continuous metrics
+  const shell = createAppShell({ seats:['P1','P2'] });
+  const vmCore = createHandConsoleViewModel();
+  shell.onEvent(ev=> vmCore.onEvent(ev));
+    globalThis.appShell = shell; // dev handle
+
+    const video = document.getElementById('cam');
+    const canvas = document.getElementById('ov');
+    const g = canvas.getContext('2d');
+  const chartCtx = document.getElementById('p1Chart').getContext('2d');
+  const chartCtxP2 = (()=>{ const el=document.getElementById('p2Chart'); return el? el.getContext('2d'):null; })();
+    const diag = { frames:0, errors:0, pinchLog:[], lastSeatSummary:'' };
+
+    function resize(){
+      const cw = video.clientWidth || video.parentElement.clientWidth;
+      const ch = video.clientHeight || video.parentElement.clientHeight;
+      if(canvas.width!==cw || canvas.height!==ch){ canvas.width=cw; canvas.height=ch; }
+    }
+    window.addEventListener('resize', resize);
+
+    shell.onEvent(ev=>{
+      if(ev.type && ev.type.startsWith('pinch:')){ diag.pinchLog.push(`${ev.t} ${ev.type} ${ev.seat||''}`); if(diag.pinchLog.length>140) diag.pinchLog.splice(0,80); }
+      const logEl = document.getElementById('log'); if(logEl) logEl.textContent = diag.pinchLog.slice(-12).join('\n') || '(none)';
+    });
+
+    function drawOverlay(){
+      g.clearRect(0,0,canvas.width,canvas.height);
+      // future: landmark visualization parity with V7
+    }
+
+    function fmt(v,d=3){ return (v==null||!isFinite(v))?'-':(+v).toFixed(d); }
+
+    function drawHyst(gx, p){
+      const w = gx.canvas.width, h = gx.canvas.height;
+      gx.clearRect(0,0,w,h);
+      const hist = p.history || [];
+      const enter = p.thresholds?.enter ?? 0.4;
+      const exit = p.thresholds?.exit ?? 0.7;
+      gx.strokeStyle = '#444'; gx.beginPath(); gx.moveTo(0,(1-enter)*h); gx.lineTo(w,(1-enter)*h); gx.stroke();
+      gx.strokeStyle = '#333'; gx.beginPath(); gx.moveTo(0,(1-exit)*h); gx.lineTo(w,(1-exit)*h); gx.stroke();
+      const start = Math.max(0, hist.length - w);
+      gx.strokeStyle = '#0af'; gx.beginPath();
+      for(let i=start;i<hist.length;i++){ const x=i-start; const y=(1-(hist[i].norm??0))*h; if(i===start) gx.moveTo(x,y); else gx.lineTo(x,y); }
+      gx.stroke();
+      for(let i=start;i<hist.length;i++){ if(hist[i].gate){ gx.fillStyle='rgba(0,255,120,0.18)'; gx.fillRect(i-start,0,1,h); } }
+    }
+
+    function renderRich(){
+      const snap = shell.getRichSnapshot ? shell.getRichSnapshot() : [];
+      const p1 = snap.find(s=> s.seat==='P1') || snap[0];
+      const p2 = snap.find(s=> s.seat==='P2' && s!==p1);
+      const seatEl = document.getElementById('seatSummary');
+      const p1Id = p1 && (p1.hand + (p1.handId!=null? ('#'+p1.handId):''));
+      const p2Id = p2 && (p2.hand + (p2.handId!=null? ('#'+p2.handId):''));
+      const seatLine = `P1=${p1Id||'-'} | P2=${p2Id||'-'}`;
+      if(seatEl && seatLine!==diag.lastSeatSummary){ seatEl.textContent = seatLine; diag.lastSeatSummary = seatLine; }
+      // vm snapshot for richer continuous values
+      let vmSnap; try { vmSnap = vmCore.snapshot(); } catch {}
+      const vmSeats = vmSnap && vmSnap.seats || {};
+      const vmHands = vmSnap && vmSnap.hands || {};
+      const vmP1 = vmSeats.P1 && vmHands[vmSeats.P1];
+      const vmP2 = vmSeats.P2 && vmHands[vmSeats.P2];
+      if(p1){
+        // Prefer continuous vmCore data when available
+        const pinch = vmP1 && vmP1.pinch || {};
+        const vel = vmP1 && vmP1.vel || {};
+        const orient = vmP1 && vmP1.orient || {};
+        document.getElementById('p1Stats').textContent = `gap ${fmt(pinch.normalizedGap??pinch.norm,3)} norm ${fmt(p1.norm)} raw ${fmt(p1.rawNorm)} vel ${fmt(vel.velDegPerSec,1)} acc ${fmt(p1.acceleration)} palm ${fmt(orient.angleDeg,1)}°\nenter ${(p1.thresholds?.enter??'-')} exit ${(p1.thresholds?.exit??'-')}`;
+        const ga = document.getElementById('p1Gate'); if(ga) ga.textContent = p1.gate? 'Y':'N';
+        const palmEl = document.getElementById('palmAngle'); if(palmEl) palmEl.textContent = (p1.palmAngleDeg!=null? p1.palmAngleDeg.toFixed(1): (orient.angleDeg!=null? orient.angleDeg.toFixed(1):'-'))+'°';
+        const flex = vmP1 && vmP1.flex || {};
+        if(p1.indexAngles || flex.mcpDeg!=null){ document.getElementById('idxAngles').textContent = `${fmt((p1.indexAngles?.mcpDeg)??flex.mcpDeg,1)}/${fmt((p1.indexAngles?.pipDeg)??flex.pipDeg,1)}/${fmt((p1.indexAngles?.dipDeg)??flex.dipDeg,1)}`; }
+        if(p1.thumbAngles || flex.thumbMcpDeg!=null){ document.getElementById('thumbAngles').textContent = `${fmt((p1.thumbAngles?.cmcDeg)??flex.thumbCmcDeg,1)}/${fmt((p1.thumbAngles?.mcpDeg)??flex.thumbMcpDeg,1)}/${fmt((p1.thumbAngles?.ipDeg)??flex.thumbIpDeg,1)}`; }
+        if(p1.history){ drawHyst(chartCtx, p1); }
+      }
+      // P2 panel (gated)
+      const dual = globalThis.__flags.FEATURE_DUAL_SEAT_TELEM;
+      const p2Panel = document.getElementById('panelP2');
+      if(dual && p2 && p2Panel){
+        p2Panel.style.display='block';
+        const pinch2 = vmP2 && vmP2.pinch || {};
+        const vel2 = vmP2 && vmP2.vel || {};
+        const orient2 = vmP2 && vmP2.orient || {};
+        document.getElementById('p2Stats').textContent = `gap ${fmt(pinch2.normalizedGap??pinch2.norm,3)} norm ${fmt(p2.norm)} raw ${fmt(p2.rawNorm)} vel ${fmt(vel2.velDegPerSec,1)} acc ${fmt(p2.acceleration)} palm ${fmt(orient2.angleDeg,1)}°\nenter ${(p2.thresholds?.enter??'-')} exit ${(p2.thresholds?.exit??'-')}`;
+        const ga2 = document.getElementById('p2Gate'); if(ga2) ga2.textContent = p2.gate? 'Y':'N';
+        const palm2 = document.getElementById('palmAngleP2'); if(palm2) palm2.textContent = (p2.palmAngleDeg!=null? p2.palmAngleDeg.toFixed(1):(orient2.angleDeg!=null?orient2.angleDeg.toFixed(1):'-'))+'°';
+        const flex2 = vmP2 && vmP2.flex || {};
+        if(p2.indexAngles || flex2.mcpDeg!=null){ document.getElementById('idxAnglesP2').textContent = `${fmt((p2.indexAngles?.mcpDeg)??flex2.mcpDeg,1)}/${fmt((p2.indexAngles?.pipDeg)??flex2.pipDeg,1)}/${fmt((p2.indexAngles?.dipDeg)??flex2.dipDeg,1)}`; }
+        if(p2.thumbAngles || flex2.thumbMcpDeg!=null){ document.getElementById('thumbAnglesP2').textContent = `${fmt((p2.thumbAngles?.cmcDeg)??flex2.thumbCmcDeg,1)}/${fmt((p2.thumbAngles?.mcpDeg)??flex2.thumbMcpDeg,1)}/${fmt((p2.thumbAngles?.ipDeg)??flex2.thumbIpDeg,1)}`; }
+        if(p2.history && chartCtxP2){ drawHyst(chartCtxP2, p2); }
+      } else if(p2Panel){ p2Panel.style.display='none'; }
+    }
+
+    function frame(){
+      resize();
+      try { vmCore.tick(); } catch(e){ /* WEBWAY:ww-2025-015 vmCore tick parity fix */ }
+      renderRich();
+      drawOverlay();
+      diag.frames++;
+      try {
+        const snap = vmCore.snapshot && vmCore.snapshot();
+        const handCount = snap && snap.hands ? Object.keys(snap.hands).length : 0;
+        document.getElementById('diag').textContent = `frames=${diag.frames} hands=${handCount} errors=${diag.errors} rich=${(shell.getRichSnapshot? shell.getRichSnapshot().length:0)}`;
+      } catch { document.getElementById('diag').textContent = `frames=${diag.frames} errors=${diag.errors} rich=${(shell.getRichSnapshot? shell.getRichSnapshot().length:0)}`; }
+      const boot = document.getElementById('boot'); if(boot && diag.frames>30){ boot.style.display='none'; }
+      requestAnimationFrame(frame);
+    }
+    frame();
+
+    async function startCamera(){ const st=document.getElementById('capStatus'); st.textContent='camera…'; try{ await shell.startCamera(video); st.textContent='camera'; } catch(e){ st.textContent='cam fail'; diag.errors++; } }
+    async function startClip(url){ const st=document.getElementById('capStatus'); st.textContent='clip…'; try{ await shell.startVideoUrl(video,url); st.textContent='clip'; } catch(e){ st.textContent='clip fail'; diag.errors++; } }
+    document.getElementById('startCam').onclick = ()=> startCamera();
+    function runClipSel(){ const sel=document.getElementById('clipSel'); if(sel) startClip(sel.value); }
+    document.getElementById('runClip').onclick = ()=>{ const v=document.getElementById('clipInput').value.trim(); if(v) startClip(v); else runClipSel(); };
+    document.getElementById('runSeq').onclick = ()=>{
+      const seq = ['../videos/two_hands_baseline_idle_v1.mp4','../videos/two_hands_stationary_right_then_left_index_pinch_hold_1s_v1.mp4'];
+      let i=0; function playNext(){ if(i>=seq.length) return; startClip(seq[i++]); video.onended=()=>playNext(); }
+      playNext();
+    };
+
+    (function initQP(){
+      const Q=new URLSearchParams(location.search);
+      const qpClip=Q.get('clip');
+      const auto=Q.get('auto')==='1' || Q.get('autostart')==='1';
+      const nocam=Q.get('nocam')==='1';
+      const seq=Q.get('seq')==='1';
+      if(qpClip){
+        document.getElementById('clipInput').value=qpClip;
+        if(auto) setTimeout(()=>startClip(qpClip),200); else if(!nocam) setTimeout(()=>startCamera(),200);
+      } else if(seq){
+        setTimeout(()=>document.getElementById('runSeq').click(),220);
+      } else if(auto){
+        // default: auto idle clip
+        setTimeout(()=>startClip('../videos/two_hands_baseline_idle_v1.mp4'),200);
+      }
+    })();
+
+    globalThis.__seatModel = 'Player'; // P1/P2 semantics confirmed
+  </script>
+</body>
+</html>

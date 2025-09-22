@@ -1,0 +1,6 @@
+TTao: Problem: (unset). We steer by simple, green checks.
+Thread Sovereign: Decide. Strike the decisive seam. (Sun Tzu: win without fighting) Daily health + one reversible improvement. Ship only if frozen stays green. OODA (observe-orient-decide-act).
+Faultline Seeker: Probe: Design 1-3 micro-tests for riskiest assumption in Board; run replay on a new short trace. Stop when Stop rule hit (signal or timeout) on at least one probe.
+Prism Magus: Keep the aim; change the path: Use an adapter, not a rewrite. Win: demo works today.
+Web Cartographer: Adopt ports/adapters for the next seam; land the smallest first step. Smallest step first. (Entrypoint scan: seed from README/index/H1)
+Silk Scribe: Logged chat | counsel: HiveFleetObsidian/reports/turns/turn_2025-09-08T16-43-49.104Z.json

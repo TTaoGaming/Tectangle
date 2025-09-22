@@ -1,0 +1,17 @@
+{
+  "span": "hour",
+  "totalEvents": 2,
+  "distinctSnapshots": 1,
+  "newestTs": "2025-09-13T22:39:50.691Z",
+  "oldestTs": "2025-09-13T22:00:02.385Z",
+  "topSnapshots": [
+    {
+      "snapshot": "heartbeat",
+      "count": 2
+    }
+  ],
+  "sampleLessons": [
+    "Ensure champion voices present; turn shape; glossary; frozen pass",
+    "Ensure champion voices present; turn shape; glossary; frozen pass"
+  ]
+}

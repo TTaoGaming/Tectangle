@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "color": {
+    "bg": "#0b1020",
+    "surface": "#0f172a",
+    "onSurface": "#e5e7eb",
+    "primary": "#7c3aed",
+    "outline": "#334155",
+    "card": "#111827"
+  },
+  "shape": {
+    "radius": { "xs": 8, "sm": 10, "md": 12, "lg": 16 }
+  },
+  "elevation": { "level0": 0, "level1": 1 },
+  "typography": { "scale": 1.0 }
+}

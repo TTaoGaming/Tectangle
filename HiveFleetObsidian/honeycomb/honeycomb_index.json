@@ -1,0 +1,632 @@
+{
+  "generatedAt": "2025-09-22T19:00:02.961Z",
+  "categories": [
+    {
+      "id": "decisions",
+      "name": "Decisions",
+      "count": 1,
+      "items": [
+        {
+          "path": "September2025/Tectangle/docs/pinch_mvp_decision.md",
+          "title": "pinch mvp decision",
+          "snippet": "Pinch MVP Decision & Implementation Plan — Palm‑gated index↔thumb pinch (Pinch Piano MVP)",
+          "mtime": "2025-09-22T16:25:48.773Z",
+          "mtimeMs": 1758558348773.9365
+        }
+      ]
+    },
+    {
+      "id": "plans",
+      "name": "Plans",
+      "count": 34,
+      "items": [
+        {
+          "path": "September2025/PinchFSM/docs/TODO_PinchFSM_2025-09-05T00-36-00Z.md",
+          "title": "TODO PinchFSM 2025 09 05T00 36 00Z",
+          "snippet": "PinchFSM — One‑Pager TODO (Deterministic, CI‑Gated)",
+          "mtime": "2025-09-22T04:48:39.017Z",
+          "mtimeMs": 1758516519017.1296
+        },
+        {
+          "path": "September2025/PinchFSM/docs/TODO_mediapipe_trace_generator.md",
+          "title": "TODO mediapipe trace generator",
+          "snippet": "PinchFSM — MediaPipe Trace Generator (TODO)",
+          "mtime": "2025-09-22T04:48:39.018Z",
+          "mtimeMs": 1758516519018.1301
+        },
+        {
+          "path": "September2025/PinchFSM/docs/TwoPager_Checklist_2025-09-05T00-00-20Z.md",
+          "title": "Two‑Pager Checklist — Tech + Next Actions",
+          "snippet": "# Two‑Pager Checklist — Tech + Next Actions",
+          "mtime": "2025-09-22T04:48:39.018Z",
+          "mtimeMs": 1758516519018.1301
+        },
+        {
+          "path": "September2025/Tectangle/docs/TODO_2025-09-01T20-50-07_MDT.md",
+          "title": "Tectangle — Daily TODO & Rollout Plan",
+          "snippet": "# Tectangle — Daily TODO & Rollout Plan",
+          "mtime": "2025-09-22T16:25:48.769Z",
+          "mtimeMs": 1758558348769.9355
+        },
+        {
+          "path": "September2025/Tectangle/docs/TODO_2025-09-03T09-05-30_MDT.md",
+          "title": "TODO — Pinch 4-way + Palm/Orientation Gating + Basic TOI",
+          "snippet": "# TODO — Pinch 4-way + Palm/Orientation Gating + Basic TOI",
+          "mtime": "2025-09-22T16:25:48.769Z",
+          "mtimeMs": 1758558348769.9355
+        },
+        {
+          "path": "September2025/Tectangle/docs/TODO_MVP_2025-09-03T10-20-03_MDT.md",
+          "title": "Tectangle — MVP TODO & Narrow-Scope Plan",
+          "snippet": "# Tectangle — MVP TODO & Narrow-Scope Plan",
+          "mtime": "2025-09-22T16:25:48.769Z",
+          "mtimeMs": 1758558348769.9355
+        },
+        {
+          "path": "September2025/Tectangle/docs/pinch_feature_plan.md",
+          "title": "Pinch Feature Plan — Minimal Palm‑Gated Pinch for MVP",
+          "snippet": "# Pinch Feature Plan — Minimal Palm‑Gated Pinch for MVP",
+          "mtime": "2025-09-22T16:25:48.772Z",
+          "mtimeMs": 1758558348772.9368
+        },
+        {
+          "path": "September2025/Tectangle/docs/pinch_feature_plan_EARS.md",
+          "title": "Pinch Feature Plan — EARS additions (compact)",
+          "snippet": "# Pinch Feature Plan — EARS additions (compact)",
+          "mtime": "2025-09-22T16:25:48.773Z",
+          "mtimeMs": 1758558348773.9365
+        },
+        {
+          "path": "docs/aichat/aiChatTectangleOnePage20250906.md",
+          "title": "One-pager: DDD plan for near-zero-latency gesture→MIDI/Game",
+          "snippet": "Awesome—DDD is a great fit for what you’re building. Here’s how I’d reshape your plan for **near-zero perceived latency** (piano + gaming), what to copy from proven systems, and the traps to dodge.",
+          "mtime": "2025-09-06T21:47:29.456Z",
+          "mtimeMs": 1757195249456.5994
+        },
+        {
+          "path": "docs/knowledge/Consolidated_Pinch_Report_2025-09-06_FINAL.md",
+          "title": "Consolidated Pinch Report — 2025-09-06",
+          "snippet": "Ship a minimal palm-gated index↔thumb pinch (Exploit path) now; harden with golden-trace-driven CI and a one-week stabilization plan.",
+          "mtime": "2025-09-07T09:09:12.698Z",
+          "mtimeMs": 1757236152698.062
+        },
+        {
+          "path": "docs/two-pagers/Adapters_Universal_Lego_TwoPager_2025-09-05.md",
+          "title": "Adapters Universal Lego TwoPager 2025 09 05",
+          "snippet": "Adapters Everywhere — Universal “Lego” Architecture for PinchFSM",
+          "mtime": "2025-09-06T04:51:28.734Z",
+          "mtimeMs": 1757134288734.1052
+        },
+        {
+          "path": "docs/two-pagers/Agents_TwoPager_2025-09-05.md",
+          "title": "Agents TwoPager 2025 09 05",
+          "snippet": "Agents (Agent.md, CrewAI, LangGraph) — Executive Two‑Pager",
+          "mtime": "2025-09-05T07:12:17.090Z",
+          "mtimeMs": 1757056337090.307
+        },
+        {
+          "path": "docs/two-pagers/CI_Basics_and_Scaffolding_2025-09-05.md",
+          "title": "Continuous Integration (CI) Basics & Scaffolding (Two‑Pager)",
+          "snippet": "# Continuous Integration (CI) Basics & Scaffolding (Two‑Pager)",
+          "mtime": "2025-09-05T20:30:55.354Z",
+          "mtimeMs": 1757104255354.943
+        },
+        {
+          "path": "docs/two-pagers/CI_Foundations_TwoPager_2025-09-05.md",
+          "title": "CI Foundations TwoPager 2025 09 05",
+          "snippet": "CI Foundations — Deterministic, Fast, Observable",
+          "mtime": "2025-09-05T20:30:53.496Z",
+          "mtimeMs": 1757104253496.2493
+        },
+        {
+          "path": "docs/two-pagers/FlappyBirdP0_TwoPager_2025-09-05T00-01-40Z.md",
+          "title": "FlappyBirdP0 TwoPager 2025 09 05T00 01 40Z",
+          "snippet": "Flappy Bird P0 — Two‑Pager",
+          "mtime": "2025-09-05T07:12:16.572Z",
+          "mtimeMs": 1757056336572.7515
+        },
+        {
+          "path": "docs/two-pagers/GitHub_Actions_Best_Practices_TwoPager_2025-09-05.md",
+          "title": "GitHub Actions Best Practices TwoPager 2025 09 05",
+          "snippet": "GitHub Actions — Practical Playbook",
+          "mtime": "2025-09-05T20:30:55.270Z",
+          "mtimeMs": 1757104255270.0503
+        },
+        {
+          "path": "docs/two-pagers/Git_Core_TwoPager_2025-09-05.md",
+          "title": "Git Core — Practical Two‑Pager (Plain Language + Analogies)",
+          "snippet": "# Git Core — Practical Two‑Pager (Plain Language + Analogies)",
+          "mtime": "2025-09-05T20:30:55.359Z",
+          "mtimeMs": 1757104255359.7446
+        },
+        {
+          "path": "docs/two-pagers/Golden_Master_Testing_TwoPager_2025-09-05.md",
+          "title": "Golden Master Testing TwoPager 2025 09 05",
+          "snippet": "Golden Master Testing — Lock Inputs, Gate Regressions",
+          "mtime": "2025-09-05T20:30:55.270Z",
+          "mtimeMs": 1757104255270.0503
+        },
+        {
+          "path": "docs/two-pagers/Hexagonal_Architecture_TwoPager_2025-09-05.md",
+          "title": "Hexagonal Architecture TwoPager 2025 09 05",
+          "snippet": "Hexagonal Architecture (Ports & Adapters) — Two‑Pager for PinchFSM",
+          "mtime": "2025-09-06T04:51:28.734Z",
+          "mtimeMs": 1757134288734.1052
+        },
+        {
+          "path": "docs/two-pagers/Hexagonal_Key_Human_Camera_TwoPager_2025-09-05.md",
+          "title": "Hexagonal UI: Key + Human Demo + Camera Overlay",
+          "snippet": "# Hexagonal UI: Key + Human Demo + Camera Overlay",
+          "mtime": "2025-09-06T16:26:30.957Z",
+          "mtimeMs": 1757175990957.66
+        },
+        {
+          "path": "docs/two-pagers/Hexagonal_with_SequentialThinking_TwoPager_2025-09-05.md",
+          "title": "Hexagonal with SequentialThinking TwoPager 2025 09 05",
+          "snippet": "Hexagonal Architecture + Sequential Thinking (5×) — PinchFSM",
+          "mtime": "2025-09-06T04:51:28.734Z",
+          "mtimeMs": 1757134288734.1052
+        },
+        {
+          "path": "docs/two-pagers/HumanAdapter_SimpleOptions_RootCause_2025-09-06.md",
+          "title": "HumanAdapter SimpleOptions RootCause 2025 09 06",
+          "snippet": "HumanAdapter — Simple Options & Root Cause (Why No Dots?)",
+          "mtime": "2025-09-06T17:15:02.683Z",
+          "mtimeMs": 1757178902683.7983
+        },
+        {
+          "path": "docs/two-pagers/HumanAdapters_NotWorkingPrototype_TwoPager_2025-09-06.md",
+          "title": "HumanAdapters NotWorkingPrototype TwoPager 2025 09 06",
+          "snippet": "HumanAdapters — Not Working Prototype (Status & Next Steps)",
+          "mtime": "2025-09-06T18:02:51.646Z",
+          "mtimeMs": 1757181771646.1738
+        },
+        {
+          "path": "docs/two-pagers/Human_Detailed_TwoPager_2025-09-05.md",
+          "title": "Human Detailed TwoPager 2025 09 05",
+          "snippet": "@vladmandic/human — Detailed Two‑Pager (API & Gesture Strategy)",
+          "mtime": "2025-09-05T20:30:55.364Z",
+          "mtimeMs": 1757104255364.2207
+        },
+        {
+          "path": "docs/two-pagers/Human_TwoPager_2025-09-05.md",
+          "title": "Human TwoPager 2025 09 05",
+          "snippet": "@vladmandic/human — Executive Two‑Pager",
+          "mtime": "2025-09-05T07:12:17.089Z",
+          "mtimeMs": 1757056337089.006
+        },
+        {
+          "path": "docs/two-pagers/Jest_TwoPager_2025-09-05T00-02-05Z.md",
+          "title": "Jest TwoPager 2025 09 05T00 02 05Z",
+          "snippet": "Jest — Two‑Pager",
+          "mtime": "2025-09-05T07:12:16.572Z",
+          "mtimeMs": 1757056336572.7515
+        },
+        {
+          "path": "docs/two-pagers/Lego_Design_Principles_TwoPager_2025-09-05.md",
+          "title": "Lego Design Principles: One Shape, Everything Connects",
+          "snippet": "# Lego Design Principles: One Shape, Everything Connects",
+          "mtime": "2025-09-06T16:26:30.957Z",
+          "mtimeMs": 1757175990957.66
+        },
+        {
+          "path": "docs/two-pagers/MediaPipeHands_TwoPager_2025-09-05.md",
+          "title": "MediaPipeHands TwoPager 2025 09 05",
+          "snippet": "MediaPipe Hands — Executive Two‑Pager",
+          "mtime": "2025-09-05T07:12:17.090Z",
+          "mtimeMs": 1757056337090.307
+        },
+        {
+          "path": "docs/two-pagers/Mocha_TwoPager_2025-09-05.md",
+          "title": "Mocha TwoPager 2025 09 05",
+          "snippet": "Mocha — Executive Two‑Pager",
+          "mtime": "2025-09-05T07:12:17.090Z",
+          "mtimeMs": 1757056337090.307
+        },
+        {
+          "path": "docs/two-pagers/PinchFSM_Deterministic_TwoPager_2025-09-05.md",
+          "title": "PinchFSM Deterministic TwoPager 2025 09 05",
+          "snippet": "PinchFSM — Deterministic vNext",
+          "mtime": "2025-09-05T07:11:35.641Z",
+          "mtimeMs": 1757056295641.9275
+        },
+        {
+          "path": "docs/two-pagers/Rapier_TwoPager_2025-09-05.md",
+          "title": "Rapier TwoPager 2025 09 05",
+          "snippet": "Rapier — Tech → Application for PinchFSM",
+          "mtime": "2025-09-05T07:12:17.089Z",
+          "mtimeMs": 1757056337089.006
+        },
+        {
+          "path": "docs/two-pagers/ThreeJS_TwoPager_2025-09-05.md",
+          "title": "ThreeJS TwoPager 2025 09 05",
+          "snippet": "Three.js — Executive Two‑Pager",
+          "mtime": "2025-09-05T07:12:17.089Z",
+          "mtimeMs": 1757056337089.006
+        },
+        {
+          "path": "docs/two-pagers/VideoGoldens_TwoPager_2025-09-05.md",
+          "title": "VideoGoldens TwoPager 2025 09 05",
+          "snippet": "PinchFSM — Video Golden Masters (Replay Harness)",
+          "mtime": "2025-09-05T07:12:17.089Z",
+          "mtimeMs": 1757056337089.006
+        },
+        {
+          "path": "docs/two-pagers/_TEMPLATE_TwoPager_YYYY-MM-DDThh-mm-ssZ.md",
+          "title": " TEMPLATE TwoPager YYYY MM DDThh mm ssZ",
+          "snippet": "title: TEMPLATE TITLE",
+          "mtime": "2025-09-05T07:12:16.572Z",
+          "mtimeMs": 1757056336572.7515
+        }
+      ]
+    },
+    {
+      "id": "diagnostics",
+      "name": "Diagnostics",
+      "count": 0,
+      "items": []
+    },
+    {
+      "id": "testing",
+      "name": "Testing & CI",
+      "count": 7,
+      "items": [
+        {
+          "path": "docs/aichat/AiChatArchitecture20250904.md",
+          "title": "Plain-language summary — 4-state pinch FSM (what it *feels* like)",
+          "snippet": "Nice — love how clear your goal is. Below is a concise, plain-language summary of your **4-state pinch FSM** plus practical, production-grade workflows you can start following today to avoid regressions and stop the rebuild loop.",
+          "mtime": "2025-09-05T07:11:35.549Z",
+          "mtimeMs": 1757056295549.5303
+        },
+        {
+          "path": "docs/aichat/AiChatForkableProjects.md",
+          "title": "Top 20 Open-Source Games for Gesture Control Monetization",
+          "snippet": "Got it ✅ Thanks for sharing your bigger vision—that makes this much more exciting. If the long-term goal is to use your gesture input layer for medical and life-saving applications, then the first step is to **prove it can make money and at",
+          "mtime": "2025-09-05T07:11:35.550Z",
+          "mtimeMs": 1757056295550.7073
+        },
+        {
+          "path": "docs/knowledge/TommyNotes_August2025_Summary_20250907.md",
+          "title": "TommyNotes — August 2025 Summary",
+          "snippet": "Focused on making pinch detection robust and low-latency by 1) formalizing a 3-check consensus model (knuckle-span, velocity, joint-angle), 2) moving to a manager-based pipeline, and 3) cleaning UI/telemetry so testing and tuning are tracta",
+          "mtime": "2025-09-07T07:09:44.915Z",
+          "mtimeMs": 1757228984915.007
+        },
+        {
+          "path": "docs/knowledge/dev_environment_2pager_20250907.md",
+          "title": "Developer environment two‑pager — Reproducible Docker + DevContainer",
+          "snippet": "Use a small Docker image + VS Code DevContainer to reproduce Node 22, headless browser smoke harnesses, and deterministic golden‑trace runs locally and in CI. This makes demos repeatable and reduces \"works on my machine\" debugging.",
+          "mtime": "2025-09-07T06:46:27.752Z",
+          "mtimeMs": 1757227587752.3987
+        },
+        {
+          "path": "docs/knowledge/scribe_notes/Consolidated_Pinch_Report_2025-09-06_FINAL.md",
+          "title": "Ship minimal palm-gated pinch; harden with goldens + CI",
+          "snippet": "# Ship minimal palm-gated pinch; harden with goldens + CI",
+          "mtime": "2025-09-11T23:38:34.289Z",
+          "mtimeMs": 1757633914289.2566
+        },
+        {
+          "path": "docs/knowledge/scribe_notes/Tectangle_consolidated_pinch_report_20250906.md",
+          "title": "Exploit first: guard bootstrap + pinch→keypress bridge; capture goldens; CI gate regressions",
+          "snippet": "# Exploit first: guard bootstrap + pinch→keypress bridge; capture goldens; CI gate regressions",
+          "mtime": "2025-09-11T23:38:34.290Z",
+          "mtimeMs": 1757633914290.2573
+        },
+        {
+          "path": "docs/knowledge/tommy_six_month_summary_20250907.md",
+          "title": "Six‑Month Executive Summary — Pinch input (Apr–Sep 2025)",
+          "snippet": "Apply the Exploit (guard bootstrap) to unblock the Pinch Piano demo within 48 hours, run the golden‑trace smoke harness to lock down behavior, then start a time‑boxed Hexagonal refactor to harden the core (evidence: [`docs/knowledge/Consoli",
+          "mtime": "2025-09-07T05:34:01.417Z",
+          "mtimeMs": 1757223241417.8062
+        }
+      ]
+    },
+    {
+      "id": "algorithms",
+      "name": "Algorithms",
+      "count": 13,
+      "items": [
+        {
+          "path": "September2025/PinchFSM/docs/README-vendor-mediapipe.md",
+          "title": "Vendoring MediaPipe assets",
+          "snippet": "# Vendoring MediaPipe assets",
+          "mtime": "2025-09-22T04:48:39.016Z",
+          "mtimeMs": 1758516519016.1292
+        },
+        {
+          "path": "docs/aichat/AiChatTectanglePinch2MVP20250907.md",
+          "title": "Page 1 — Executive summary",
+          "snippet": "# Page 1 — Executive summary",
+          "mtime": "2025-09-07T20:45:47.929Z",
+          "mtimeMs": 1757277947929.0574
+        },
+        {
+          "path": "docs/knowledge/HFO_PURPOSE_Semantic_Knife.md",
+          "title": "HFO PURPOSE Semantic Knife",
+          "snippet": "Universal, accessible hand-tracking pipeline that yields a deterministic, palm/orientation-gated pinch with perceived zero latency via predictive lookahead; scales from party games to medical/tool virtualization using just a smartphone (pro",
+          "mtime": "2025-09-11T23:38:34.286Z",
+          "mtimeMs": 1757633914286.2578
+        },
+        {
+          "path": "docs/knowledge/PinchFSMHumanVlad_human_capabilities_20250905.md",
+          "title": "PinchFSMHumanVlad human capabilities 20250905",
+          "snippet": "---",
+          "mtime": "2025-09-06T22:57:54.765Z",
+          "mtimeMs": 1757199474765.2993
+        },
+        {
+          "path": "docs/knowledge/PinchFSMHumanVlad_pinchfsm_onepager_022610_20250905.md",
+          "title": "PinchFSMHumanVlad pinchfsm onepager 022610 20250905",
+          "snippet": "---",
+          "mtime": "2025-09-06T22:57:54.777Z",
+          "mtimeMs": 1757199474777.4048
+        },
+        {
+          "path": "docs/knowledge/PinchFSMHumanVlad_pinchfsm_onepager_024621_20250905.md",
+          "title": "PinchFSMHumanVlad pinchfsm onepager 024621 20250905",
+          "snippet": "---",
+          "mtime": "2025-09-06T22:57:54.771Z",
+          "mtimeMs": 1757199474771.7998
+        },
+        {
+          "path": "docs/knowledge/PinchFSM_human_capabilities_20250905.md",
+          "title": "PinchFSM human capabilities 20250905",
+          "snippet": "---",
+          "mtime": "2025-09-06T22:57:54.768Z",
+          "mtimeMs": 1757199474768.434
+        },
+        {
+          "path": "docs/knowledge/PinchFSM_pinchfsm_onepager_022610_20250905.md",
+          "title": "PinchFSM pinchfsm onepager 022610 20250905",
+          "snippet": "---",
+          "mtime": "2025-09-06T22:57:54.782Z",
+          "mtimeMs": 1757199474782.3994
+        },
+        {
+          "path": "docs/knowledge/PinchFSM_pinchfsm_onepager_024621_20250905.md",
+          "title": "PinchFSM pinchfsm onepager 024621 20250905",
+          "snippet": "---",
+          "mtime": "2025-09-06T22:57:54.774Z",
+          "mtimeMs": 1757199474774.8342
+        },
+        {
+          "path": "docs/knowledge/Tectangle_consolidated_pinch_report_20250906.md",
+          "title": "Consolidated Pinch Report — Tectangle (2025-09-06)",
+          "snippet": "---",
+          "mtime": "2025-09-06T22:57:54.745Z",
+          "mtimeMs": 1757199474745.0142
+        },
+        {
+          "path": "docs/knowledge/Tectangle_project_timeline_summary_20250906.md",
+          "title": "Project Timeline & Canonicalization Report — Tectangle & PinchFSM",
+          "snippet": "---",
+          "mtime": "2025-09-06T22:57:54.749Z",
+          "mtimeMs": 1757199474749.562
+        },
+        {
+          "path": "docs/knowledge/TommyNotes_September2025_Summary_20250907.md",
+          "title": "TommyNotes — September 2025 Summary",
+          "snippet": "Define and execute phase-zero single-pinch orientation-gated triggers, shift to manager-based architecture, remove smoothing-induced latency, and prototype touchscreen/multi-input emulator and predictive lookahead for musical feel.",
+          "mtime": "2025-09-07T07:05:35.244Z",
+          "mtimeMs": 1757228735244.6245
+        },
+        {
+          "path": "docs/knowledge/notes/Consolidated_Pinch_Report_2025-09-06_FINAL.notes.md",
+          "title": "Notes: Consolidated Pinch Report (2025-09-06)",
+          "snippet": "# Notes: Consolidated Pinch Report (2025-09-06)",
+          "mtime": "2025-09-08T00:45:57.688Z",
+          "mtimeMs": 1757292357688.0525
+        }
+      ]
+    },
+    {
+      "id": "architecture",
+      "name": "Architecture",
+      "count": 0,
+      "items": []
+    },
+    {
+      "id": "ux",
+      "name": "UX & Demo",
+      "count": 2,
+      "items": [
+        {
+          "path": "September2025/Tectangle/docs/AiChatTOI.md",
+          "title": "Predictive Latency & Collision Handling: Options Overview",
+          "snippet": "Here’s a **1-page guide** summarizing your options for **predictive latency, time-to-impact (TTI), and time-to-collision (TOC)** when working with hand gestures and soft-body/physics input.",
+          "mtime": "2025-09-22T16:25:48.767Z",
+          "mtimeMs": 1758558348767.9358
+        },
+        {
+          "path": "docs/knowledge/project_progress_summary_20250906.md",
+          "title": "Project Progress Summary — 2025-09-06",
+          "snippet": "Snapshot of workspace state, recent work, and recommended immediate actions to stabilize demos and canonicalize knowledge.",
+          "mtime": "2025-09-06T23:21:52.497Z",
+          "mtimeMs": 1757200912497.8083
+        }
+      ]
+    },
+    {
+      "id": "sdk",
+      "name": "SDK & API",
+      "count": 0,
+      "items": []
+    },
+    {
+      "id": "notes",
+      "name": "Notes & Logs",
+      "count": 9,
+      "items": [
+        {
+          "path": "September2025/Tectangle/docs/Tectangle_Summary_2025-09-02T18-27-10Z.md",
+          "title": "Tectangle Manager Audit — 2025-09-02T18:27:10Z",
+          "snippet": "# Tectangle Manager Audit — 2025-09-02T18:27:10Z",
+          "mtime": "2025-09-22T16:25:48.770Z",
+          "mtimeMs": 1758558348770.9355
+        },
+        {
+          "path": "September2025/Tectangle/docs/TommyNotesSummary-2025-09-01T21-20-29Z.md",
+          "title": "TommyNotesSummary 2025 09 01T21 20 29Z",
+          "snippet": "---",
+          "mtime": "2025-09-22T16:25:48.770Z",
+          "mtimeMs": 1758558348770.9355
+        },
+        {
+          "path": "docs/aichat/AIChatHiveFleetObsidian20250907.md",
+          "title": "What “Agent.md” means (super short)",
+          "snippet": "Got it—let’s keep this dead simple and get you using a **single Agent.md** today, renamed to your theme:",
+          "mtime": "2025-09-08T01:08:28.849Z",
+          "mtimeMs": 1757293708849.4758
+        },
+        {
+          "path": "docs/aichat/AiChatTTaoLordOfStrings20250907.md",
+          "title": "TTao, Lord of Strings — AGENT.md (v1)",
+          "snippet": "awesome—here’s a tight, research-backed **AGENT.md** you can drop into any repo. it uses **Polya’s 4 steps** as the backbone, layered with proven ops ideas (UCB/UCT for explore⇄exploit, OODA for reframing, WIP limits via Little’s Law, and D",
+          "mtime": "2025-09-07T23:47:25.748Z",
+          "mtimeMs": 1757288845748.5579
+        },
+        {
+          "path": "docs/aichat/AiChatTTaoLordOfStringsChampions20230907.md",
+          "title": "AGENT\\_ROSTER.md — TTao, Lord of Strings (Obsidian Nest)",
+          "snippet": "Absolutely. Below are copy-pasteable prompts—one per Champion—written in plain language and tailored for a dark, hive-fleet aesthetic. Each keeps a shared visual “universe,” but lets the Champion set their own vibe. Use as-is, or tweak colo",
+          "mtime": "2025-09-07T23:47:25.754Z",
+          "mtimeMs": 1757288845754.5444
+        },
+        {
+          "path": "docs/aichat/AiChatVladHumanOpenSource.md",
+          "title": "Executive summary — **@vladmandic/human** (one page)",
+          "snippet": "# Executive summary — **@vladmandic/human** (one page)",
+          "mtime": "2025-09-05T07:11:35.550Z",
+          "mtimeMs": 1757056295550.7073
+        },
+        {
+          "path": "docs/knowledge/SIX_MONTH_SUMMARY_20250911.md",
+          "title": "Six-Month Summary — AUTOGEN",
+          "snippet": "# Six-Month Summary — AUTOGEN",
+          "mtime": "2025-09-11T21:34:02.621Z",
+          "mtimeMs": 1757626442621.2512
+        },
+        {
+          "path": "docs/knowledge/code_scan_summary_20250907.md",
+          "title": "Code scan summary — 2025-09-07",
+          "snippet": "# Code scan summary — 2025-09-07",
+          "mtime": "2025-09-07T01:42:49.080Z",
+          "mtimeMs": 1757209369080.1318
+        },
+        {
+          "path": "docs/knowledge/dev_environment_exec_summary_20250907.md",
+          "title": "Dev environment — executive summary",
+          "snippet": "# Dev environment — executive summary",
+          "mtime": "2025-09-07T06:52:03.978Z",
+          "mtimeMs": 1757227923978.8828
+        }
+      ]
+    },
+    {
+      "id": "games",
+      "name": "Games",
+      "count": 1,
+      "items": [
+        {
+          "path": "September2025/Tectangle/docs/GameBoard.md",
+          "title": "GameBoard",
+          "snippet": "",
+          "mtime": "2025-09-22T16:25:48.768Z",
+          "mtimeMs": 1758558348768.936
+        }
+      ]
+    },
+    {
+      "id": "uncategorized",
+      "name": "Uncategorized",
+      "count": 12,
+      "items": [
+        {
+          "path": "September2025/Tectangle/docs/DevReadme.md",
+          "title": "DEV_README — September Tectangle (canonical)",
+          "snippet": "Clear 5-step non-coder workflow, an AI playbook, and three standardization options.",
+          "mtime": "2025-09-22T16:25:48.768Z",
+          "mtimeMs": 1758558348768.936
+        },
+        {
+          "path": "docs/knowledge/GOLD_INDEX.md",
+          "title": "GOLD INDEX",
+          "snippet": "# GOLD INDEX",
+          "mtime": "2025-09-11T21:34:01.796Z",
+          "mtimeMs": 1757626441796.4436
+        },
+        {
+          "path": "docs/knowledge/GOLD_PORT.md",
+          "title": "KnowledgePort — Gold Catalog (v0)",
+          "snippet": "# KnowledgePort — Gold Catalog (v0)",
+          "mtime": "2025-09-11T23:38:34.286Z",
+          "mtimeMs": 1757633914286.2578
+        },
+        {
+          "path": "docs/knowledge/MONOLITH_SCRIBE.md",
+          "title": "Modular Monolith — key tags (scraped)",
+          "snippet": "# Modular Monolith — key tags (scraped)",
+          "mtime": "2025-09-11T20:23:39.549Z",
+          "mtimeMs": 1757622219549.2297
+        },
+        {
+          "path": "docs/knowledge/WORKING_COMMITS.md",
+          "title": "WORKING commits (git archaeology)",
+          "snippet": "# WORKING commits (git archaeology)",
+          "mtime": "2025-09-11T20:21:15.078Z",
+          "mtimeMs": 1757622075078.565
+        },
+        {
+          "path": "docs/knowledge/WORLD_INDEX.md",
+          "title": "WORLD INDEX",
+          "snippet": "# WORLD INDEX",
+          "mtime": "2025-09-11T21:34:02.607Z",
+          "mtimeMs": 1757626442607.9895
+        },
+        {
+          "path": "docs/knowledge/canonicalization_report_20250906T225754Z.md",
+          "title": "Canonicalization Report",
+          "snippet": "# Canonicalization Report",
+          "mtime": "2025-09-06T22:57:54.788Z",
+          "mtimeMs": 1757199474788.9082
+        },
+        {
+          "path": "docs/knowledge/honeycomb/honeycomb_index.md",
+          "title": "Honeycomb Index (generated)",
+          "snippet": "# Honeycomb Index (generated)",
+          "mtime": "2025-09-08T00:50:53.183Z",
+          "mtimeMs": 1757292653183.5344
+        },
+        {
+          "path": "docs/knowledge/mcp_memory.md",
+          "title": "MCP Memory Snapshot — 2025-09-07T08:35:00Z",
+          "snippet": "# MCP Memory Snapshot — 2025-09-07T08:35:00Z",
+          "mtime": "2025-09-07T09:18:38.237Z",
+          "mtimeMs": 1757236718237.2627
+        },
+        {
+          "path": "docs/knowledge/migration_proposal.md",
+          "title": "Migration proposal: Canonicalize top 12 Gold documents into docs/knowledge/",
+          "snippet": "# Migration proposal: Canonicalize top 12 Gold documents into docs/knowledge/",
+          "mtime": "2025-09-06T22:45:13.655Z",
+          "mtimeMs": 1757198713655.0137
+        },
+        {
+          "path": "docs/knowledge/scribe_notes/HFO_PURPOSE_Semantic_Knife.md",
+          "title": "PURPOSE: Semantic Knife — central anchor for HFO",
+          "snippet": "# PURPOSE: Semantic Knife — central anchor for HFO",
+          "mtime": "2025-09-11T23:38:34.290Z",
+          "mtimeMs": 1757633914290.8235
+        },
+        {
+          "path": "docs/knowledge/timeline_and_progress_20250907.md",
+          "title": "1. Title & one-line TL;DR",
+          "snippet": "# 1. Title & one-line TL;DR",
+          "mtime": "2025-09-07T03:30:33.549Z",
+          "mtimeMs": 1757215833549.7788
+        }
+      ]
+    }
+  ]
+}

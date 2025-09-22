@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Human Dual View: Demo + Fingertips</title>
+    <style>
+      html, body { height: 100%; margin: 0; background:#0b0b0b; color:#eee; font-family: system-ui, sans-serif; }
+      .layout { display: grid; grid-template-columns: 1.1fr 0.9fr; grid-auto-rows: 100vh; }
+      .pane { position: relative; overflow: hidden; border-left: 1px solid #222; }
+      .pane:first-child { border-left: none; }
+      iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #111; }
+      .pane h2 { position: absolute; top: 8px; left: 12px; margin: 0; font-weight: 600; font-size: 14px; color:#bbb; z-index: 2; }
+      .stack { position:absolute; inset:0; display:grid; place-items:center; }
+      video, canvas { max-width: 100%; max-height: 100%; }
+      .footer { position: fixed; bottom: 8px; left: 12px; color:#999; font-size:12px; }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <div class="pane" id="left">
+        <h2>Human Demo (iframe)</h2>
+        <iframe
+          src="/human-main-referenceonly/human-main/demo/index.html?backend=webgl&worker=false&results=false"
+          allow="camera; microphone; autoplay; clipboard-read; clipboard-write; fullscreen; display-capture"
+          allowfullscreen
+          referrerpolicy="no-referrer"></iframe>
+      </div>
+      <div class="pane" id="right">
+        <h2>Camera + Index/Thumb Tips</h2>
+        <div class="stack">
+          <video id="cam" playsinline autoplay muted></video>
+          <canvas id="ov"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="footer">Tip: If you need better FPS, we can enable worker mode with COOP/COEP headers.</div>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

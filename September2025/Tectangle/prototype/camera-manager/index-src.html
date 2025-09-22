@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Camera Manager Prototype — index-src.html</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial;
+        margin: 16px;
+      }
+      button {
+        margin-right: 8px;
+      }
+      #log {
+        white-space: pre-wrap;
+        background: #f7f7f8;
+        padding: 12px;
+        border-radius: 6px;
+        border: 1px solid #e2e2e5;
+        max-height: 360px;
+        overflow: auto;
+        font-family: monospace;
+      }
+      .muted {
+        color: #666;
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Camera Manager Prototype (index-src.html)</h1>
+    <p class="muted">
+      This page imports the prototype bootstrap + canonical managers from
+      <code>src/</code>. Open via VS Code Live Server and use the buttons below
+      to manually inspect behavior.
+    </p>
+
+    <div>
+      <button id="startBtn">Start Camera</button>
+      <button id="stopBtn">Stop Camera</button>
+      <button id="inspectBtn">Show Managers (console)</button>
+    </div>
+
+    <p id="status" class="muted">Status: idle</p>
+
+    <h3>Event Log</h3>
+    <pre id="log">Waiting for events...</pre>
+
+    <script type="module">
+      // Import real manager modules directly for standalone prototyping
+      import * as EBMod from "../../src/EventBusManager.js";
+      import * as CamMod from "../../src/CameraManager.js";
+
+      function pickExport(
+        mod,
+        candidates = [
+          "default",
+          "EventBusManager",
+          "EventBus",
+          "CameraManager",
+          "Camera",
+        ]
+      ) {
+        if (!mod) return null;
+        for (const k of candidates) {
+          if (k in mod) return mod[k];
+        }
+        // fallback to module itself (could be an instance)
+        return mod;
+      }
+
+      function instantiateIfNeeded(exported, arg) {
+        // If exported is a function/class, try to construct with arg then without.
+        if (!exported) return null;
+        if (typeof exported === "function") {
+          try {
+            return new exported(arg);
+          } catch (e1) {
+            try {
+              return new exported();
+            } catch (e2) {
+              // Try as factory call
+              try {
+                return exported(arg);
+              } catch (e3) {
+                try {
+                  return exported();
+                } catch (e4) {
+                  console.debug(
+                    "[index-src] constructor/factory failed for",
+                    exported.name || "<fn>",
+                    e4 && e4.message
+                  );
+                  return null;
+                }
+              }
+            }
+          }
+        }
+        // If it's an object (already an instance), return it
+        if (typeof exported === "object") return exported;
+        // Unknown shape
+        return exported;
+      }
+
+      // Ensure discovery surface and try to obtain managers from registry or instantiate modules
+      (async function initManagers() {
+        window.__MANAGERS__ = window.__MANAGERS__ || {};
+        const Registry = window.ManagerRegistry;
+        try {
+          if (Registry && typeof Registry.get === "function") {
+            const eb =
+              Registry.get("EventBus") || Registry.get("EventBusManager");
+            const cm = Registry.get("CameraManager") || Registry.get("Camera");
+            if (eb) window.__MANAGERS__.EventBus = eb;
+            if (cm) window.__MANAGERS__.CameraManager = cm;
+            if (Object.keys(window.__MANAGERS__).length) return;
+          }
+        } catch (e) {
+          console.debug("[index-src] registry check failed", e && e.message);
+        }
+
+        // Fallback: try to construct from module exports
+        try {
+          const EBExport = pickExport(EBMod, [
+            "default",
+            "EventBusManager",
+            "EventBus",
+          ]);
+          const EBInstance = instantiateIfNeeded(EBExport);
+          if (EBInstance) {
+            window.__MANAGERS__.EventBus = EBInstance;
+            if (Registry && typeof Registry.register === "function") {
+              try {
+                Registry.register("EventBus", EBInstance);
+              } catch (e) {
+                console.debug(
+                  "[index-src] registry.register failed",
+                  e && e.message
+                );
+              }
+            }
+          }
+        } catch (e) {
+          console.debug(
+            "[index-src] EventBus instantiation failed",
+            e && e.message
+          );
+        }
+
+        try {
+          const CamExport = pickExport(CamMod, [
+            "default",
+            "CameraManager",
+            "Camera",
+          ]);
+          const CamInstance = instantiateIfNeeded(
+            CamExport,
+            window.__MANAGERS__.EventBus
+          );
+          if (CamInstance) {
+            window.__MANAGERS__.CameraManager = CamInstance;
+            if (Registry && typeof Registry.register === "function") {
+              try {
+                Registry.register("CameraManager", CamInstance);
+              } catch (e) {
+                console.debug(
+                  "[index-src] registry.register failed",
+                  e && e.message
+                );
+              }
+            }
+          }
+        } catch (e) {
+          console.debug(
+            "[index-src] CameraManager instantiation failed",
+            e && e.message
+          );
+        }
+      })();
+
+      const startBtn = document.getElementById("startBtn");
+      const stopBtn = document.getElementById("stopBtn");
+      const inspectBtn = document.getElementById("inspectBtn");
+      const statusEl = document.getElementById("status");
+      const logEl = document.getElementById("log");
+
+      function appendLog(...parts) {
+        const line = parts
+          .map((p) => (typeof p === "string" ? p : JSON.stringify(p)))
+          .join(" ");
+        const ts = new Date().toISOString();
+        logEl.textContent =
+          (logEl.textContent === "Waiting for events..."
+            ? ""
+            : logEl.textContent + "\n") + `[${ts}] ${line}`;
+        // Keep the newest content visible
+        logEl.scrollTop = logEl.scrollHeight;
+        console.debug("[camera-proto]", line);
+      }
+
+      function getManagers() {
+        // Prefer canonical discovery surface put in place by the bootstrap
+        return (
+          window.__MANAGERS__ ||
+          (window.ManagerRegistry &&
+          typeof window.ManagerRegistry.get === "function"
+            ? {
+                EventBus: window.ManagerRegistry.get("EventBus"),
+                CameraManager: window.ManagerRegistry.get("CameraManager"),
+              }
+            : {})
+        );
+      }
+
+      async function ensureCameraManager() {
+        const m = getManagers().CameraManager;
+        if (m) return m;
+        // Wait briefly for bootstrap to register managers
+        await new Promise((r) => setTimeout(r, 200));
+        return getManagers().CameraManager;
+      }
+
+      async function ensureEventBus() {
+        const m = getManagers().EventBus;
+        if (m) return m;
+        await new Promise((r) => setTimeout(r, 200));
+        return getManagers().EventBus;
+      }
+
+      startBtn.addEventListener(
+        "click",
+        async () => {
+          const cam = await ensureCameraManager();
+          if (!cam) {
+            appendLog(
+              "CameraManager not found. Ensure bootstrap loaded. Check console for errors."
+            );
+            statusEl.textContent = "Status: missing CameraManager";
+            return;
+          }
+          appendLog(
+            "Calling CameraManager.start() (may prompt for camera permission)"
+          );
+          try {
+            // Some CameraManager implementations use async start(); call if available
+            const res = cam.start
+              ? cam.start()
+              : cam.start === undefined
+              ? null
+              : cam.start();
+            if (res instanceof Promise) await res;
+            statusEl.textContent = "Status: started";
+          } catch (err) {
+            appendLog("CameraManager.start() error:", err);
+            statusEl.textContent = "Status: error";
+          }
+        },
+        false
+      );
+
+      stopBtn.addEventListener(
+        "click",
+        async () => {
+          const cam = await ensureCameraManager();
+          if (!cam) {
+            appendLog("CameraManager not found.");
+            return;
+          }
+          appendLog("Calling CameraManager.stop()");
+          try {
+            const res = cam.stop
+              ? cam.stop()
+              : cam.stop === undefined
+              ? null
+              : cam.stop();
+            if (res instanceof Promise) await res;
+            statusEl.textContent = "Status: stopped";
+          } catch (err) {
+            appendLog("CameraManager.stop() error:", err);
+            statusEl.textContent = "Status: error";
+          }
+        },
+        false
+      );
+
+      inspectBtn.addEventListener("click", () => {
+        appendLog("Managers snapshot:");
+        console.log("window.__MANAGERS__ =", window.__MANAGERS__);
+        console.log("ManagerRegistry =", window.ManagerRegistry || "n/a");
+        appendLog(JSON.stringify(Object.keys(window.__MANAGERS__ || {})));
+      });
+
+      // Subscribe to EventBus camera events for on-page logging
+      (async function subscribeToCameraEvents() {
+        const EB = await ensureEventBus();
+        if (EB && typeof EB.addEventListener === "function") {
+          // Some EventBus implementations use addEventListener(topic, fn)
+          try {
+            EB.addEventListener("camera:params", (ev) =>
+              appendLog("[camera:params]", ev?.detail || ev)
+            );
+            EB.addEventListener("camera:frame", (ev) => {
+              const d = ev?.detail || ev;
+              appendLog(
+                "[camera:frame]",
+                `frameId=${d?.frameId ?? "n/a"} size=${d?.width ?? "?"}x${
+                  d?.height ?? "?"
+                }`
+              );
+            });
+            appendLog("Subscribed to EventBus camera:params and camera:frame");
+            return;
+          } catch (err) {
+            appendLog("EventBus subscription failed (unexpected shape).", err);
+          }
+        }
+        appendLog("EventBus not available yet; will retry shortly.");
+        // Retry a few times
+        for (let i = 0; i < 6; i++) {
+          await new Promise((r) => setTimeout(r, 300));
+          const EB2 = await ensureEventBus();
+          if (EB2 && typeof EB2.addEventListener === "function") {
+            EB2.addEventListener("camera:params", (ev) =>
+              appendLog("[camera:params]", ev?.detail || ev)
+            );
+            EB2.addEventListener("camera:frame", (ev) => {
+              const d = ev?.detail || ev;
+              appendLog(
+                "[camera:frame]",
+                `frameId=${d?.frameId ?? "n/a"} size=${d?.width ?? "?"}x${
+                  d?.height ?? "?"
+                }`
+              );
+            });
+            appendLog("Subscribed to EventBus camera events (retry)");
+            return;
+          }
+        }
+        appendLog(
+          "Unable to subscribe to EventBus camera events after retries."
+        );
+      })();
+    </script>
+  </body>
+</html>

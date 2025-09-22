@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+  <head>
+  <!-- WEBWAY:ww-2025-007: v3 demo with 1D CV Kalman ghost lookahead strip -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Tectangle — Spatial SDK Demo v3 (Kalman)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style> html, body { height: 100%; } canvas { image-rendering: crisp-edges; } </style>
+  </head>
+  <body class="h-full bg-slate-900 text-slate-100">
+  <div class="flex h-full">
+      <div class="relative flex-1 min-w-0">
+        <video id="cam" playsinline muted preload="metadata" class="absolute inset-0 w-full h-full object-cover bg-black"></video>
+        <canvas id="overlay" class="absolute inset-0 w-full h-full"></canvas>
+        <div class="absolute top-3 left-3 flex flex-wrap items-center gap-2 bg-slate-950/70 backdrop-blur px-2 py-2 rounded">
+          <button id="btnStart" class="px-3 py-1 rounded bg-emerald-500 hover:bg-emerald-600 text-xs">Start Camera</button>
+          <button id="btnStop" class="px-3 py-1 rounded bg-rose-500 hover:bg-rose-600 text-xs">Stop</button>
+          <button id="btnPlayPinch" class="px-3 py-1 rounded bg-blue-500 hover:bg-blue-600 text-xs">Play Golden: Pinch</button>
+          <button id="btnPlayIdle" class="px-3 py-1 rounded bg-amber-500 hover:bg-amber-600 text-xs">Play Golden: Idle</button>
+          <label class="text-[11px] opacity-80 ml-2">MP4: <input id="fileInput" type="file" accept="video/mp4" class="text-xs" /></label>
+          <label class="text-[11px] opacity-80 ml-2 inline-flex items-center gap-1">Fit:
+            <select id="fitMode" class="bg-slate-800 text-xs rounded px-1 py-0.5"><option value="cover" selected>cover</option><option value="contain">contain</option></select>
+          </label>
+          <label class="text-[11px] opacity-80 ml-2 inline-flex items-center gap-1"><input id="mirrorToggle" type="checkbox" class="accent-slate-300"> Mirror</label>
+          <!-- WEBWAY:ww-2025-006: Toggle Kalman TOI flag for demo only -->
+          <label class="text-[11px] opacity-80 ml-2 inline-flex items-center gap-1"><input id="ff_kalman" type="checkbox" class="accent-slate-300"> Kalman TOI</label>
+          <!-- WEBWAY:ww-2025-008: Toggle Dino sidecar for negative latency demo -->
+          <label class="text-[11px] opacity-80 ml-2 inline-flex items-center gap-1"><input id="ff_dino" type="checkbox" class="accent-slate-300"> Dino Sidecar</label>
+        </div>
+        <!-- WEBWAY:ww-2025-043: Seat Config (flagged) -->
+        <div class="absolute right-3 top-3 bg-slate-950/80 border border-slate-800 rounded p-2 text-[11px] space-y-1" id="seatcfg" style="display:none">
+          <div class="font-semibold">Seat Config</div>
+          <label class="inline-flex items-center gap-1">Seat
+            <select id="cfg_seat" class="bg-slate-800 rounded px-1 py-0.5">
+              <option>P1</option><option>P2</option><option>P3</option><option>P4</option>
+            </select>
+          </label>
+          <label class="inline-flex items-center gap-1">Preset
+            <select id="cfg_preset" class="bg-slate-800 rounded px-1 py-0.5">
+              <option value="responsive">Responsive</option>
+              <option value="balanced" selected>Balanced</option>
+              <option value="smooth">Smooth</option>
+            </select>
+          </label>
+          <label class="inline-flex items-center gap-1">Lookahead ms <input id="cfg_la" type="number" class="w-16 bg-slate-800 rounded px-1 py-0.5" value="100"/></label>
+          <label class="inline-flex items-center gap-1">Enter <input id="cfg_enter" type="number" step="0.01" class="w-16 bg-slate-800 rounded px-1 py-0.5" value="0.50"/></label>
+          <label class="inline-flex items-center gap-1">Exit <input id="cfg_exit" type="number" step="0.01" class="w-16 bg-slate-800 rounded px-1 py-0.5" value="0.80"/></label>
+          <label class="inline-flex items-center gap-1">Anchor ms <input id="cfg_anchor" type="number" class="w-16 bg-slate-800 rounded px-1 py-0.5" value="75"/></label>
+          <label class="inline-flex items-center gap-1">Knuckle cm <input id="cfg_knuckle" type="number" step="0.1" class="w-16 bg-slate-800 rounded px-1 py-0.5" value="8.0"/></label>
+          <button id="cfg_apply" class="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500">Apply</button>
+        </div>
+        <!-- Predictive Lookahead (Kalman) tray -->
+        <div class="absolute left-3 right-3 bottom-3 space-y-2" id="kalman-mount">
+          <div id="kalman" class="bg-slate-950/70 backdrop-blur rounded border border-slate-800 p-2 text-[11px]">
+            <div class="flex items-center justify-between mb-1">
+              <div class="font-semibold">Predictive Lookahead (1D Kalman)</div>
+              <div class="flex items-center gap-2 opacity-80">
+                <label class="inline-flex items-center gap-1">lookahead ms <input id="la" type="number" step="5" value="100" class="w-16 bg-slate-800 rounded px-1 py-0.5"/></label>
+                <label class="inline-flex items-center gap-1">Q <input id="q" type="number" step="0.0001" value="0.01" class="w-20 bg-slate-800 rounded px-1 py-0.5"/></label>
+                <label class="inline-flex items-center gap-1">R <input id="r" type="number" step="0.0001" value="0.001" class="w-20 bg-slate-800 rounded px-1 py-0.5"/></label>
+              </div>
+            </div>
+            <div id="strips" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+          </div>
+        </div>
+      </div>
+      <aside id="panel" class="w-[360px] max-w-full border-l border-slate-800 bg-slate-950/80 backdrop-blur-md overflow-auto transition-all">
+        <div class="p-3 flex items-center justify-between sticky top-0 bg-slate-950/95 border-b border-slate-800">
+          <h2 class="font-semibold">Side Panel (v3)</h2>
+          <button id="btnToggle" class="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700">Collapse</button>
+        </div>
+        <div class="p-3 space-y-3">
+          <div><h3 class="text-sm font-semibold mb-1">State</h3><pre id="state" class="text-xs whitespace-pre-wrap bg-slate-900 p-2 rounded border border-slate-800"></pre></div>
+          <div><h3 class="text-sm font-semibold mb-1">Last Frame (rich)</h3><pre id="rich" class="text-xs whitespace-pre-wrap bg-slate-900 p-2 rounded border border-slate-800"></pre></div>
+        </div>
+      </aside>
+    </div>
+    <script type="module">
+  // WEBWAY:ww-2025-006: v3 demo, 1D Kalman lookahead visualization
+      import { createSpatialInput } from '../../../src/index.js';
+      import { createAppShell } from '../src/app/appShell.js';
+      import { createToiKalmanCV } from '../src/ports/toiKalmanPort.js';
+  // WEBWAY:ww-2025-008: sidecar module
+  import { createDinoSidecar } from './sidecars/dino_sidecar.mjs';
+  // WEBWAY:ww-2025-032: UI guards + telemetry
+  import { createGuards } from './src/ui/guards.js';
+  import { createPinchTelemetry } from './src/telemetry/pinch_telemetry.js';
+      const seatColor={P1:'#10b981',P2:'#60a5fa',P3:'#f59e0b',P4:'#ef4444',NONE:'#94a3b8'};
+      const video=document.getElementById('cam'); const canvas=document.getElementById('overlay'); const ctx=canvas.getContext('2d');
+      const btnStart=document.getElementById('btnStart'); const btnStop=document.getElementById('btnStop');
+      const btnToggle=document.getElementById('btnToggle'); const btnPlayPinch=document.getElementById('btnPlayPinch'); const btnPlayIdle=document.getElementById('btnPlayIdle'); const fileInput=document.getElementById('fileInput');
+      const panel=document.getElementById('panel'); const elState=document.getElementById('state'); const elRich=document.getElementById('rich');
+    const fitMode=document.getElementById('fitMode'); const mirrorToggle=document.getElementById('mirrorToggle');
+  // WEBWAY:ww-2025-032: Initialize UI guards and mark placeholders
+  const guards = createGuards({ mount: document });
+  // Mark toggles that are known-good vs experimental/placeholder
+  guards.apply('#btnStart', 'ready');
+  guards.apply('#btnStop', 'ready');
+  guards.apply('#btnPlayPinch', 'ready');
+  guards.apply('#btnPlayIdle', 'ready');
+  // Fit/mirror are functional; leave ready
+  guards.apply('#fitMode', 'ready');
+  guards.apply('#mirrorToggle', 'ready');
+  // Feature flags: Kalman is experimental; Dino sidecar is experimental (may be detached)
+  guards.apply('#ff_kalman', 'experimental'); // WEBWAY:ww-2025-032: standardize FF badges
+  guards.apply('#ff_dino', 'experimental');
+  const ffKalman=document.getElementById('ff_kalman'); window.__flags = window.__flags || {}; if(ffKalman){ ffKalman.checked = !!window.__flags['FEATURE_SDK_V3_KALMAN_TOI']; ffKalman.addEventListener('change',()=>{ window.__flags['FEATURE_SDK_V3_KALMAN_TOI'] = ffKalman.checked; }); }
+  // WEBWAY:ww-2025-008: Dino sidecar toggle and instance
+  const ffDino=document.getElementById('ff_dino');
+  const dino = createDinoSidecar({ target: window });
+  if(ffDino){ ffDino.checked = !!window.__flags['FEATURE_SIDECAR_DINO']; ffDino.addEventListener('change',()=>{ window.__flags['FEATURE_SIDECAR_DINO'] = ffDino.checked; if(ffDino.checked){ dino.attach({ sdk }); } else { dino.detach(); } }); }
+      const sdk=createSpatialInput({ factories:{ createAppShell } }); window.__sdk=sdk;
+      // WEBWAY:ww-2025-043: init seat-config UI if flag is on
+      const seatCfgBox = document.getElementById('seatcfg');
+      const cfgSeat = document.getElementById('cfg_seat');
+      const cfgPreset = document.getElementById('cfg_preset');
+      const cfgLa = document.getElementById('cfg_la');
+      const cfgEnter = document.getElementById('cfg_enter');
+      const cfgExit = document.getElementById('cfg_exit');
+      const cfgAnchor = document.getElementById('cfg_anchor');
+      const cfgKnuckle = document.getElementById('cfg_knuckle');
+      const cfgApply = document.getElementById('cfg_apply');
+      if(window.__flags['FEATURE_SEAT_CONFIG']){
+        seatCfgBox.style.display='block';
+        function refreshSeat(){ const s=cfgSeat.value; const c=sdk.getSeatConfig?.(s)||{}; cfgPreset.value=c.preset||'balanced'; cfgLa.value = c.lookaheadMs ?? 100; cfgEnter.value = c.enterThresh ?? 0.50; cfgExit.value = c.exitThresh ?? 0.80; cfgAnchor.value = c.anchorDelayMs ?? 75; cfgKnuckle.value = c.knuckleSpanCm ?? 8.0; }
+        cfgSeat.addEventListener('change', refreshSeat);
+        cfgPreset.addEventListener('change', ()=>{ sdk.setSeatPreset?.(cfgSeat.value, cfgPreset.value); refreshSeat(); });
+        cfgApply.addEventListener('click', ()=>{
+          const s = cfgSeat.value;
+          sdk.setSeatConfig?.(s, { lookaheadMs:+cfgLa.value, enterThresh:+cfgEnter.value, exitThresh:+cfgExit.value, anchorDelayMs:+cfgAnchor.value, knuckleSpanCm:+cfgKnuckle.value });
+        });
+        refreshSeat();
+      }
+  // WEBWAY:ww-2025-032: minimal pinch telemetry ring
+  const pinchTelem = createPinchTelemetry(); window.__pinchTelem = pinchTelem;
+  // Attach sidecar if flag pre-set
+  if(window.__flags['FEATURE_SIDECAR_DINO']){ dino.attach({ sdk }); }
+      function fitCanvas(){ const rect=canvas.getBoundingClientRect(); canvas.width=Math.max(2,Math.floor(rect.width)); canvas.height=Math.max(2,Math.floor(rect.height)); }
+      const ro=new ResizeObserver(fitCanvas); ro.observe(canvas); fitCanvas();
+      fitMode.addEventListener('change',()=>{ video.style.objectFit=fitMode.value; });
+      mirrorToggle.addEventListener('change',()=>{ const on=!!mirrorToggle.checked; video.style.transform=on?'scaleX(-1)':'none'; });
+
+      // Per-hand Kalman instances
+      const kalmanMap = new Map();
+      function getKalman(handKey){
+        let k = kalmanMap.get(handKey);
+        if(!k){ k = createToiKalmanCV({ q:+qEl.value || 0.01, r:+rEl.value || 0.001 }); kalmanMap.set(handKey,k); }
+        return k;
+      }
+      function resetAllKalman(){ for(const k of kalmanMap.values()) k.reset(); }
+
+      // UI controls
+      const laEl = document.getElementById('la'); const qEl = document.getElementById('q'); const rEl = document.getElementById('r');
+      qEl.addEventListener('change', ()=>{ for(const k of kalmanMap.values()) k.setParams({ q:+qEl.value||0.01 }); });
+      rEl.addEventListener('change', ()=>{ for(const k of kalmanMap.values()) k.setParams({ r:+rEl.value||0.001 }); });
+
+      // Predictive strips
+      const stripsEl=document.getElementById('strips');
+      function ensureStrip(handKey,label){ let row=document.querySelector(`[data-strip="${handKey}"]`); if(!row){ row=document.createElement('div'); row.dataset.strip=handKey; row.className='space-y-1'; row.innerHTML=`<div class="flex items-center justify-between"><div class="font-semibold text-[11px]">${label}</div><div class="text-[10px] opacity-70" data-state></div></div><div class="relative h-6 bg-slate-800/60 rounded overflow-hidden" data-bar><div class="absolute top-0 bottom-0 bg-emerald-500/20" data-enter></div><div class="absolute top-0 bottom-0 bg-rose-500/20" data-exit></div><div class="absolute top-0 bottom-0" data-dot style="width:2px;background:#fff"></div><div class="absolute top-0 bottom-0" data-ghost style="width:2px;background:#22d3ee"></div><canvas data-spark class="absolute inset-0"></canvas></div>`; stripsEl.appendChild(row);} return row; }
+      function renderStrip(row, snap, ghost){ const bar=row.querySelector('[data-bar]'); const spark=row.querySelector('[data-spark]'); const dot=row.querySelector('[data-dot]'); const ghostEl=row.querySelector('[data-ghost]'); const st=row.querySelector('[data-state]'); const W=bar.clientWidth||200, H=bar.clientHeight||24; 
+        const enterPct=(snap?.thresholds?.enter ?? 0.5); const exitPct=(snap?.thresholds?.exit ?? 0.8); const enterEl=row.querySelector('[data-enter]'); const exitEl=row.querySelector('[data-exit]'); enterEl.style.left='0%'; enterEl.style.width=(enterPct*100)+'%'; exitEl.style.left='0%'; exitEl.style.width=(exitPct*100)+'%';
+        const norm = (snap?.norm!=null)? snap.norm : null; if(norm!=null){ dot.style.left = (norm*100)+'%'; }
+        if(ghost!=null){ ghostEl.style.left = (Math.max(0,Math.min(1,ghost))*100)+'%'; ghostEl.style.display='block'; } else { ghostEl.style.display='none'; }
+        let fsm = snap?.fsm || (snap?.gate===false?'GATED':(norm!=null? (norm<enterPct?'Armed': (norm<exitPct?'Held':'Released')):'?'));
+        st.textContent = `${fsm}${snap?.palmAngleDeg!=null? ' | palm '+snap.palmAngleDeg.toFixed(0)+'°':''}`;
+        // sparkline of norm
+        const hist = Array.isArray(snap?.history)? snap.history : []; spark.width=W; spark.height=H; const sctx=spark.getContext('2d'); sctx.clearRect(0,0,W,H);
+        if(hist.length){ sctx.strokeStyle='#94a3b8'; sctx.lineWidth=1; sctx.beginPath(); for(let i=0;i<hist.length;i++){ const x = (i/(hist.length-1))*W; const y = H - (hist[i].norm!=null? hist[i].norm:0)*H; if(i===0) sctx.moveTo(x,y); else sctx.lineTo(x,y); } sctx.stroke(); }
+      }
+
+      function drawLandmarks(points,color,filled=false){ if(!points||!points.length) return; const W=canvas.width,H=canvas.height; const vw=video.videoWidth||1,vh=video.videoHeight||1; const fit=(getComputedStyle(video).objectFit||'cover').toLowerCase(); const scale=(fit==='contain')?Math.min(W/vw,H/vh):Math.max(W/vw,H/vh); const dispW=vw*scale,dispH=vh*scale; const offX=(W-dispW)/2, offY=(H-dispH)/2; const mirrored=getComputedStyle(video).transform!=='none'; ctx.save(); ctx.lineWidth=2; ctx.strokeStyle=color; ctx.fillStyle=color; for(const p of points){ const px=mirrored?(1-p[0]):p[0]; const x=offX+px*dispW; const y=offY+p[1]*dispH; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); filled?ctx.fill():ctx.stroke(); } ctx.restore(); }
+
+      function draw(){ ctx.clearRect(0,0,canvas.width,canvas.height); const state=sdk.getState?.()||{}; const rich=sdk.getRichSnapshot?.()||[];
+        // per-hand ghost update and strip rendering
+        const now = performance.now();
+        for(const snap of rich){ if(snap?.norm==null) continue; const handKey = snap.hand + ':' + (snap.handId ?? '?'); const row=ensureStrip(handKey, `${snap.hand} ${snap.seat?('['+snap.seat+']'):''}`);
+          const k = getKalman(handKey); const r = k.step({ t: now, norm: snap.norm, enterThresh: (snap?.thresholds?.enter ?? 0.5) });
+          const dtAhead = Math.max(0, (+laEl.value||0)/1000);
+          const ghost = r.x + r.v * dtAhead;
+          renderStrip(row, snap, ghost);
+          // WEBWAY:ww-2025-032: record essential pinch telemetry
+          try{
+            pinchTelem.record({ t: now, handId: snap.handId, norm: snap.norm, fsm: snap.fsm, thresholds: snap.thresholds, palmAngleDeg: snap.palmAngleDeg });
+          }catch{}
+        }
+        // landmarks paint (debug)
+        const LH=window.__hexLastHands||null; if(LH&&LH.length){ const seatMap=new Map(); try{ const seats=state.seats?.seats||state.seats; if(seats){ for(const s of Object.values(seats)){ if(s.handId!=null){ seatMap.set(s.handId,s.seat); } } } }catch{}
+          for(let i=0;i<LH.length;i++){ const lm=LH[i]; const seat=seatMap.get(i) || (rich.find(r=>r.handId===i)?.seat) || 'NONE'; const color=seatColor[seat]||seatColor.NONE; const filled=seat!=='NONE'; drawLandmarks(lm,color,filled); }
+        }
+      }
+
+      function fitCanvasLoop(){ const rect=canvas.getBoundingClientRect(); canvas.width=Math.max(2,Math.floor(rect.width)); canvas.height=Math.max(2,Math.floor(rect.height)); }
+      const ro2=new ResizeObserver(fitCanvasLoop); ro2.observe(canvas); fitCanvasLoop();
+      function scheduleDraw(){ if('requestVideoFrameCallback' in video){ const cb=()=>{ try{draw();}catch(e){}; try{ video.requestVideoFrameCallback(cb);}catch{ requestAnimationFrame(scheduleDraw);} }; try{ video.requestVideoFrameCallback(cb);}catch{ requestAnimationFrame(scheduleDraw);} } else { requestAnimationFrame(function loop(){ draw(); requestAnimationFrame(loop); }); } }
+      scheduleDraw();
+
+      // Controls
+      btnStart.addEventListener('click', async()=>{ try{ await sdk.startCamera(video);}catch(e){ console.error(e);} });
+    btnStop.addEventListener('click', ()=>{ sdk.stop(video); resetAllKalman(); });
+  // WEBWAY:ww-2025-032: expose a quick flush for post-mortem analysis
+  window.__flushPinchTelemetry = ()=> pinchTelem.flush();
+  // WEBWAY:ww-2025-008: expose brief dino summary for e2e
+  window.__dino = dino;
+      async function playUrl(url){ try{ try{ video.crossOrigin='anonymous'; }catch{} await sdk.startVideoUrl(video,url); }catch(e){ console.error('Failed to play url',url,e);} }
+      const PINCH_URL='/September2025/TectangleHexagonal/videos/golden/golden.two_hands_pinch_seq.v1.mp4'; const IDLE_URL='/September2025/TectangleHexagonal/videos/golden/golden.two_hands_idle.v1.mp4';
+      btnPlayPinch.addEventListener('click', ()=> playUrl(PINCH_URL)); btnPlayIdle.addEventListener('click', ()=> playUrl(IDLE_URL));
+      fileInput.addEventListener('change', async (e)=>{ const f=e.target.files && e.target.files[0]; if(!f) return; const blobUrl=URL.createObjectURL(f); await playUrl(blobUrl); });
+
+      // Panel toggle
+      btnToggle.addEventListener('click', ()=>{ panel.style.display = (panel.style.display==='none')? '' : 'none'; });
+
+      // WEBWAY:ww-2025-008: URL params to autostart for automation
+      (async function autoStartFromQuery(){
+        try{
+          const p = new URLSearchParams(location.search);
+          if(p.get('kalman')==='1'){ window.__flags['FEATURE_SDK_V3_KALMAN_TOI']=true; if(ffKalman){ ffKalman.checked=true; } }
+          if(p.get('dino')==='1'){ window.__flags['FEATURE_SIDECAR_DINO']=true; if(ffDino){ ffDino.checked=true; dino.attach({ sdk }); } }
+          if(p.has('la')){ laEl.value = String(+p.get('la')); }
+          if(p.has('q')){ qEl.value = String(+p.get('q')); for(const k of kalmanMap.values()) k.setParams({ q:+qEl.value||0.01 }); }
+          if(p.has('r')){ rEl.value = String(+p.get('r')); for(const k of kalmanMap.values()) k.setParams({ r:+rEl.value||0.001 }); }
+          // WEBWAY:ww-2025-044: allow seatcfg=1 to surface Seat Config panel during automation
+          if(p.get('seatcfg')==='1'){ window.__flags['FEATURE_SEAT_CONFIG']=true; if(seatCfgBox){ seatCfgBox.style.display='block'; } }
+          const clip = p.get('clip');
+          const autostart = p.get('autostart')==='1';
+          if(autostart && clip){ await playUrl(clip); }
+        }catch(e){ console.warn('autostart params failed', e); }
+      })();
+    </script>
+  </body>
+  </html>

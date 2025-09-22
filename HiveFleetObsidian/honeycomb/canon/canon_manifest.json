@@ -1,0 +1,155 @@
+{
+  "generatedAt": "2025-09-22T19:00:02.974Z",
+  "champions": [
+    {
+      "id": "silk_scribe",
+      "name": "Silk Scribe",
+      "pascal": "SilkScribe",
+      "canonical": {
+        "path": "docs/knowledge/scribe_notes/HFO_PURPOSE_Semantic_Knife.md",
+        "title": "PURPOSE: Semantic Knife — central anchor for HFO",
+        "snippet": "# PURPOSE: Semantic Knife — central anchor for HFO",
+        "mtime": "2025-09-11T23:38:34.290Z",
+        "mtimeMs": 1757633914290.8235
+      }
+    },
+    {
+      "id": "honeycomb_smith",
+      "name": "Honeycomb Smith",
+      "pascal": "HoneycombSmith",
+      "canonical": {
+        "path": "September2025/Tectangle/docs/pinch_mvp_decision.md",
+        "title": "pinch mvp decision",
+        "snippet": "Pinch MVP Decision & Implementation Plan — Palm‑gated index↔thumb pinch (Pinch Piano MVP)",
+        "mtime": "2025-09-22T16:25:48.773Z",
+        "mtimeMs": 1758558348773.9365
+      }
+    },
+    {
+      "id": "web_cartographer",
+      "name": "Web Cartographer",
+      "pascal": "WebCartographer",
+      "canonical": {
+        "path": "September2025/Tectangle/docs/DevReadme.md",
+        "title": "DEV_README — September Tectangle (canonical)",
+        "snippet": "Clear 5-step non-coder workflow, an AI playbook, and three standardization options.",
+        "mtime": "2025-09-22T16:25:48.768Z",
+        "mtimeMs": 1758558348768.936
+      }
+    },
+    {
+      "id": "thread_sovereign",
+      "name": "Thread Sovereign",
+      "pascal": "ThreadSovereign",
+      "canonical": {
+        "path": "docs/knowledge/scribe_notes/Tectangle_consolidated_pinch_report_20250906.md",
+        "title": "Exploit first: guard bootstrap + pinch→keypress bridge; capture goldens; CI gate regressions",
+        "snippet": "# Exploit first: guard bootstrap + pinch→keypress bridge; capture goldens; CI gate regressions",
+        "mtime": "2025-09-11T23:38:34.290Z",
+        "mtimeMs": 1757633914290.2573
+      }
+    },
+    {
+      "id": "faultline_seeker",
+      "name": "Faultline Seeker",
+      "pascal": "FaultlineSeeker",
+      "canonical": {
+        "path": "docs/aichat/AiChatTTaoLordOfStrings20250907.md",
+        "title": "TTao, Lord of Strings — AGENT.md (v1)",
+        "snippet": "awesome—here’s a tight, research-backed **AGENT.md** you can drop into any repo. it uses **Polya’s 4 steps** as the backbone, layered with proven ops ideas (UCB/UCT for explore⇄exploit, OODA for reframing, WIP limits via Little’s Law, and D",
+        "mtime": "2025-09-07T23:47:25.748Z",
+        "mtimeMs": 1757288845748.5579
+      }
+    },
+    {
+      "id": "prism_magus",
+      "name": "Prism Magus",
+      "pascal": "PrismMagus",
+      "canonical": {
+        "path": "docs/aichat/AiChatTTaoLordOfStringsChampions20230907.md",
+        "title": "AGENT\\_ROSTER.md — TTao, Lord of Strings (Obsidian Nest)",
+        "snippet": "Absolutely. Below are copy-pasteable prompts—one per Champion—written in plain language and tailored for a dark, hive-fleet aesthetic. Each keeps a shared visual “universe,” but lets the Champion set their own vibe. Use as-is, or tweak colo",
+        "mtime": "2025-09-07T23:47:25.754Z",
+        "mtimeMs": 1757288845754.5444
+      }
+    },
+    {
+      "id": "lattice_steward",
+      "name": "Lattice Steward",
+      "pascal": "LatticeSteward",
+      "canonical": {
+        "path": "docs/knowledge/dev_environment_2pager_20250907.md",
+        "title": "Developer environment two‑pager — Reproducible Docker + DevContainer",
+        "snippet": "Use a small Docker image + VS Code DevContainer to reproduce Node 22, headless browser smoke harnesses, and deterministic golden‑trace runs locally and in CI. This makes demos repeatable and reduces \"works on my machine\" debugging.",
+        "mtime": "2025-09-07T06:46:27.752Z",
+        "mtimeMs": 1757227587752.3987
+      }
+    },
+    {
+      "id": "window_hunter",
+      "name": "Window Hunter",
+      "pascal": "WindowHunter",
+      "canonical": null
+    },
+    {
+      "id": "safebreaker",
+      "name": "Safebreaker",
+      "pascal": "Safebreaker",
+      "canonical": null
+    },
+    {
+      "id": "first_principles",
+      "name": "First Principles",
+      "pascal": "FirstPrinciples",
+      "canonical": {
+        "path": "September2025/Tectangle/docs/Tectangle_Summary_2025-09-02T18-27-10Z.md",
+        "title": "Tectangle Manager Audit — 2025-09-02T18:27:10Z",
+        "snippet": "# Tectangle Manager Audit — 2025-09-02T18:27:10Z",
+        "mtime": "2025-09-22T16:25:48.770Z",
+        "mtimeMs": 1758558348770.9355
+      }
+    },
+    {
+      "id": "swarm_jester",
+      "name": "Swarm Jester",
+      "pascal": "SwarmJester",
+      "canonical": {
+        "path": "docs/aichat/AiChatTTaoLordOfStrings20250907.md",
+        "title": "TTao, Lord of Strings — AGENT.md (v1)",
+        "snippet": "awesome—here’s a tight, research-backed **AGENT.md** you can drop into any repo. it uses **Polya’s 4 steps** as the backbone, layered with proven ops ideas (UCB/UCT for explore⇄exploit, OODA for reframing, WIP limits via Little’s Law, and D",
+        "mtime": "2025-09-07T23:47:25.748Z",
+        "mtimeMs": 1757288845748.5579
+      }
+    },
+    {
+      "id": "concord_weaver",
+      "name": "Concord Weaver",
+      "pascal": "ConcordWeaver",
+      "canonical": {
+        "path": "September2025/Tectangle/docs/DevReadme.md",
+        "title": "DEV_README — September Tectangle (canonical)",
+        "snippet": "Clear 5-step non-coder workflow, an AI playbook, and three standardization options.",
+        "mtime": "2025-09-22T16:25:48.768Z",
+        "mtimeMs": 1758558348768.936
+      }
+    },
+    {
+      "id": "signal_warden",
+      "name": "Signal Warden",
+      "pascal": "SignalWarden",
+      "canonical": {
+        "path": "docs/knowledge/TommyNotes_August2025_Summary_20250907.md",
+        "title": "TommyNotes — August 2025 Summary",
+        "snippet": "Focused on making pinch detection robust and low-latency by 1) formalizing a 3-check consensus model (knuckle-span, velocity, joint-angle), 2) moving to a manager-based pipeline, and 3) cleaning UI/telemetry so testing and tuning are tracta",
+        "mtime": "2025-09-07T07:09:44.915Z",
+        "mtimeMs": 1757228984915.007
+      }
+    },
+    {
+      "id": "shadow_auditor",
+      "name": "Shadow Auditor",
+      "pascal": "ShadowAuditor",
+      "canonical": null
+    }
+  ]
+}

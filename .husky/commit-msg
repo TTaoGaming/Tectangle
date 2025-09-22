@@ -1,0 +1,5 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Guard chatmode edits unless explicitly allowed
+node scripts/guard_chatmode_commits.mjs "$1"

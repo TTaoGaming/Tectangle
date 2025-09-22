@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+  <!-- WEBWAY:ww-2025-002: v2 demo (FROZEN 2025-09-18) with Tier-0 insights (hysteresis strip + event rail) behind flag. Successor: demo_fullscreen_sdk_v3_kalman.html -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Tectangle — Spatial SDK Demo v2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style> html, body { height: 100%; } canvas { image-rendering: crisp-edges; } </style>
+  </head>
+  <body class="h-full bg-slate-900 text-slate-100">
+  <div class="flex h-full">
+      <div class="relative flex-1 min-w-0">
+        <video id="cam" playsinline muted preload="metadata" class="absolute inset-0 w-full h-full object-cover bg-black"></video>
+        <canvas id="overlay" class="absolute inset-0 w-full h-full"></canvas>
+        <div class="absolute top-3 left-3 flex flex-wrap items-center gap-2 bg-slate-950/70 backdrop-blur px-2 py-2 rounded">
+          <button id="btnStart" class="px-3 py-1 rounded bg-emerald-500 hover:bg-emerald-600 text-xs">Start Camera</button>
+          <button id="btnStop" class="px-3 py-1 rounded bg-rose-500 hover:bg-rose-600 text-xs">Stop</button>
+          <button id="btnPlayPinch" class="px-3 py-1 rounded bg-blue-500 hover:bg-blue-600 text-xs">Play Golden: Pinch</button>
+          <button id="btnPlayIdle" class="px-3 py-1 rounded bg-amber-500 hover:bg-amber-600 text-xs">Play Golden: Idle</button>
+          <label class="text-[11px] opacity-80 ml-2">MP4: <input id="fileInput" type="file" accept="video/mp4" class="text-xs" /></label>
+          <label class="text-[11px] opacity-80 ml-2 inline-flex items-center gap-1">Fit:
+            <select id="fitMode" class="bg-slate-800 text-xs rounded px-1 py-0.5"><option value="cover" selected>cover</option><option value="contain">contain</option></select>
+          </label>
+          <label class="text-[11px] opacity-80 ml-2 inline-flex items-center gap-1"><input id="mirrorToggle" type="checkbox" class="accent-slate-300"> Mirror</label>
+          <!-- WEBWAY:ww-2025-006: Toggle Kalman TOI flag for demo only -->
+          <label class="text-[11px] opacity-80 ml-2 inline-flex items-center gap-1"><input id="ff_kalman" type="checkbox" class="accent-slate-300"> Kalman TOI</label>
+        </div>
+        <!-- Insights tray (Tier 0) -->
+        <!-- WEBWAY:ww-2025-002: insights tray mount -->
+        <div class="absolute left-3 right-3 bottom-3 space-y-2" id="insights-mount">
+          <div id="insights" class="bg-slate-950/70 backdrop-blur rounded border border-slate-800 p-2 text-[11px]" style="display:none">
+            <div class="flex items-center justify-between mb-1">
+              <div class="font-semibold">Insights</div>
+              <div class="opacity-70" id="fps"></div>
+            </div>
+            <div id="strips" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+            <div class="mt-2">
+              <div class="text-[10px] opacity-80">Event rail</div>
+              <div id="rail" class="relative h-6 bg-slate-800/50 rounded overflow-hidden"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside id="panel" class="w-[380px] max-w-full border-l border-slate-800 bg-slate-950/80 backdrop-blur-md overflow-auto transition-all">
+        <div class="p-3 flex items-center justify-between sticky top-0 bg-slate-950/95 border-b border-slate-800">
+          <h2 class="font-semibold">Side Panel (v2)</h2>
+          <button id="btnToggle" class="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700">Collapse</button>
+        </div>
+        <div class="p-3 space-y-3">
+          <div><h3 class="text-sm font-semibold mb-1">State</h3><pre id="state" class="text-xs whitespace-pre-wrap bg-slate-900 p-2 rounded border border-slate-800"></pre></div>
+          <div><h3 class="text-sm font-semibold mb-1">Last Frame (rich)</h3><pre id="rich" class="text-xs whitespace-pre-wrap bg-slate-900 p-2 rounded border border-slate-800"></pre></div>
+          <div><h3 class="text-sm font-semibold mb-1">Event Log</h3><div id="log" class="text-xs space-y-1 max-h-[40vh] overflow-auto"></div></div>
+        </div>
+      </aside>
+    </div>
+    <script type="module">
+      // WEBWAY:ww-2025-002: feature flag for demo v2 insights
+      const FEATURE_FLAG_DEMO_V2_INSIGHTS = true;
+      import { createSpatialInput } from '../../../src/index.js';
+      import { createAppShell } from '../src/app/appShell.js';
+      const seatColor={P1:'#10b981',P2:'#60a5fa',P3:'#f59e0b',P4:'#ef4444',NONE:'#94a3b8'};
+      const video=document.getElementById('cam'); const canvas=document.getElementById('overlay'); const ctx=canvas.getContext('2d');
+      const btnStart=document.getElementById('btnStart'); const btnStop=document.getElementById('btnStop');
+      const btnToggle=document.getElementById('btnToggle'); const btnPlayPinch=document.getElementById('btnPlayPinch'); const btnPlayIdle=document.getElementById('btnPlayIdle'); const fileInput=document.getElementById('fileInput');
+      const panel=document.getElementById('panel'); const elState=document.getElementById('state'); const elRich=document.getElementById('rich'); const elLog=document.getElementById('log');
+  const fitMode=document.getElementById('fitMode'); const mirrorToggle=document.getElementById('mirrorToggle');
+  // WEBWAY:ww-2025-006: demo flag toggle
+  const ffKalman=document.getElementById('ff_kalman'); window.__flags = window.__flags || {}; if(ffKalman){ ffKalman.checked = !!window.__flags['FEATURE_SDK_V3_KALMAN_TOI']; ffKalman.addEventListener('change',()=>{ window.__flags['FEATURE_SDK_V3_KALMAN_TOI'] = ffKalman.checked; }); }
+      const sdk=createSpatialInput({ factories:{ createAppShell } }); window.__sdk=sdk;
+      function fitCanvas(){ const rect=canvas.getBoundingClientRect(); canvas.width=Math.max(2,Math.floor(rect.width)); canvas.height=Math.max(2,Math.floor(rect.height)); }
+      const ro=new ResizeObserver(fitCanvas); ro.observe(canvas); fitCanvas();
+      fitMode.addEventListener('change',()=>{ video.style.objectFit=fitMode.value; });
+      mirrorToggle.addEventListener('change',()=>{ const on=!!mirrorToggle.checked; video.style.transform=on?'scaleX(-1)':'none'; });
+      function drawLandmarks(points,color,filled=false){ if(!points||!points.length) return; const W=canvas.width,H=canvas.height; const vw=video.videoWidth||1,vh=video.videoHeight||1; const fit=(getComputedStyle(video).objectFit||'cover').toLowerCase(); const scale=(fit==='contain')?Math.min(W/vw,H/vh):Math.max(W/vw,H/vh); const dispW=vw*scale,dispH=vh*scale; const offX=(W-dispW)/2, offY=(H-dispH)/2; const mirrored=getComputedStyle(video).transform!=='none'; ctx.save(); ctx.lineWidth=2; ctx.strokeStyle=color; ctx.fillStyle=color; for(const p of points){ const px=mirrored?(1-p[0]):p[0]; const x=offX+px*dispW; const y=offY+p[1]*dispH; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); filled?ctx.fill():ctx.stroke(); } ctx.restore(); }
+      // Insights helpers
+  const stripsEl=document.getElementById('strips'); const railEl=document.getElementById('rail'); const fpsEl=document.getElementById('fps');
+  // Show insights only if flag is enabled
+  if (FEATURE_FLAG_DEMO_V2_INSIGHTS) { document.getElementById('insights').style.display='block'; }
+      let lastRAF=performance.now(), fps=0;
+      function updateFPS(){ const now=performance.now(); const dt=now-lastRAF; lastRAF=now; const inst=1000/dt; fps = fps*0.9 + inst*0.1; fpsEl.textContent = `~${fps.toFixed(0)} fps`; }
+      function ensureStrip(handKey,label){ let row=document.querySelector(`[data-strip="${handKey}"]`); if(!row){ row=document.createElement('div'); row.dataset.strip=handKey; row.className='space-y-1'; row.innerHTML=`<div class="flex items-center justify-between"><div class="font-semibold text-[11px]">${label}</div><div class="text-[10px] opacity-70" data-state></div></div><div class="relative h-6 bg-slate-800/60 rounded overflow-hidden" data-bar><div class="absolute top-0 bottom-0 bg-emerald-500/20" data-enter></div><div class="absolute top-0 bottom-0 bg-rose-500/20" data-exit></div><div class="absolute top-0 bottom-0" data-dot style="width:2px;background:#fff"></div><canvas data-spark class="absolute inset-0"></canvas></div>`; stripsEl.appendChild(row);} return row; }
+      function renderStrip(row, snap){ const bar=row.querySelector('[data-bar]'); const spark=row.querySelector('[data-spark]'); const dot=row.querySelector('[data-dot]'); const st=row.querySelector('[data-state]'); const W=bar.clientWidth||200, H=bar.clientHeight||24; // thresholds
+        const enterPct=(snap?.thresholds?.enter ?? 0.5); const exitPct=(snap?.thresholds?.exit ?? 0.8); const enterEl=row.querySelector('[data-enter]'); const exitEl=row.querySelector('[data-exit]'); enterEl.style.left='0%'; enterEl.style.width=(enterPct*100)+'%'; exitEl.style.left='0%'; exitEl.style.width=(exitPct*100)+'%'; // dot
+        const norm = (snap?.norm!=null)? snap.norm : null; if(norm!=null){ dot.style.left = (norm*100)+'%'; }
+        // state label
+        let fsm = snap?.fsm || (snap?.gate===false?'GATED':(norm!=null? (norm<enterPct?'Armed': (norm<exitPct?'Held':'Released')):'?'));
+        st.textContent = `${fsm}${snap?.palmAngleDeg!=null? ' | palm '+snap.palmAngleDeg.toFixed(0)+'°':''}`;
+        // sparkline
+        const hist = Array.isArray(snap?.history)? snap.history : []; spark.width=W; spark.height=H; const sctx=spark.getContext('2d'); sctx.clearRect(0,0,W,H);
+        if(hist.length){ sctx.strokeStyle='#94a3b8'; sctx.lineWidth=1; sctx.beginPath(); for(let i=0;i<hist.length;i++){ const x = (i/(hist.length-1))*W; const y = H - (hist[i].norm!=null? hist[i].norm:0)*H; if(i===0) sctx.moveTo(x,y); else sctx.lineTo(x,y); } sctx.stroke(); }
+      }
+      const eventsWindowMs=3000; const eventColors={ 'pinch:down':'#10b981', 'pinch:confirm':'#22d3ee', 'pinch:up':'#f59e0b', 'pinch:cancel':'#ef4444' };
+      function pushEventTick(evt){ const now=performance.now(); const railW=railEl.clientWidth||400; const t0=now-eventsWindowMs; // prune
+        for(const child of Array.from(railEl.children)){ const ts=Number(child.dataset.ts||0); if(ts<t0){ railEl.removeChild(child); } }
+        const tick=document.createElement('div'); tick.dataset.ts=String(evt.t||now); tick.className='absolute top-0 bottom-0 w-[2px]'; tick.style.background = eventColors[evt.type]||'#fff'; railEl.appendChild(tick); // position update on each frame
+      }
+      function layoutRail(){ const now=performance.now(); const railW=railEl.clientWidth||400; const t0=now-eventsWindowMs; for(const child of Array.from(railEl.children)){ const ts=Number(child.dataset.ts||0); const x = ((ts - t0) / eventsWindowMs) * railW; child.style.left = Math.max(-4, Math.min(railW, x)) + 'px'; } }
+      // Draw loop
+      function draw(){ ctx.clearRect(0,0,canvas.width,canvas.height); updateFPS(); layoutRail(); const state=sdk.getState?.()||{}; const seatMap=new Map(); try{ const seats=state.seats?.seats||state.seats; if(seats){ for(const s of Object.values(seats)){ if(s.handId!=null){ seatMap.set(s.handId,s.seat); } } } }catch{}
+        const rich=sdk.getRichSnapshot?.()||[]; // render strips per hand
+        for(const snap of rich){ const key = snap.hand + ':' + (snap.handId ?? '?'); const row=ensureStrip(key, `${snap.hand} ${snap.seat?('['+snap.seat+']'):''}`); renderStrip(row, snap); }
+        const LH=window.__hexLastHands||null; if(LH&&LH.length){ for(let i=0;i<LH.length;i++){ const lm=LH[i]; const handId=i; const seat=seatMap.get(handId) || (rich.find(r=>r.handId===handId)?.seat) || 'NONE'; const color=seatColor[seat]||seatColor.NONE; const filled=seat!=='NONE'; drawLandmarks(lm,color,filled); } }
+      }
+      function scheduleDraw(){ if('requestVideoFrameCallback' in video){ const cb=()=>{ try{draw();}catch(e){}; try{ video.requestVideoFrameCallback(cb);}catch{ requestAnimationFrame(scheduleDraw);} }; try{ video.requestVideoFrameCallback(cb);}catch{ requestAnimationFrame(scheduleDraw);} } else { requestAnimationFrame(function loop(){ draw(); requestAnimationFrame(loop); }); } }
+      scheduleDraw();
+      sdk.on(evt=>{ if(evt.type && evt.type.startsWith('pinch:')){ pushEventTick(evt); } try{ elState.textContent=JSON.stringify(sdk.getState(),null,2);}catch{} try{ elRich.textContent=JSON.stringify(sdk.getRichSnapshot?.()||[],null,2);}catch{} });
+      btnStart.addEventListener('click', async()=>{ try{ await sdk.startCamera(video);}catch(e){ console.error(e);} });
+      btnStop.addEventListener('click', ()=>{ sdk.stop(video); });
+      async function playUrl(url){ try{ try{ video.crossOrigin='anonymous'; }catch{} await sdk.startVideoUrl(video,url); }catch(e){ console.error('Failed to play url',url,e);} }
+      const PINCH_URL='/September2025/TectangleHexagonal/videos/golden/golden.two_hands_pinch_seq.v1.mp4'; const IDLE_URL='/September2025/TectangleHexagonal/videos/golden/golden.two_hands_idle.v1.mp4';
+      btnPlayPinch.addEventListener('click', ()=> playUrl(PINCH_URL)); btnPlayIdle.addEventListener('click', ()=> playUrl(IDLE_URL));
+      fileInput.addEventListener('change', async (e)=>{ const f=e.target.files && e.target.files[0]; if(!f) return; const blobUrl=URL.createObjectURL(f); await playUrl(blobUrl); });
+    </script>
+  </body>
+</html>

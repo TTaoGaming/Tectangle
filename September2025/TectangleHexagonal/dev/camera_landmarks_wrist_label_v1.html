@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Camera + Landmarks + Wrist Label (v1)</title>
+  <style>
+    html,body{height:100%;margin:0}
+    body{background:#0b1020;color:#e5e7eb;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+    #stage{position:relative;width:100%;height:100%;background:black}
+  #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+    #overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+    #hud{position:absolute;left:10px;top:10px;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.15);padding:6px 8px;border-radius:8px;font-size:12px}
+    #controls{position:absolute;right:10px;top:10px;display:flex;gap:8px}
+    button{background:#16a34a;color:#fff;border:0;border-radius:8px;padding:6px 10px;cursor:pointer}
+    button.stop{background:#ef4444}
+  </style>
+</head>
+<body>
+  <!-- WEBWAY:ww-2025-092: Minimal demo to validate camera + landmarks + wrist label -->
+  <div id="wrap">
+    <div id="stage">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="overlay"></canvas>
+  <div id="hud">Idle • FPS: <span id="fps">0</span></div>
+      <div id="controls">
+        <button id="start">Start</button>
+        <button id="stop" class="stop">Stop</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { makeVideoMapper } from '../src/vis/viewport_mapping.js';
+    import { createLandmarkSmoother } from '../src/processing/landmark_smoother.js';
+    import { drawRaw, drawSmoothed } from '../src/vis/draw_landmarks.js';
+    import { initShell } from '../src/ui/shell/shell_os.js';
+    // Offline-friendly ESM/WASM + model paths (align with v3 demos)
+    const nmBase = '/node_modules/@mediapipe/tasks-vision';
+    const wasmBase = `${nmBase}/wasm`;
+    const HAND_MODEL = '/September2025/TectangleHexagonal/assets/models/hand_landmarker.task';
+    const GESTURE_MODEL = '/September2025/TectangleHexagonal/assets/models/gesture_recognizer.task';
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('overlay');
+    const g = canvas.getContext('2d');
+    const fpsEl = document.getElementById('fps');
+    const btnStart = document.getElementById('start');
+    const btnStop = document.getElementById('stop');
+
+  let landmarker = null; let recognizer = null; let running=false; let rafId=null; let stream=null; let lastT=0; let fps=0;
+  let state = 'Idle'; // Placeholder; FSM to be added later
+  let lastRes = null; // hand landmarks (raw MP)
+  let lastGest = null; // gesture result
+  let smoother = createLandmarkSmoother({ oneEuro: { minCutoff: 1.6, beta: 0.03, dCutoff: 1.0 } });
+  let mapper = null; // viewport mapper
+  let showDual = true; // dual viz toggle
+
+    function resizeCanvas(){
+      const rect = video.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.floor(rect.width));
+      canvas.height = Math.max(1, Math.floor(rect.height));
+      if(!mapper) mapper = makeVideoMapper(video, canvas, { fit:'cover', mirror:true });
+      mapper.recalc();
+    }
+
+    function drawLandmarks(res){
+      const W = canvas.width|0, H = canvas.height|0;
+      g.clearRect(0,0,W,H);
+      const L = res?.landmarks || [];
+      const HN = res?.handednesses || [];
+      // Prepare hands arrays
+      const rawHands = L.map(hand => (hand||[]).map(p => p ? { x:p.x, y:p.y, z:p.z||0 } : null));
+      const smoothed = smoother.push({ t: performance.now(), hands: rawHands, width: video.videoWidth||0, height: video.videoHeight||0 });
+      // Draw raw semi-transparent dots
+      drawRaw(g, rawHands, mapper, { color:'rgba(255,255,255,0.45)', radius:3 });
+      // Draw smoothed small circles
+      if(showDual) drawSmoothed(g, smoothed, mapper, { color:'rgba(234,179,8,0.8)', radius:2 });
+      // Wrist label per hand 0 landmark
+      g.font = '12px system-ui,Segoe UI,Roboto,Arial';
+      for(let i=0;i<rawHands.length;i++){
+        const hand = rawHands[i]; if(!hand || hand.length<1) continue;
+        const w = hand[0]; if(!w) continue;
+        const [wx,wy] = mapper.map(w.x, w.y);
+        const handedCat = (Array.isArray(HN?.[i]) && HN[i][0]) ? HN[i][0] : null;
+        const handed = handedCat?.categoryName || handedCat?.displayName || 'Unknown';
+        const hScore = (typeof handedCat?.score === 'number') ? handedCat.score.toFixed(2) : '–';
+        const text = `State: ${state}  ${handed}(${hScore})  wrist xyz: ${w.x.toFixed(3)}, ${w.y.toFixed(3)}, ${Number(w.z||0).toFixed(3)}`;
+        const pad = 6; const tw = g.measureText(text).width; const th = 18;
+        g.save();
+        g.translate(wx, wy - 20);
+        g.fillStyle = 'rgba(0,0,0,0.55)';
+        roundRect(g, -pad, -th+4, tw + pad*2, th, 8); g.fill();
+        g.fillStyle = '#facc15';
+        g.fillText(text, 0, 0);
+        g.restore();
+      }
+    }
+
+    function roundRect(ctx, x, y, w, h, r){
+      const rr = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x+rr, y);
+      ctx.arcTo(x+w, y, x+w, y+h, rr);
+      ctx.arcTo(x+w, y+h, x, y+h, rr);
+      ctx.arcTo(x, y+h, x, y, rr);
+      ctx.arcTo(x, y, x+w, y, rr);
+      ctx.closePath();
+    }
+
+    function loop(){
+      if(!running) return;
+      const now = performance.now();
+      const dt = now - lastT; lastT = now; if(dt>0){ fps = 1000/dt; fpsEl.textContent = fps.toFixed(1); }
+      try{
+        // Landmarks
+  const res = landmarker?.detectForVideo ? landmarker.detectForVideo(video, now) : null;
+        if(res){ lastRes = res; drawLandmarks(res); }
+        // Gestures
+        if(recognizer && typeof recognizer.recognizeForVideo === 'function'){
+          lastGest = recognizer.recognizeForVideo(video, now);
+          // Set state to top label of first hand (if present)
+          const g0 = lastGest?.gestures?.[0] || [];
+          const top = g0[0];
+          const lbl = top?.categoryName || null;
+          if(lbl){ state = lbl; }
+        }
+      }catch(e){ /* swallow per-frame errors */ }
+      rafId = requestAnimationFrame(loop);
+    }
+
+    async function initMedia(){
+      if(stream) return;
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio:false });
+      video.srcObject = stream; await video.play();
+      resizeCanvas();
+      new ResizeObserver(resizeCanvas).observe(document.getElementById('stage'));
+    }
+
+    async function initLandmarker(){
+      if(landmarker) return;
+      const vision = await import(`${nmBase}/vision_bundle.mjs`);
+      const { FilesetResolver, HandLandmarker } = vision;
+      const fileset = await FilesetResolver.forVisionTasks(wasmBase);
+      landmarker = await HandLandmarker.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: HAND_MODEL },
+        runningMode: 'VIDEO', numHands: 2
+      });
+    }
+
+    async function initRecognizer(){
+      if(recognizer) return;
+      const vision = await import(`${nmBase}/vision_bundle.mjs`);
+      const { FilesetResolver, GestureRecognizer } = vision;
+      const fileset = await FilesetResolver.forVisionTasks(wasmBase);
+      recognizer = await GestureRecognizer.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: GESTURE_MODEL },
+        runningMode: 'VIDEO', numHands: 2
+      });
+    }
+
+    async function start(){
+      if(running) return;
+      await initMedia(); await initLandmarker(); await initRecognizer();
+      // Mapper init now that video has dimensions
+      if(!mapper) mapper = makeVideoMapper(video, canvas, { fit:'cover', mirror:true });
+      mapper.recalc();
+      running = true; lastT = performance.now(); loop();
+    }
+    function stop(){ if(!running) return; running=false; if(rafId) cancelAnimationFrame(rafId); }
+
+    btnStart.addEventListener('click', start);
+    btnStop.addEventListener('click', stop);
+  // Toggle dual viz with keyboard 'v'
+  window.addEventListener('keydown', (e)=>{ if(e.key.toLowerCase()==='v'){ showDual=!showDual; }});
+
+    // Auto-start for convenience; if model missing, show hint
+    (async () => {
+      try{
+        await start();
+      }catch(err){
+        const hud = document.getElementById('hud');
+        hud.textContent = 'Model missing? Run: npm run hex:hand:model';
+        console.error('HandLandmarker init failed', err);
+      }
+    })();
+
+    // Optional shell UI: enable when explicitly requested (?FEATURE_GSOS_SHELL_BAR=1) or when top-level
+    try{
+      const p = new URLSearchParams(location.search);
+      const enableBar = (()=>{
+        const v = p.get('FEATURE_GSOS_SHELL_BAR') || p.get('shell');
+        if (v === '1' || v === 'true') return true;
+        if (v === '0' || v === 'false') return false;
+        try { return window === window.top; } catch { return true; }
+      })();
+      if (enableBar) {
+        initShell({ mount: document.body, apps: [
+          { id:'demo', title:'Camera Demo', open: ()=>{/* placeholder */} }
+        ]});
+      }
+    }catch{}
+
+    // WEBWAY:ww-2025-095: test hooks for smoke validation
+    window.__cam = {
+      getState: ()=> state,
+      getLast: ()=> lastRes,
+      getGesture: ()=> lastGest,
+      hasHandLandmarker: ()=> !!landmarker,
+      hasGestureRecognizer: ()=> !!recognizer,
+      setDualViz: (b)=>{ showDual = !!b; },
+      getMapperState: ()=> mapper?.state || null
+    };
+  </script>
+</body>
+</html>

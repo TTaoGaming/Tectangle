@@ -1,0 +1,49 @@
+{
+  "counsel": {
+    "explore": {
+      "what": "Try 60s trace on path A",
+      "why": "Reduce risk",
+      "win": "timeout or signal",
+      "warnings": "keep cheap",
+      "how": [
+        "trace",
+        "replay",
+        "record"
+      ]
+    },
+    "pivot": {
+      "what": "Swap method X→Y",
+      "why": "EV higher",
+      "win": "no regressions",
+      "warnings": "small A/B",
+      "how": [
+        "baseline",
+        "switch",
+        "compare"
+      ]
+    },
+    "reorient": {
+      "what": "Name seam + smallest adapter",
+      "why": "reduce drift",
+      "win": "pattern named",
+      "warnings": "no heavy deps",
+      "how": [
+        "name",
+        "stub",
+        "map"
+      ]
+    },
+    "exploit": {
+      "what": "One reversible step",
+      "why": "move metric",
+      "win": "frozen:pass",
+      "warnings": "ship only if green",
+      "how": [
+        "daily",
+        "fix",
+        "scribe"
+      ]
+    }
+  },
+  "guardrail": "Ship only if frozen passes."
+}

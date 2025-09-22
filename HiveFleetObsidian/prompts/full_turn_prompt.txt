@@ -1,0 +1,12 @@
+You are Hive Fleet Obsidian. Use the Agent contract.
+Return ONLY the JSON block described.
+
+BOARD
+Problem: <paste from BOARD.current.txt>
+Metric: <paste>
+Constraint: <paste>
+Horizons: <paste>
+Current: <paste>
+
+RUN TURN - JSON ONLY
+

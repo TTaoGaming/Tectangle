@@ -1,0 +1,37 @@
+{
+  "name": "pinchfsm",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic trace generator for PinchFSM using MediaPipe Tasks (Node WASM)",
+  "scripts": {
+    "trace-gen": "node ./src/trace-gen.js",
+    "trace-gen:example": "node ./src/trace-gen.js --input ../../right hand hand oriented towards the camera and wrist to middle knuckle pointing up index to thumb pinch.mp4",
+    "trace-gen:example2": "node ./src/trace-gen.js --input ../../right hand palm oriented to my left index and thumb pinch should be GATED.mp4",
+    "trace-gen:human": "node ./src/trace-gen-human.js",
+    "trace-gen:human:example": "node ./src/trace-gen-human.js --input ../../right hand hand oriented towards the camera and wrist to middle knuckle pointing up index to thumb pinch.mp4",
+    "trace-gen:human:example2": "node ./src/trace-gen-human.js --input ../../right hand palm oriented to my left index and thumb pinch should be GATED.mp4",
+  "human:extract": "node ./scripts/human-puppeteer-extract.mjs",
+  "smooth:oneeuro": "node ./scripts/oneeuro-smooth.mjs --input",
+  "goldens:freeze": "node ./scripts/goldens-freeze.mjs",
+  "goldens:verifyFrozen": "node ./scripts/goldens-verify.mjs",
+  "goldens:curate-freeze": "npm run human:extract && npm run goldens:freeze",
+    "verify": "node ./src/prereq-check.js",
+  "test": "node --test ./tests/*.mjs",
+  "ci": "npm run verify && npm run human:extract && npm test --silent"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "0.10.14",
+    "@tensorflow/tfjs-backend-wasm": "4.21.0",
+    "@tensorflow/tfjs-converter": "4.21.0",
+    "@tensorflow/tfjs-core": "4.21.0",
+    "@vladmandic/human": "3.3.6",
+    "ffmpeg-static": "5.2.0",
+    "jpeg-js": "0.4.4",
+    "pipe2jpeg": "0.5.0",
+    "pngjs": "7.0.0",
+    "puppeteer": "^24.19.0",
+    "yargs": "17.7.2",
+    "zod": "3.23.8"
+  }
+}

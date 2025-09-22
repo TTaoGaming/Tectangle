@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PinchFSM Dev UI — Raw vs Smoothed JSONL</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 16px; }
+      .row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+      canvas { width: 640px; height: 480px; border: 1px solid #ddd; border-radius: 6px; }
+      .small { font-size: 12px; color: #666; }
+      .col { display:flex; flex-direction:column; gap:8px; }
+      .pill { padding: 2px 8px; border-radius: 10px; background: #f3f3f3; display:inline-block; }
+    </style>
+  </head>
+  <body>
+    <h1>PinchFSM Dev UI — Raw vs Smoothed JSONL</h1>
+    <div class="row">
+      <label>Raw JSONL <input type="file" id="rawFile" accept=".jsonl" /></label>
+      <label>Smoothed JSONL (optional) <input type="file" id="smoothFile" accept=".jsonl" /></label>
+      <button id="playBtn">Play</button>
+      <span id="status" class="small">idle</span>
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <div class="col"><strong>Raw</strong><canvas id="rawCanvas" width="640" height="480"></canvas></div>
+      <div class="col"><strong>Smoothed</strong><canvas id="smoothCanvas" width="640" height="480"></canvas></div>
+    </div>
+    <div style="margin-top:8px" class="small">
+      Metrics: <span id="metrics" class="pill">n/a</span>
+    </div>
+    <script>
+      const rawEl = document.getElementById('rawFile');
+      const smoothEl = document.getElementById('smoothFile');
+      const playBtn = document.getElementById('playBtn');
+      const statusEl = document.getElementById('status');
+      const rawCtx = document.getElementById('rawCanvas').getContext('2d');
+      const smoothCtx = document.getElementById('smoothCanvas').getContext('2d');
+      const metricsEl = document.getElementById('metrics');
+
+      function readJsonl(file) {
+        return new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onerror = () => reject(fr.error);
+          fr.onload = () => {
+            const text = String(fr.result || '');
+            const frames = text.split(/\r?\n/).filter(Boolean).map((l) => JSON.parse(l));
+            resolve(frames);
+          };
+          fr.readAsText(file);
+        });
+      }
+
+      function drawHand(ctx, hand, color) {
+        if (!hand) return;
+        const lm = hand.landmarks || [];
+        const chains = [ [0,1,2,3,4],[0,5,6,7,8],[0,9,10,11,12],[0,13,14,15,16],[0,17,18,19,20] ];
+        ctx.lineWidth = 2; ctx.strokeStyle = color; ctx.fillStyle = color;
+        for (const c of chains) {
+          ctx.beginPath(); let moved = false;
+          for (const idx of c) {
+            const p = lm[idx]; if (!p) continue;
+            const x = p.x * ctx.canvas.width; const y = p.y * ctx.canvas.height;
+            if (!moved) { ctx.moveTo(x,y); moved=true; } else ctx.lineTo(x,y);
+          }
+          ctx.stroke();
+        }
+        for (let i=0;i<lm.length;i++) { const p = lm[i]; if (!p) continue; const x=p.x*ctx.canvas.width, y=p.y*ctx.canvas.height; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); }
+      }
+
+      function pinchDistance(hand, aIdx, bIdx) {
+        if (!hand) return null; const A = hand.landmarks?.[aIdx], B = hand.landmarks?.[bIdx];
+        if (!A||!B) return null; const dx=A.x-B.x, dy=A.y-B.y, dz=(A.z||0)-(B.z||0); return Math.hypot(dx,dy,dz);
+      }
+
+      function palmNormal(hand) {
+        // rough normal from triangle (wrist=0, index base=5, pinky base=17)
+        const lm = hand?.landmarks||[]; const a=lm[0], b=lm[5], c=lm[17]; if (!a||!b||!c) return null;
+        const u = { x:b.x-a.x, y:b.y-a.y, z:(b.z||0)-(a.z||0) };
+        const v = { x:c.x-a.x, y:c.y-a.y, z:(c.z||0)-(a.z||0) };
+        const n = { x:u.y*v.z - u.z*v.y, y:u.z*v.x - u.x*v.z, z:u.x*v.y - u.y*v.x };
+        return n;
+      }
+
+      function renderFrame(rawF, smoothF) {
+        rawCtx.clearRect(0,0,rawCtx.canvas.width, rawCtx.canvas.height);
+        smoothCtx.clearRect(0,0,smoothCtx.canvas.width, smoothCtx.canvas.height);
+        const rh = rawF?.hands?.[0]; const sh = smoothF?.hands?.[0];
+        drawHand(rawCtx, rh, '#444');
+        drawHand(smoothCtx, sh, '#0a84ff');
+        const d = pinchDistance(sh || rh, 4, 8); // thumb-index
+        const n = palmNormal(sh || rh);
+        const gate = n ? (n.z < 0 ? 'GATED:OFF' : 'GATED:ON') : 'GATE:NA';
+        metricsEl.textContent = `t=${rawF?.timestampMs ?? 'NA'} ms | pinch d(4,8)=${d?.toFixed(4) ?? 'NA'} | ${gate}`;
+      }
+
+      async function play() {
+        const rawFile = rawEl.files?.[0]; if (!rawFile) { statusEl.textContent='Select raw JSONL'; return; }
+        const rawFrames = await readJsonl(rawFile);
+        let smoothFrames = null;
+        if (smoothEl.files?.length) smoothFrames = await readJsonl(smoothEl.files[0]);
+        statusEl.textContent = `loaded ${rawFrames.length} raw${smoothFrames? ' / '+smoothFrames.length+' smoothed':''}`;
+        let i=0; const start = performance.now(); const baseT = rawFrames[0]?.timestampMs ?? 0;
+        function step() {
+          if (i >= rawFrames.length) { statusEl.textContent='done'; return; }
+          const fr = rawFrames[i]; const t0 = fr.timestampMs - baseT; const now = performance.now() - start;
+          if (now + 2 >= t0) {
+            const sf = smoothFrames ? smoothFrames[i] : null;
+            renderFrame(fr, sf);
+            i++;
+          }
+          requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      }
+
+      playBtn.addEventListener('click', () => { play().catch(e => { console.error(e); statusEl.textContent='error'; }); });
+    </script>
+  </body>
+  </html>

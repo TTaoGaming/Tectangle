@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hfo.example/schema/champion-seed-kernel.v1.json",
+  "title": "ChampionSeedKernelV1",
+  "type": "object",
+  "required": [
+    "version",
+    "metadata",
+    "identity",
+    "mission",
+    "triggers",
+    "inputs_required",
+    "output_shape",
+    "guardrails",
+    "procedure",
+    "stop_rules",
+    "defaults",
+    "invocation"
+  ],
+  "properties": {
+    "version": { "type": "string" },
+    "metadata": {
+      "type": "object",
+      "required": ["id", "name", "version"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+        "name": { "type": "string" },
+        "version": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "identity": {
+      "type": "object",
+      "required": ["element", "archetype", "approach", "motto"],
+      "properties": {
+        "element": { "type": "string" },
+        "archetype": { "type": "string" },
+        "approach": { "type": "string" },
+        "motto": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "lineage_tags": {
+      "type": "object",
+      "properties": {
+        "mythic": { "type": "array", "items": { "type": "string" } },
+        "algorithms": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "mission": { "type": "string" },
+    "triggers": { "type": "array", "items": { "type": "string" } },
+    "inputs_required": { "type": "array", "items": { "type": "string" } },
+    "output_shape": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "type": "string" },
+          {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "guardrails": { "type": "array", "items": { "type": "string" } },
+    "procedure": { "type": "array", "items": { "type": "string" } },
+    "stop_rules": { "type": "array", "items": { "type": "string" } },
+    "defaults": { "type": "object" },
+    "invocation": {
+      "type": "object",
+      "properties": { "one_line": { "type": "string" } },
+      "required": ["one_line"],
+      "additionalProperties": true
+    },
+    "notes_patched_weaknesses": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": true
+}

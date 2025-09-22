@@ -1,0 +1,9 @@
+{"meta":{"name":"right_hand_gated","notes":"synthetic demo trace: stays unpinched (tests gating)"}}
+{"t":0,"indexTip":[0.85,0.50],"thumbTip":[0.35,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}
+{"t":80,"indexTip":[0.84,0.50],"thumbTip":[0.36,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}
+{"t":160,"indexTip":[0.83,0.50],"thumbTip":[0.37,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}
+{"t":240,"indexTip":[0.82,0.50],"thumbTip":[0.38,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}
+{"t":400,"indexTip":[0.81,0.50],"thumbTip":[0.39,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}
+{"t":520,"indexTip":[0.82,0.50],"thumbTip":[0.38,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}
+{"t":640,"indexTip":[0.83,0.50],"thumbTip":[0.37,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}
+{"t":760,"indexTip":[0.84,0.50],"thumbTip":[0.36,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}

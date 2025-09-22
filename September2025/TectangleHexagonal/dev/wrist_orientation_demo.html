@@ -1,0 +1,184 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/unit/wristOrientationCore.test.mjs
+  - [ ] tests/unit/wristOrientationSmoothing.test.mjs
+  - [ ] tests/unit/wristOrientationVelocity.test.mjs
+  - [ ] tests/unit/wristOrientationDemoHarness.test.mjs
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Wrist Orientation Demo</title>
+  <style>
+    body { margin:0; font-family: system-ui, sans-serif; display:grid; grid-template-columns: 2fr 1fr; height:100vh; background:#0d0f12; color:#e5e7eb; }
+    #left { position:relative; }
+    video { width:100%; height:100%; object-fit:cover; background:#000; }
+    canvas { position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; }
+    #right { padding:12px; overflow:auto; }
+    pre { font-size:12px; line-height:1.3; }
+    .bucket-UP { color:#60a5fa; }
+    .bucket-RIGHT { color:#34d399; }
+    .bucket-DOWN { color:#f87171; }
+    .bucket-LEFT { color:#fbbf24; }
+  </style>
+</head>
+<body>
+  <div id="left">
+    <video id="cam" playsinline muted></video>
+    <canvas id="overlay"></canvas>
+  </div>
+  <div id="right">
+  <h3>Wrist Orientation (Planar)</h3>
+    <button id="startCam">Start Camera</button>
+    <button id="playVideo">Sample MP4</button>
+    <label style="display:block;margin-top:8px;font-size:12px;">
+      <input type="checkbox" id="toggleOrient" checked /> FEATURE_WRIST_ORIENT_V1
+    </label>
+    <div id="info"></div>
+    <pre id="log"></pre>
+  </div>
+  <script type="module">
+    import { createAppShell } from '../src/app/appShell.js';
+    // Enable orientation flag
+    globalThis.__flags = Object.assign({}, globalThis.__flags, { FEATURE_WRIST_ORIENT_V1: true });
+
+    const video = document.getElementById('cam');
+    const overlay = document.getElementById('overlay');
+    const ctx = overlay.getContext('2d');
+    const logEl = document.getElementById('log');
+    const infoEl = document.getElementById('info');
+    const shell = createAppShell({});
+    window.__wristDemoShell = shell;
+
+    const MAX_LOG = 30;
+    const evBuf = [];
+
+    shell.onEvent(e => {
+      if(e.type === 'wrist:orientation'){
+        evBuf.push(e);
+        while(evBuf.length > MAX_LOG) evBuf.shift();
+      }
+    });
+
+    async function startCam(){ await shell.startCamera(video); }
+    async function playVideo(){ const url = '../videos/two_hands_baseline_idle_v1.mp4'; await shell.startVideoUrl(video, url); }
+    document.getElementById('startCam').onclick = startCam;
+    document.getElementById('playVideo').onclick = playVideo;
+    document.getElementById('toggleOrient').onchange = (e)=>{
+      // Persist preference in localStorage then reload to re-init shell before mediapipe start
+      try{ localStorage.setItem('WRO_FLAG', e.target.checked ? '1':'0'); }catch{}
+      location.reload();
+    };
+    // Apply stored flag preference early
+    try{ const saved = localStorage.getItem('WRO_FLAG'); if(saved==='0'){ document.getElementById('toggleOrient').checked=false; globalThis.__flags.FEATURE_WRIST_ORIENT_V1=false; } }catch{}
+
+    function drawLandmarks(frame){
+      if(!frame || !frame.landmarks) return; // single hand path currently per-frame per hand
+      const W = overlay.width = overlay.clientWidth;
+      const H = overlay.height = overlay.clientHeight;
+      ctx.clearRect(0,0,W,H);
+      // Optional quadrant guide
+      ctx.save();
+      ctx.globalAlpha = 0.08;
+      ctx.fillStyle = '#2563eb'; ctx.fillRect(0,0,W/2,H/2); // upper-left (approx LEFT/UP depending coordinate)
+      ctx.fillStyle = '#059669'; ctx.fillRect(W/2,0,W/2,H/2);
+      ctx.fillStyle = '#dc2626'; ctx.fillRect(W/2,H/2,W/2,H/2);
+      ctx.fillStyle = '#d97706'; ctx.fillRect(0,H/2,W/2,H/2);
+      ctx.restore();
+      const lm = frame.landmarks;
+      ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.fillStyle='#1f2937';
+      for(let i=0;i<lm.length;i++){
+        const [x,y] = lm[i];
+        ctx.beginPath(); ctx.arc(x*W, y*H, 4, 0, Math.PI*2); ctx.fill();
+      }
+      // orientation vector wrist->indexMCP (simplified)
+      const ref = frame.indexMCP;
+      if(frame.wrist && ref){
+        ctx.strokeStyle = '#60a5fa';
+        ctx.beginPath();
+        ctx.moveTo(frame.wrist[0]*W, frame.wrist[1]*H);
+        ctx.lineTo(ref[0]*W, ref[1]*H);
+        ctx.stroke();
+        // Draw numeric angle at wrist (planar 0-360)
+        try {
+          const dx = ref[0]-frame.wrist[0];
+          const dy = ref[1]-frame.wrist[1];
+          let raw = Math.atan2(dy, dx) * 180/Math.PI;
+          if(raw < 0) raw += 360;
+          // derive handKey like HandSessionManager
+          const handKey = (frame.handId!=null) ? `id:${frame.handId}` : (frame.hand ? `hand:${frame.hand}` : 'hand:Unknown');
+          let smooth = raw;
+            for(let i=evBuf.length-1;i>=0;i--){ const e=evBuf[i]; if(e.type==='wrist:orientation' && e.handKey===handKey){ if(typeof e.smoothAngleDeg==='number') smooth = e.smoothAngleDeg; break; } }
+          const arrowUp = raw >= 180;
+          const color = arrowUp ? '#60a5fa' : '#f87171';
+          const arrow = arrowUp ? '↑' : '↓';
+          const label = `${arrow}${Math.round(raw)} / ${Math.round(smooth)}`; // raw / smooth
+          ctx.font = 'bold 13px system-ui';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const wx = frame.wrist[0]*W;
+          const wy = frame.wrist[1]*H;
+          const padX = 6, padY = 4;
+          ctx.save();
+          ctx.fillStyle = 'rgba(0,0,0,0.55)';
+          const textW = ctx.measureText(label).width;
+          const boxW = textW + padX*2;
+          const boxH = 22;
+          const x0 = wx - boxW/2;
+          const y0 = wy - boxH/2;
+          if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(x0, y0, boxW, boxH, 6); ctx.fill(); }
+          else { ctx.fillRect(x0, y0, boxW, boxH); }
+          ctx.restore();
+          ctx.fillStyle = color;
+          ctx.fillText(label, wx, wy+1);
+        } catch {}
+      }
+      // annotate latest bucket angles from buffer (by hand)
+      const latestByHand = {};
+      for(let i=evBuf.length-1;i>=0;i--){ const e = evBuf[i]; if(e.type==='wrist:orientation' && !(e.handKey in latestByHand)) latestByHand[e.handKey]=e; }
+      let yOff = 18;
+      for(const k of Object.keys(latestByHand)){
+        const ev = latestByHand[k];
+        const raw = ev.angleDeg ?? 0;
+        const smooth = ev.smoothAngleDeg ?? raw;
+        const up = raw >= 180; // requested mapping: 0-179 => red/down, 180-360 => blue/up
+        const color = up ? '#60a5fa' : '#f87171';
+        const arrow = up ? '↑' : '↓';
+        ctx.font = '13px system-ui';
+        ctx.fillStyle = color;
+        ctx.fillText(`${k} ${arrow} raw=${raw.toFixed(0)}° sm=${smooth.toFixed(0)}°`, 8, yOff);
+        yOff += 16;
+      }
+    }
+
+    function render(){
+      const st = shell.getState();
+      // get last orientation events by handKey
+      const byHand = {};
+      for(let i=evBuf.length-1;i>=0;i--){ const e = evBuf[i]; if(!(e.handKey in byHand)) byHand[e.handKey]=e; }
+      const lines = Object.keys(byHand).map(k => {
+        const e = byHand[k];
+        const raw = e.angleDeg?.toFixed(1);
+        const sm = e.smoothAngleDeg?.toFixed(1);
+        const arrow = (e.angleDeg>=180)?'↑':'↓';
+        return `${k} ${arrow} bucket=${e.bucket} raw=${raw} sm=${sm}`;
+      });
+      infoEl.innerHTML = lines.map(l=>`<div>${l}</div>`).join('');
+      logEl.textContent = evBuf.map(e=> `${e.t.toFixed(0)} ${e.handKey} ${e.bucket} raw=${e.angleDeg?.toFixed(1)} sm=${e.smoothAngleDeg?.toFixed(1)}`).join('\n');
+      drawLandmarks(st.lastFrame);
+    }
+
+    setInterval(render, 250);
+  </script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+name: Hex Tiers — Manual Dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: "Tier to run (repeat|commit|hourly|daily|weekly)"
+        required: true
+        default: "commit"
+
+jobs:
+  run-tier:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+      - name: Install deps
+        run: npm ci
+      - name: Start http server
+        run: |
+          npx http-server . -p 8080 &
+          ping 127.0.0.1 -n 3 > nul
+      - name: Run selected tier
+        shell: bash
+        run: |
+          case "${{ github.event.inputs.tier }}" in \
+            repeat) npm run -s hex:tier:repeat ;; \
+            commit) npm run -s hex:tier:commit ;; \
+            hourly) npm run -s hex:tier:hourly ;; \
+            daily) npm run -s hex:tier:daily ;; \
+            weekly) npm run -s hex:tier:weekly ;; \
+            *) echo "Unknown tier"; exit 1 ;; \
+          esac

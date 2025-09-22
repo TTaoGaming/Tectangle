@@ -1,0 +1,43 @@
+{
+  "generatedAt": "2025-09-09T04:02:11.746Z",
+  "prompt": "",
+  "board": {
+    "problem": "",
+    "metric": "hfo_sailworthy",
+    "constraint": "Node>=18; reversible steps; reuse goldens",
+    "horizons": "1h=<today> | 1d=<tomorrow> | 1w=<this week> | 1m=<this month>",
+    "current": "test; updated: 2025-09-08T21:51:25.8889525-06:00"
+  },
+  "chat": [
+    "TTao: Problem: (unset). Let's keep it green and simple.",
+    "Thread Sovereign: One reversible step after green frozen checks | focus: Metric: hfo_sailworthy (Win: dup==0 && smoke:pass && frozen:pass && miss==0)",
+    "Faultline Seeker: Design 1–3 micro-tests and replay a short trace | focus: Metric: hfo_sailworthy (Stop: Stop on signal or timeout)",
+    "Prism Magus: Try a small method swap framed by constraints | focus: Metric: hfo_sailworthy (Keep when EV_new > EV_old; no regressions)",
+    "Web Cartographer: Adopt ports/adapters; land the smallest first step | focus: Metric: hfo_sailworthy",
+    "Silk Scribe: Logged chat | counsel: HiveFleetObsidian/reports/turns/turn_2025-09-09T04-02-11.738Z.json",
+    "Help: Ask anything. Controls — tone=casual|formal, rounds=1|2, --strict, --council, --provider <p>, seed=<text>. Private: sovereign decide | prism plan. Edit BOARD.current.txt to steer."
+  ],
+  "voices": {
+    "exploit": {
+      "persona": "I cut indecision; we move one safe step.",
+      "canon": "<fill>",
+      "pascal": "ThreadSovereign"
+    },
+    "explore": {
+      "persona": "I probe the crack that breaks assumptions fastest.",
+      "canon": "<fill>",
+      "pascal": "FaultlineSeeker"
+    },
+    "pivot": {
+      "persona": "I change the path, not the goal; I turn complicated into constrained.",
+      "canon": "<fill>",
+      "pascal": "PrismMagus"
+    },
+    "reorient": {
+      "persona": "I reveal the map so we can choose a better path.",
+      "canon": "<fill>",
+      "pascal": "WebCartographer"
+    }
+  },
+  "counselRef": "HiveFleetObsidian/reports/turns/turn_2025-09-09T04-02-11.738Z.json"
+}

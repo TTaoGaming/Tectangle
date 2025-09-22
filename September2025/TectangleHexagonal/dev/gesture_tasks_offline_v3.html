@@ -1,0 +1,585 @@
+customer later yes <!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Offline Gesture Recognizer v3 (Hex)</title>
+  <style>
+    html,body{height:100%;margin:0}
+    body{background:#0b1020;color:#e5e7eb;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .card{border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:rgba(255,255,255,0.05);padding:12px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .chip{display:inline-block;border:1px solid rgba(255,255,255,0.25);padding:2px 8px;border-radius:999px;margin-right:8px;font-size:12px}
+    button{background:#16a34a;color:white;border:0;border-radius:8px;padding:6px 10px;margin-right:8px;cursor:pointer}
+    button.stop{background:#ef4444}
+    button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.25);color:#e5e7eb}
+    .muted{opacity:.75;font-size:12px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:12px;text-align:left;white-space:nowrap}
+    tbody tr:nth-child(odd){background:rgba(255,255,255,0.02)}
+    .grid-3{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px}
+  </style>
+</head>
+<body class="h-full">
+  <div class="wrap">
+    <h1 style="margin:4px 0 8px">Offline Gesture Recognizer v3 (Hex)</h1>
+    <p class="muted">WEBWAY:ww-2025-094 — V3 scaffold cloned from V2, ready for clarity-first visuals and UX tweaks.</p>
+
+    <div class="grid-3">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div style="font-weight:600">Camera</div><span id="status" class="muted">idle</span></div>
+        <div id="vidWrap" style="position:relative;width:100%;aspect-ratio:4/3;background:black;border-radius:8px;overflow:hidden">
+          <video id="cam" playsinline muted autoplay style="width:100%;height:100%;object-fit:cover"></video>
+          <canvas id="overlay" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none"></canvas>
+        </div>
+        <div style="margin-top:8px">
+          <span class="chip" id="chipLabel">Label: –</span>
+          <span class="chip" id="chipScore">Score: –</span>
+          <span class="chip" id="chipFPS">FPS: –</span>
+          <span class="chip" id="chipState">FSM: Idle</span>
+        </div>
+        <div style="margin-top:8px">
+          <button id="btnStart">Start</button>
+          <button id="btnStop" class="stop">Stop</button>
+          <label class="chip" for="fileInput" style="cursor:pointer">Load MP4</label>
+          <input id="fileInput" type="file" accept="video/mp4,video/webm" style="display:none"/>
+          <span class="muted">Source: <strong id="chipSource">camera</strong></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div style="font-weight:600">Dino (optional)</div><button id="btnFocus" class="secondary">Focus</button></div>
+        <div style="aspect-ratio:16/9;background:black;border-radius:8px;overflow:hidden">
+          <iframe id="game" title="T‑Rex Runner" src="../vendor/dino/index.html" style="width:100%;height:100%;border:0"></iframe>
+        </div>
+        <div style="margin-top:8px">
+          <span class="chip" id="chipSelect">Selects: 0</span>
+          <button id="btnSim" class="secondary">Simulate Select</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div style="font-weight:600">Telemetry</div>
+          <div>
+            <button id="btnPause" class="secondary">Pause</button>
+            <button id="btnClear" class="secondary">Clear</button>
+            <button id="btnExport" class="secondary">Export JSONL</button>
+            <label class="secondary" style="margin-left:6px">
+              <input id="chkAutoExport" type="checkbox" style="vertical-align:middle;margin-right:4px"/> Auto-export on end
+            </label>
+          </div>
+        </div>
+        <div style="max-height:300px;overflow:auto;border-radius:6px">
+          <table id="telemetryTable">
+            <thead>
+              <tr>
+                <th>ts</th><th>frame</th><th>hands</th><th>dt</th><th>fps</th><th>label</th><th>score</th><th>cand2/3</th><th>event</th><th>state</th><th>gate</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <label class="muted">Idle label <input id="idleLabel" value="Open_Palm" class="secondary" style="margin-left:4px;padding:2px 6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.25);color:#e5e7eb"></label>
+          <label class="muted">Target label <input id="targetLabel" value="Closed_Fist" class="secondary" style="margin-left:4px;padding:2px 6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.25);color:#e5e7eb"></label>
+          <button id="btnValidate" class="secondary">Validate</button>
+        </div>
+        <pre id="valOut" class="muted" style="margin-top:6px;max-height:140px;overflow:auto;background:rgba(255,255,255,0.03);padding:6px;border-radius:6px"></pre>
+      </div>
+    </div>
+
+    <!-- Visuals: copied from V2 for now; V3 will refine for clarity-first UX -->
+    <div class="card" style="display:none;margin-top:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-weight:600">Visuals</div>
+        <div>
+          <button id="btnExportCSV" class="secondary">Export CSV</button>
+          <label class="secondary" style="margin-left:6px">
+            <input id="chkLiveViz" type="checkbox" style="vertical-align:middle;margin-right:4px" checked/> Live update
+          </label>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:10px">
+        <div>
+          <div class="muted" style="margin-bottom:4px">Score sparkline (Closed_Fist) — enter/exit thresholds</div>
+          <canvas id="vizScore" height="80" style="width:100%;background:rgba(255,255,255,0.03);border-radius:6px"></canvas>
+        </div>
+        <div>
+          <div class="muted" style="margin-bottom:4px">State timeline</div>
+          <canvas id="vizState" height="28" style="width:100%;background:rgba(255,255,255,0.03);border-radius:6px"></canvas>
+        </div>
+        <div>
+          <div class="muted" style="margin-bottom:4px">Hands count</div>
+          <canvas id="vizHands" height="56" style="width:100%;background:rgba(255,255,255,0.03);border-radius:6px"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating draggable telemetry panel (clarity-first) -->
+    <div id="telePanel" class="tele-panel" style="position:fixed;right:16px;bottom:16px;width:380px;max-width:95vw;background:rgba(17,24,39,0.96);border:1px solid rgba(255,255,255,0.12);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.5);backdrop-filter: blur(6px);z-index:50;">
+      <div id="telePanelHeader" style="cursor:move;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.08);">
+        <div style="font-weight:600">Telemetry</div>
+        <div>
+          <label class="muted" style="margin-right:8px"><input id="panelLiveViz" type="checkbox" checked style="vertical-align:middle;margin-right:4px"> Live</label>
+          <label class="muted" style="margin-right:8px"><input id="panelShowDots" type="checkbox" checked style="vertical-align:middle;margin-right:4px"> Hand dots</label>
+          <button id="btnClosePanel" class="secondary">×</button>
+        </div>
+      </div>
+      <div style="padding:8px 10px;display:grid;gap:8px">
+        <div>
+          <div class="muted" style="margin-bottom:4px">Score sparkline (Closed_Fist)</div>
+          <canvas id="panelScore" height="80" style="width:100%;background:rgba(255,255,255,0.03);border-radius:6px"></canvas>
+        </div>
+        <div>
+          <div class="muted" style="margin-bottom:4px">State timeline</div>
+          <canvas id="panelState" height="28" style="width:100%;background:rgba(255,255,255,0.03);border-radius:6px"></canvas>
+        </div>
+        <div>
+          <div class="muted" style="margin-bottom:4px">Hands count</div>
+          <canvas id="panelHands" height="56" style="width:100%;background:rgba(255,255,255,0.03);border-radius:6px"></canvas>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button id="panelExportCSV" class="secondary">Export CSV</button>
+          <button id="panelExportJSONL" class="secondary">Export JSONL</button>
+        </div>
+      </div>
+    </div>
+    <button id="btnOpenPanel" class="fab" style="position:fixed;right:16px;bottom:16px;height:44px;padding:0 14px;border-radius:999px;background:#16a34a;color:white;border:0;box-shadow:0 8px 20px rgba(0,0,0,0.35);z-index:40;display:none">Telemetry</button>
+
+    <!-- WEBWAY:ww-2025-094 — L/R transition sparklines overlay (guarded by FEATURE_HAND_TRANSITIONS_V3) -->
+    <div id="sparkWrap" style="position:fixed;left:12px;bottom:12px;display:none;flex-direction:column;gap:6px;z-index:45">
+      <div class="muted" style="font-size:11px;opacity:.7">Open→Fist transitions</div>
+      <canvas id="sparkL" width="220" height="40" style="width:220px;height:40px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.15);border-radius:6px"></canvas>
+      <canvas id="sparkR" width="220" height="40" style="width:220px;height:40px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.15);border-radius:6px"></canvas>
+      <div class="muted" style="font-size:11px;display:flex;gap:8px"><span>Left</span><span>Right</span></div>
+    </div>
+
+    <p class="muted" style="margin-top:10px">WEBWAY:ww-2025-094: V3 scaffold for clarity-first visuals. Feature flags: FEATURE_GESTURE_TELEM_V3, FEATURE_GESTURE_VIZ_V3.</p>
+  </div>
+
+  <script type="module">
+    // WEBWAY:ww-2025-094 — Feature guards
+    const FEATURE_GESTURE_TELEM_V3 = true;
+    const FEATURE_GESTURE_VIZ_V3 = true;
+    // WEBWAY:ww-2025-094: New feature for Open→Fist lock + L/R sparklines
+    const FEATURE_HAND_TRANSITIONS_V3 = true;
+    // WEBWAY:ww-2025-094 — One-hand FSM demo flags
+  const FEATURE_ONE_HAND_FSM_V1 = true; // limit to single-hand path for clarity
+    const FEATURE_LANDMARK_COLOR_BY_FSM = true; // color 21 landmarks by FSM state
+    const FEATURE_PALM_ORIENT_V1 = true; // estimate/display palm orientation and wrist xyz
+  const FEATURE_MINIMAL_MODE_UI = true; // hide Dino/Telemetry blocks by default; compact HUD
+  const FEATURE_ZONE_X_SEATING_V1 = true; // zone-based seating with hysteresis (L/R lanes)
+    if(!FEATURE_GESTURE_TELEM_V3){
+      document.body.innerHTML = '<div style="padding:24px;color:#e5e7eb">Feature disabled (FEATURE_GESTURE_TELEM_V3=false)</div>';
+      throw new Error('FEATURE_GESTURE_TELEM_V3 disabled');
+    }
+
+  // Resolve local ESM/WASM and model (offline)
+    const nmBase = '/node_modules/@mediapipe/tasks-vision';
+    const wasmBase = `${nmBase}/wasm`;
+    const modelPath = '/September2025/TectangleHexagonal/assets/models/gesture_recognizer.task';
+
+  // Params: allow overriding max concurrent hands via ?hands= or ?maxHands=
+  const __q = new URLSearchParams(location.search);
+  const MAX_HANDS = (()=>{ const raw = Number(__q.get('hands') || __q.get('maxHands') || (FEATURE_ONE_HAND_FSM_V1?1:2)); if(!Number.isFinite(raw)) return FEATURE_ONE_HAND_FSM_V1?1:2; return Math.max(1, Math.min(4, Math.floor(raw))); })();
+  const WANT_FULLSCREEN = (__q.get('fs')==='1' || __q.get('fullscreen')==='1');
+
+    // Elements
+    const video = document.getElementById('cam');
+    const statusEl = document.getElementById('status');
+    const chipLabel = document.getElementById('chipLabel');
+    const chipScore = document.getElementById('chipScore');
+    const chipFPS = document.getElementById('chipFPS');
+    const chipState = document.getElementById('chipState');
+    const chipSelect = document.getElementById('chipSelect');
+    const btnStart = document.getElementById('btnStart');
+    const btnStop = document.getElementById('btnStop');
+    const btnFocus = document.getElementById('btnFocus');
+    const btnSim = document.getElementById('btnSim');
+    const btnPause = document.getElementById('btnPause');
+    const btnClear = document.getElementById('btnClear');
+    const btnExport = document.getElementById('btnExport');
+    const tableBody = document.querySelector('#telemetryTable tbody');
+    const gameIframe = document.getElementById('game');
+    const fileInput = document.getElementById('fileInput');
+    const chipSource = document.getElementById('chipSource');
+    const chkAutoExport = document.getElementById('chkAutoExport');
+    const idleLabelEl = document.getElementById('idleLabel');
+    const targetLabelEl = document.getElementById('targetLabel');
+    const btnValidate = document.getElementById('btnValidate');
+    const valOut = document.getElementById('valOut');
+
+  // Visuals elements (panel-first; fallback to legacy block)
+  const btnExportCSV = document.getElementById('btnExportCSV');
+  const panelExportCSV = document.getElementById('panelExportCSV');
+  const panelExportJSONL = document.getElementById('panelExportJSONL');
+  const fabOpen = document.getElementById('btnOpenPanel');
+  const telePanel = document.getElementById('telePanel');
+  const telePanelHeader = document.getElementById('telePanelHeader');
+  const btnClosePanel = document.getElementById('btnClosePanel');
+  const chkLiveViz = document.getElementById('panelLiveViz') || document.getElementById('chkLiveViz');
+  const chkShowDots = document.getElementById('panelShowDots');
+  const cvScore = document.getElementById('panelScore') || document.getElementById('vizScore');
+  const cvState = document.getElementById('panelState') || document.getElementById('vizState');
+  const cvHands = document.getElementById('panelHands') || document.getElementById('vizHands');
+  const gScore = cvScore?.getContext?.('2d') || null;
+  const gState = cvState?.getContext?.('2d') || null;
+  const gHands = cvHands?.getContext?.('2d') || null;
+  const overlay = document.getElementById('overlay');
+  const gOverlay = overlay?.getContext?.('2d') || null;
+  // Minimal UI toggle
+  if(FEATURE_MINIMAL_MODE_UI){
+    try{
+      // Hide Dino and table blocks to reduce clutter
+      document.querySelectorAll('.card').forEach((el, idx)=>{ if(idx===1){ el.style.display='none'; } });
+      // Hide legacy visuals and panel button; keep small HUDs
+      const legacyBlock = document.querySelectorAll('.card')[3]; if(legacyBlock) legacyBlock.style.display='none';
+      const teleBtn = document.getElementById('btnOpenPanel'); if(teleBtn) teleBtn.style.display='none';
+      if(telePanel) telePanel.style.display='none';
+    }catch{}
+  }
+  // HUD small readouts
+  const hud = document.createElement('div'); hud.style.cssText = 'position:absolute;left:8px;top:8px;font:12px/1.2 system-ui;color:#e5e7eb;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.15);padding:6px 8px;border-radius:8px;pointer-events:none;min-width:160px;'; hud.id = 'hud';
+  document.getElementById('vidWrap')?.appendChild(hud);
+
+    // Sparklines (guarded)
+    const sparkWrap = document.getElementById('sparkWrap');
+    const sparkL = document.getElementById('sparkL');
+    const sparkR = document.getElementById('sparkR');
+    const gSparkL = sparkL?.getContext?.('2d') || null;
+    const gSparkR = sparkR?.getContext?.('2d') || null;
+    if(FEATURE_MINIMAL_MODE_UI){ try{ document.getElementById('sparkWrap').style.display='flex'; }catch{} }
+
+    // Dino helpers
+  const bumpSelect = (()=>{ let n=0; return ()=>{ n++; try{ chipSelect.textContent = `Selects: ${n}`; }catch{} }; })();
+  const sendSpaceDownUp = () => { if(FEATURE_MINIMAL_MODE_UI) return; try{ const w = gameIframe?.contentWindow; if(!w) return; w.postMessage({ type:'dino:key', action:'down', code:'Space', key:' ' }, '*'); setTimeout(()=>{ try{ w.postMessage({ type:'dino:key', action:'up', code:'Space', key:' ' }, '*'); }catch{} }, 60); }catch{} };
+  btnFocus.addEventListener('click', ()=>{ if(FEATURE_MINIMAL_MODE_UI) return; try{ const w=gameIframe.contentWindow; w?.focus?.(); const c=w?.document?.querySelector?.('canvas'); c?.focus?.(); c?.click?.(); }catch{} });
+
+    // Test hook
+    window.__gtOfflineSim = { fireOnce(){ bumpSelect(); sendSpaceDownUp(); enqueueEvent({ t: performance.now(), type:'select:simulated'}); } };
+    btnSim.addEventListener('click', ()=> window.__gtOfflineSim.fireOnce());
+
+    // Small event bus + telemetry ring
+    const MAX_ROWS = 200; let paused=false; const rows=[]; const jsonl=[];
+    // Viz buffers (sliding window)
+  const MAX_PTS = 400; const vScore=[]; const vState=[]; const vHands=[];
+  // Per-hand transition spark buffers
+  const SPARK_MAX = 240; const lSpark=[]; const rSpark=[];
+
+    function appendRow(obj){ if(paused) return; rows.push(obj); jsonl.push(JSON.stringify(obj)); if(rows.length>MAX_ROWS){ rows.shift(); }
+      const tr = document.createElement('tr');
+      const cells = [
+        obj.t?.toFixed?.(1)||'', (obj.frame??'')+'', (obj.hands??'')+'', obj.dt?.toFixed?.(1)||'', obj.fps?.toFixed?.(1)||'', obj.label||'',
+        (isNaN(obj.score)?'':obj.score.toFixed(2)), obj.candAlt||'', obj.event||'', obj.state||'', obj.gate||''
+      ];
+      for(const c of cells){ const td=document.createElement('td'); td.textContent = c; tr.appendChild(td); }
+      tableBody.appendChild(tr);
+      while(tableBody.children.length>MAX_ROWS){ tableBody.removeChild(tableBody.firstChild); }
+    }
+    btnPause.addEventListener('click', ()=>{ paused=!paused; btnPause.textContent = paused? 'Resume':'Pause'; });
+    btnClear.addEventListener('click', ()=>{ rows.length=0; jsonl.length=0; tableBody.innerHTML=''; });
+
+    function pushVizPoint({label, score, state, hands}){
+      if(!FEATURE_GESTURE_VIZ_V3) return;
+      const s = (label==='Closed_Fist' && typeof score==='number') ? Math.max(0, Math.min(1, score)) : 0;
+      vScore.push(s); if(vScore.length>MAX_PTS) vScore.shift();
+      vState.push(state || 'Idle'); if(vState.length>MAX_PTS) vState.shift();
+      vHands.push(Math.max(0, Math.min(2, Number.isFinite(hands)?hands:0))); if(vHands.length>MAX_PTS) vHands.shift();
+      if(chkLiveViz?.checked){ drawAllViz(); }
+    }
+
+    function drawAllViz(){ drawScore(); drawState(); drawHands(); }
+    function drawScore(){ if(!gScore || !FEATURE_GESTURE_VIZ_V3) return; const W=cvScore.width|0, H=cvScore.height|0; gScore.clearRect(0,0,W,H);
+      const yEnter = (1-FSM.enterThresh)*H; const yExit=(1-FSM.exitThresh)*H;
+      gScore.strokeStyle='rgba(34,197,94,0.7)'; gScore.beginPath(); gScore.moveTo(0,yEnter); gScore.lineTo(W,yEnter); gScore.stroke();
+      gScore.strokeStyle='rgba(239,68,68,0.6)'; gScore.beginPath(); gScore.moveTo(0,yExit); gScore.lineTo(W,yExit); gScore.stroke();
+      gScore.strokeStyle='#60a5fa'; gScore.lineWidth=1.5; gScore.beginPath();
+      const n=vScore.length; if(n<2) return; for(let i=0;i<n;i++){ const x=i*(W/(n-1)); const y=(1-vScore[i])*H; if(i===0) gScore.moveTo(x,y); else gScore.lineTo(x,y);} gScore.stroke();
+    }
+    function drawState(){ if(!gState || !FEATURE_GESTURE_VIZ_V3) return; const W=cvState.width|0, H=cvState.height|0; gState.clearRect(0,0,W,H);
+      const n=vState.length; if(n===0) return; const wSeg = Math.max(1, Math.floor(W/Math.max(1,n)));
+      for(let i=0;i<n;i++){
+        const st = vState[i]; let col='#52525b';
+        if(st==='Triggered') col='#f59e0b'; else if(st==='Held') col='#10b981'; else if(st==='Released') col='#3b82f6';
+        gState.fillStyle=col; gState.fillRect(i*wSeg,0,wSeg,H);
+      }
+    }
+    function drawHands(){ if(!gHands || !FEATURE_GESTURE_VIZ_V3) return; const W=cvHands.width|0, H=cvHands.height|0; gHands.clearRect(0,0,W,H);
+      gHands.strokeStyle='rgba(255,255,255,0.1)'; gHands.beginPath(); gHands.moveTo(0,H-1); gHands.lineTo(W,H-1); gHands.moveTo(0,Math.round(H*0.5)); gHands.lineTo(W,Math.round(H*0.5)); gHands.moveTo(0,0); gHands.lineTo(W,0); gHands.stroke();
+      gHands.strokeStyle='#eab308'; gHands.lineWidth=1.5; gHands.beginPath();
+      const n=vHands.length; if(n<2) return; for(let i=0;i<n;i++){ const x=i*(W/(n-1)); const y=(1-(vHands[i]/2))*H; if(i===0) gHands.moveTo(x,y); else gHands.lineTo(x,y);} gHands.stroke();
+    }
+
+    // Sparklines rendering (Open→Fist pulses)
+    function drawSpark(g, pts){ if(!g) return; const W=g.canvas.width|0, H=g.canvas.height|0; g.clearRect(0,0,W,H);
+      g.strokeStyle='rgba(255,255,255,0.15)'; g.beginPath(); g.moveTo(0,H-1); g.lineTo(W,H-1); g.stroke();
+      const n=pts.length; if(n<2) return; g.strokeStyle='#22c55e'; g.lineWidth=1.5; g.beginPath();
+      for(let i=0;i<n;i++){ const x=i*(W/(n-1)); const y=(1-Math.min(1, pts[i]))*(H-2)+1; if(i===0) g.moveTo(x,y); else g.lineTo(x,y); }
+      g.stroke();
+    }
+    function pushSpark(which, v){ const buf = (which==='Left'||which==='L')? lSpark : rSpark; buf.push(v?1:0); if(buf.length>SPARK_MAX) buf.shift(); if(which==='Left'||which==='L') drawSpark(gSparkL, lSpark); else drawSpark(gSparkR, rSpark); }
+
+    // FSM for a single gesture: Closed_Fist => Select (inherited for now)
+    const FSM = {
+      state: 'Idle', enterThresh: 0.70, exitThresh: 0.55, lastTs: 0,
+      step({ts,label,score}){
+        const prev = this.state; const active = (label==='Closed_Fist' && score>=this.enterThresh);
+        const inactive = (label!=='Closed_Fist' || score<=this.exitThresh);
+        let evt=null; if(prev==='Idle' && active){ this.state='Triggered'; evt='select:trigger'; }
+        else if((prev==='Triggered'||prev==='Held') && inactive){ this.state='Released'; evt='select:release'; }
+        else if(prev==='Triggered' && active){ this.state='Held'; }
+        else if(prev==='Released' && inactive){ this.state='Idle'; }
+        this.lastTs = ts; return { state:this.state, event:evt };
+      }
+    };
+
+    function enqueueEvent(e){ appendRow({ t:e.t, frame:e.frame, hands:e.hands, dt:e.dt, fps:e.fps, label:e.label, score:e.score, candAlt:e.candAlt, event:e.type||e.event, state:e.state, gate:e.gate, per:e.per }); }
+
+  // Load local ESM
+  let recognizer; let handLandmarker=null; let handDotsAvailable=false; const HAND_MODEL='/September2025/TectangleHexagonal/assets/models/hand_landmarker.task';
+  let lastT=0; let stream; let running=false; let lastFire=0; const MIN_GAP_MS=350; let srcMode = 'camera'; let frameIdx = 0; let objectUrl = null;
+  const lastFireBySeat = new Map();
+
+  // Per-hand FSM factory and simple seat assignment
+  const HandFactory = (()=>{
+    const map = new Map();
+    const makeFSM = ()=>({
+      // WEBWAY:ww-2025-094 — Per-hand Open→Fist lock
+      state:'Idle', enterThresh:0.70, exitThresh:0.55, openThresh:0.65, openLocked:false,
+      step({ts,label,score,handed}){
+        if(FEATURE_HAND_TRANSITIONS_V3){
+          if(label==='Open_Palm' && typeof score==='number' && score>=this.openThresh){ this.openLocked = true; }
+          const fistActive = (label==='Closed_Fist' && typeof score==='number' && score>=this.enterThresh);
+          const fistInactive = (label!=='Closed_Fist' || (typeof score==='number' && score<=this.exitThresh));
+          let evt=null;
+          if(this.state==='Idle'){
+            if(fistActive && this.openLocked){ this.state='Triggered'; evt='select:trigger'; this.openLocked=false; if(handed==='Left') pushSpark('Left', 1); else if(handed==='Right') pushSpark('Right', 1); }
+          } else if(this.state==='Triggered'){
+            if(fistActive){ this.state='Held'; }
+          } else if(this.state==='Held'){
+            if(fistInactive){ this.state='Released'; evt='select:release'; }
+          } else if(this.state==='Released'){
+            if(fistInactive){ this.state='Idle'; }
+          }
+          // decay pulse with zeros for continuity
+          if(handed==='Left') pushSpark('Left', 0); else if(handed==='Right') pushSpark('Right', 0);
+          return { state:this.state, event:evt };
+        }
+        // Fallback legacy
+        const prev=this.state; const active=(label==='Closed_Fist' && score>=this.enterThresh); const inactive=(label!=='Closed_Fist' || score<=this.exitThresh); let evt=null; if(prev==='Idle' && active){ this.state='Triggered'; evt='select:trigger'; } else if((prev==='Triggered'||prev==='Held') && inactive){ this.state='Released'; evt='select:release'; } else if(prev==='Triggered' && active){ this.state='Held'; } else if(prev==='Released' && inactive){ this.state='Idle'; } return { state:this.state, event:evt };
+      }
+    });
+    return { get(id){ if(!map.has(id)) map.set(id, makeFSM()); return map.get(id); }, all(){ return map; } };
+  })();
+  // Track seat centers for simple nearest-neighbor assignment when landmarks available
+  const seatCenters = new Map(); // seatId -> {x,y}
+  const SEATS_POOL = [1,2,3,4].slice(0, MAX_HANDS);
+  // Zone-X seating with hysteresis (if enabled)
+  const zoneSeat = (()=>{
+    const hyst = 0.06; // stickiness near the middle
+    let leftOccupied = false, rightOccupied = false;
+    return {
+      assign(xNorm){
+        if(!FEATURE_ZONE_X_SEATING_V1){ return (xNorm<=0.5)?1:2; }
+        const leftZone = xNorm < (0.5 - hyst);
+        const rightZone = xNorm > (0.5 + hyst);
+        if(leftZone){ leftOccupied = true; return 1; }
+        if(rightZone){ rightOccupied = true; return 2; }
+        // Near middle: prefer last occupied
+        if(leftOccupied && !rightOccupied) return 1;
+        if(rightOccupied && !leftOccupied) return 2;
+        return (xNorm<=0.5)?1:2;
+      },
+      reset(){ leftOccupied = rightOccupied = false; }
+    };
+  })();
+    try {
+      const visionPkg = await import(`${nmBase}/vision_bundle.mjs`);
+  const { FilesetResolver, GestureRecognizer } = visionPkg;
+      const filesetResolver = await FilesetResolver.forVisionTasks(wasmBase);
+      recognizer = await GestureRecognizer.createFromOptions(filesetResolver, {
+        baseOptions: { modelAssetPath: modelPath }, runningMode: 'VIDEO', numHands: Math.min(MAX_HANDS, 2)
+      });
+      // Optional: init hand landmarker for overlay
+      try{
+        const { HandLandmarker } = visionPkg;
+  handLandmarker = await HandLandmarker.createFromOptions(filesetResolver, { baseOptions:{ modelAssetPath: HAND_MODEL }, runningMode:'VIDEO', numHands: Math.min(MAX_HANDS, 2) });
+        handDotsAvailable = true;
+      }catch(e){ console.warn('WEBWAY:ww-2025-094 hand dots unavailable', e?.message||e); handDotsAvailable=false; }
+      window.__gtOfflineReady = true;
+    } catch (e) { console.error('WEBWAY:ww-2025-094 offline import failed', e); window.__gtOfflineError = String(e?.message || e); }
+
+    // Overlay sizing
+    const resizeOverlay = ()=>{ try{ if(!overlay || !video) return; const r = video.getBoundingClientRect(); overlay.width = Math.max(2, Math.floor(r.width)); overlay.height = Math.max(2, Math.floor(r.height)); }catch{} };
+    window.addEventListener('resize', resizeOverlay);
+    video.addEventListener('loadedmetadata', resizeOverlay);
+    video.addEventListener('play', resizeOverlay);
+
+  // Fullscreen helper
+  async function goFullscreen(){ try{ const el = document.getElementById('vidWrap') || document.documentElement; if(el.requestFullscreen) await el.requestFullscreen(); else if(el.webkitRequestFullscreen) await el.webkitRequestFullscreen(); if(FEATURE_HAND_TRANSITIONS_V3 && sparkWrap) sparkWrap.style.display='flex'; }catch{} }
+
+    async function start(){
+      try{ srcMode = 'camera'; chipSource.textContent = 'camera'; frameIdx = 0; if(objectUrl){ try{ URL.revokeObjectURL(objectUrl); }catch{} objectUrl = null; }
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} }, audio:false });
+        video.srcObject = stream; await video.play(); running=true; statusEl.textContent='camera on'; if(WANT_FULLSCREEN) await goFullscreen(); loop();
+      }catch(e){ console.error(e); statusEl.textContent='error'; }
+    }
+    function stop(){ try{ running=false; statusEl.textContent='stopped'; video.pause(); stream?.getTracks()?.forEach(t=>t.stop()); }catch{} }
+    btnStart.addEventListener('click', start);
+    btnStop.addEventListener('click', stop);
+
+    fileInput.addEventListener('change', async (ev)=>{
+      const f = ev.target.files?.[0]; if(!f) return; try{ stop(); srcMode = 'file'; chipSource.textContent = 'video'; frameIdx = 0; rows.length=0; jsonl.length=0; tableBody.innerHTML='';
+        objectUrl && URL.revokeObjectURL(objectUrl); objectUrl = URL.createObjectURL(f);
+        video.srcObject = null; video.src = objectUrl; video.loop = false; video.currentTime = 0; await video.play(); statusEl.textContent = 'video on'; running = true;
+        video.onended = ()=>{ statusEl.textContent = 'ended'; running=false; window.__ended = true; if(chkAutoExport.checked){ doExport(); } }; loopFile();
+      }catch(err){ console.error(err); statusEl.textContent='error'; }
+    });
+
+    async function loadVideoUrl(url){
+      try{ stop(); srcMode = 'file'; chipSource.textContent = 'video'; frameIdx = 0; rows.length=0; jsonl.length=0; tableBody.innerHTML='';
+        video.srcObject = null; video.src = url; video.loop = false; video.currentTime = 0; await video.play(); statusEl.textContent = 'video on'; running = true;
+        video.onended = ()=>{ statusEl.textContent = 'ended'; running=false; window.__ended = true; if(chkAutoExport.checked){ doExport(); } }; loopFile();
+      }catch(e){ console.error('loadVideoUrl failed', e); statusEl.textContent='error'; }
+      // Headless hooks for CI
+      window.__v3 = {
+        isEnded: ()=> statusEl.textContent.includes('ended'),
+        getSummary: ()=> { const idle = (idleLabelEl.value||'Open_Palm').trim(); const tgt = (targetLabelEl.value||'Closed_Fist').trim(); return summarize(rows, idle, tgt); },
+        getRows: ()=> rows.slice(),
+        getJsonl: ()=> jsonl.join('\n')+'\n'
+      };
+    }
+
+  async function onResults(res, ts){
+      try{ const handsCount = Array.isArray(res?.gestures) ? res.gestures.length : 0;
+        const g0 = res?.gestures?.[0] || []; const top = g0[0]; const alt1=g0[1]; const alt2=g0[2];
+        const label = top?.categoryName || '—'; const score = typeof top?.score==='number' ? top.score : NaN; const candAlt = [alt1?.categoryName, alt2?.categoryName].filter(Boolean).join('/') || '';
+        // Build per-hand array
+        const per = []; for(let i=0;i<handsCount;i++){ const gi = res.gestures[i] || []; const ti = gi[0]; const li = ti?.categoryName || '—'; const si = typeof ti?.score==='number' ? ti.score : NaN; const hi = res?.handednesses?.[i]?.[0]?.categoryName || undefined; per.push({ handed: hi, label: li, score: si, idx:i }); }
+        const dt = lastT? (ts-lastT): 0; const fps = dt>0? (1000/dt): 0; lastT = ts; chipLabel.textContent = `Label: ${label}`; chipScore.textContent = `Score: ${isNaN(score)?'–':score.toFixed(2)}`; chipFPS.textContent = `FPS: ${fps? fps.toFixed(1):'–'}`;
+        const { state, event } = FSM.step({ ts, label, score }); chipState.textContent = `FSM*: ${state}`; const gate = (label==='Closed_Fist' && score>=FSM.enterThresh) ? 'enter' : (score<=FSM.exitThresh? 'exit':'mid');
+
+        // Optional hand dots + seat assignment
+        let centers = null;
+        if(gOverlay){ gOverlay.clearRect(0,0,overlay.width|0, overlay.height|0); }
+        if(handLandmarker && handDotsAvailable && chkShowDots?.checked && video?.videoWidth){
+          try{
+            const lmRes = await handLandmarker.detectForVideo(video, ts);
+            const W = overlay.width|0, H=overlay.height|0; if(gOverlay && lmRes?.landmarks){
+              centers = [];
+              // For one-hand FSM, take index 0 if available
+              const activeHands = FEATURE_ONE_HAND_FSM_V1 ? lmRes.landmarks.slice(0,1) : lmRes.landmarks;
+              for(let hi=0; hi<activeHands.length; hi++){
+                const hand = activeHands[hi]; let sx=0, sy=0; let n=0;
+                // Determine FSM state color
+                let color = '#60a5fa';
+                try{
+                  const fp = (Array.isArray(per) && per[hi]) ? per[hi] : null;
+                  const st = fp?.hState || (typeof state==='string'? state: 'Idle');
+                  if(st==='Triggered') color='#f59e0b'; else if(st==='Held') color='#10b981'; else if(st==='Released') color='#3b82f6'; else color='#a3a3a3';
+                }catch{}
+                gOverlay.fillStyle = color;
+                // Draw 21 landmarks
+                for(const p of hand){ const x = p.x * W; const y = p.y * H; sx+=x; sy+=y; n++; gOverlay.beginPath(); gOverlay.arc(x, y, 2.4, 0, Math.PI*2); gOverlay.fill(); }
+                const cx = sx/Math.max(1,n)/W, cy = sy/Math.max(1,n)/H; centers.push({ x:cx, y:cy });
+                // Draw simple L/R lane markers
+                if(FEATURE_ZONE_X_SEATING_V1){
+                  const midX = Math.round(W*0.5); gOverlay.strokeStyle='rgba(255,255,255,0.12)'; gOverlay.beginPath(); gOverlay.moveTo(midX, 0); gOverlay.lineTo(midX, H); gOverlay.stroke();
+                }
+                // Wrist XYZ and palm orientation (rough) HUD
+                if(FEATURE_PALM_ORIENT_V1){
+                  try{
+                    const WRIST=0, INDEX_MCP=5, PINKY_MCP=17, MIDDLE_MCP=9;
+                    const w = hand[WRIST], i5 = hand[INDEX_MCP], p17 = hand[PINKY_MCP], m9 = hand[MIDDLE_MCP];
+                    // World coords if available (z from image space as fallback)
+                    const wx = (w?.x??0).toFixed(3), wy = (w?.y??0).toFixed(3), wz = (w?.z??0).toFixed(3);
+                    // Palm plane: normal ≈ (i5 - p17) x (m9 - w)
+                    const vA = { x:(i5.x - p17.x), y:(i5.y - p17.y), z:(i5.z - p17.z) };
+                    const vB = { x:(m9.x - w.x), y:(m9.y - w.y), z:(m9.z - w.z) };
+                    const nrm = { x: vA.y*vB.z - vA.z*vB.y, y: vA.z*vB.x - vA.x*vB.z, z: vA.x*vB.y - vA.y*vB.x };
+                    const len = Math.hypot(nrm.x, nrm.y, nrm.z) || 1; const nx=nrm.x/len, ny=nrm.y/len, nz=nrm.z/len;
+                    const yaw = Math.atan2(nx, -ny) * 180/Math.PI; // rough screen-plane yaw
+                    const pitch = Math.asin(Math.max(-1, Math.min(1, nz))) * 180/Math.PI; // rough depth tilt
+                    hud.textContent = `Wrist xyz: ${wx}, ${wy}, ${wz}\nPalm yaw/pitch: ${yaw.toFixed(1)}° / ${pitch.toFixed(1)}°`;
+                  }catch(e){ hud.textContent = 'Palm/wrist: (n/a)'; }
+                }
+              }
+            }
+          }catch{}
+        }
+
+        // Assign seats to current hands
+        const usedSeats = new Set();
+        const assignSeat = (i, handed)=>{
+          // Prefer zone-x seating when centers known
+          if(Array.isArray(centers) && centers[i]){
+            const c = centers[i]; const zSeat = zoneSeat.assign(c.x);
+            if(!usedSeats.has(zSeat)){ usedSeats.add(zSeat); seatCenters.set(zSeat, c); return zSeat; }
+            // If the preferred zone seat is taken, fallback to nearest neighbor
+            let bestSeat=null; let bestD=1e9; for(const sid of SEATS_POOL){ const prev = seatCenters.get(sid); if(!prev) continue; const dx=prev.x-c.x, dy=prev.y-c.y; const d=dx*dx+dy*dy; if(d<bestD && !usedSeats.has(sid)){ bestD=d; bestSeat=sid; } }
+            if(bestSeat!=null){ usedSeats.add(bestSeat); seatCenters.set(bestSeat, c); return bestSeat; }
+            for(const sid of SEATS_POOL){ if(!usedSeats.has(sid)){ usedSeats.add(sid); seatCenters.set(sid, c); return sid; } }
+          }
+          // Fallback: handedness mapping
+          if(handed==='Left' && SEATS_POOL.includes(1) && !usedSeats.has(1)){ usedSeats.add(1); return 1; }
+          if(handed==='Right' && SEATS_POOL.includes(2) && !usedSeats.has(2)){ usedSeats.add(2); return 2; }
+          for(const sid of SEATS_POOL){ if(!usedSeats.has(sid)){ usedSeats.add(sid); return sid; } }
+          return SEATS_POOL[0];
+        };
+        zoneSeat.reset();
+
+  // Step per-hand FSMs and possibly trigger actions per seat
+        let anyTriggered = false;
+  // WEBWAY:ww-2025-094 — One-hand mode: only process first hand for FSM outputs
+  const perLoop = FEATURE_ONE_HAND_FSM_V1 ? per.slice(0,1) : per;
+  for(const p of perLoop){ const seat = assignSeat(p.idx, p.handed); const fsm = HandFactory.get(seat); const step = fsm.step({ ts, label: p.label, score: p.score, handed: p.handed }); p.seat = seat; p.hState = step.state; p.hEvent = step.event; if(step.event==='select:trigger'){ anyTriggered = true; const now = ts; const last = lastFireBySeat.get(seat)||0; if(now - last > MIN_GAP_MS){ bumpSelect(); sendSpaceDownUp(); lastFireBySeat.set(seat, now); } } }
+
+  const rec = { t:ts, frame:frameIdx, hands: FEATURE_ONE_HAND_FSM_V1 ? Math.min(1,handsCount) : handsCount, dt, fps, label, score, candAlt, state, type:event, gate, per };
+        enqueueEvent(rec); pushVizPoint({ label, score, state, hands:handsCount });
+      }catch(err){ console.error(err); }
+    }
+
+  async function loop(){ while(running){ if(!recognizer){ await new Promise(r=>setTimeout(r, 50)); continue; } const ts = performance.now(); const res = await recognizer.recognizeForVideo(video, ts); frameIdx++; await onResults(res, ts); await new Promise(r=>setTimeout(r,16)); } }
+
+  async function loopFile(){ if('requestVideoFrameCallback' in HTMLVideoElement.prototype){ const onFrame = async ()=>{ if(!running || video.paused || video.ended) return; if(!recognizer){ video.requestVideoFrameCallback(()=>onFrame()); return; } const ts = performance.now(); const res = await recognizer.recognizeForVideo(video, ts); frameIdx++; await onResults(res, ts); video.requestVideoFrameCallback(()=>onFrame()); }; video.requestVideoFrameCallback(()=>onFrame()); } else { const tick = async ()=>{ if(!running || video.paused || video.ended) return; if(!recognizer) return setTimeout(tick, 16); const ts = performance.now(); const res = await recognizer.recognizeForVideo(video, ts); frameIdx++; await onResults(res, ts); setTimeout(tick, 16); }; setTimeout(tick, 0); } }
+
+    function doExport(){ const blob=new Blob([jsonl.join('\n')+'\n'], {type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='telemetry.gesture_v3.jsonl'; a.click(); URL.revokeObjectURL(a.href); }
+    btnExport.addEventListener('click', doExport);
+
+    function summarize(rows, idleLabel, targetLabel){ const out = { totalFrames: rows.length, twoHands: 0, twoHandsIdle: 0, twoHandsTarget: 0 }; for(const r of rows){ const hc = r.hands||0; if(hc>=2){ out.twoHands++; } const per = Array.isArray(r.per)? r.per : []; const idleHits = per.filter(p=>p && p.label===idleLabel && (isNaN(p.score) || p.score>=0.5)).length; if(idleHits>=2) out.twoHandsIdle++; const tgtHits = per.filter(p=>p && p.label===targetLabel && (isNaN(p.score) || p.score>=0.5)).length; if(tgtHits>=2) out.twoHandsTarget++; } return out; }
+    btnValidate.addEventListener('click', ()=>{ const idle = (idleLabelEl.value||'Open_Palm').trim(); const tgt = (targetLabelEl.value||'Closed_Fist').trim(); try{ valOut.textContent = JSON.stringify(summarize(rows, idle, tgt), null, 2); }catch(e){ valOut.textContent = 'Validator error: '+e; } });
+
+    function toCSV(rows){ const headers = ['ts','frame','hands','dt','fps','label','score','cand2_3','event','state','gate']; const escape = (v)=>{ if(v==null) return ''; const s = String(v); return (s.includes(',')||s.includes('"')||s.includes('\n')) ? '"'+s.replace(/"/g,'""')+'"' : s; }; const lines = [headers.join(',')]; for(const r of rows){ const line = [r.t?.toFixed?.(1)||'', r.frame??'', r.hands??'', r.dt?.toFixed?.(1)||'', r.fps?.toFixed?.(1)||'', r.label||'', isNaN(r.score)?'':Number(r.score).toFixed(3), r.candAlt||'', r.event||'', r.state||'', r.gate||''].map(escape).join(','); lines.push(line);} return lines.join('\n')+'\n'; }
+    function doExportCSV(){ const csv = toCSV(rows); const blob=new Blob([csv], {type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='telemetry.gesture_v3.csv'; a.click(); URL.revokeObjectURL(a.href); }
+    btnExportCSV?.addEventListener('click', doExportCSV);
+    panelExportCSV?.addEventListener('click', doExportCSV);
+    panelExportJSONL?.addEventListener('click', doExport);
+
+    // Draggable/closable telemetry panel
+    (function(){
+      let dragging=false, dx=0, dy=0;
+      telePanelHeader?.addEventListener('mousedown', (ev)=>{ dragging=true; const r = telePanel.getBoundingClientRect(); dx = ev.clientX - r.left; dy = ev.clientY - r.top; ev.preventDefault(); });
+      window.addEventListener('mousemove', (ev)=>{ if(!dragging) return; telePanel.style.left = Math.max(8, ev.clientX - dx) + 'px'; telePanel.style.top = Math.max(8, ev.clientY - dy) + 'px'; telePanel.style.right = 'auto'; telePanel.style.bottom = 'auto'; });
+      window.addEventListener('mouseup', ()=> dragging=false);
+      btnClosePanel?.addEventListener('click', ()=>{ telePanel.style.display='none'; fabOpen.style.display='inline-flex'; });
+      fabOpen?.addEventListener('click', ()=>{ telePanel.style.display='block'; fabOpen.style.display='none'; });
+    })();
+
+    // Query param auto-run
+  (function(){ const q = new URLSearchParams(location.search); const v = q.get('video'); const auto = q.get('auto')==='1' || q.get('auto')==='true'; const idleQ = q.get('idle'); const targetQ = q.get('target'); const autoExport = q.get('autoExport')==='1' || q.get('autoExport')==='true' || auto; const autoValidate = q.get('validate')==='1' || q.get('validate')==='true' || auto; if(idleQ) idleLabelEl.value = idleQ; if(targetQ) targetLabelEl.value = targetQ; if(autoExport) chkAutoExport.checked = true; if(v){ video.onended = ()=>{ statusEl.textContent = 'ended'; running=false; window.__ended = true; if(chkAutoExport.checked) doExport(); if(autoValidate) btnValidate.click(); }; loadVideoUrl(v); } if((__q.get('fs')==='1'||__q.get('fullscreen')==='1')){ btnStart?.focus?.(); } if(FEATURE_HAND_TRANSITIONS_V3 && sparkWrap) sparkWrap.style.display='flex'; })();
+
+  // Headless convenience: start and fullscreen
+  window.__v3fs = { startFS: async ()=>{ await start(); await goFullscreen(); } };
+
+    // Headless hooks for smoke validation
+    // WEBWAY:ww-2025-095: expose getRows/getJsonl for CI consumers (Open_Palm idle guard)
+    window.__v3 = Object.assign({}, window.__v3 || {}, {
+      isEnded: ()=> !!window.__ended,
+      getSummary: ()=> { try{ const idle = (idleLabelEl.value||'Open_Palm').trim(); const tgt = (targetLabelEl.value||'Closed_Fist').trim(); return summarize(rows, idle, tgt); }catch(e){ return { error: String(e) }; } },
+      getRows: ()=> rows.slice(),
+      getJsonl: ()=> (Array.isArray(jsonl) ? (jsonl.join('\n')+'\n') : '')
+    });
+  </script>
+</body>
+</html>

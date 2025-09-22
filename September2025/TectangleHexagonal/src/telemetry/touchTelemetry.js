@@ -1,0 +1,1 @@
+﻿// Touch telemetry adapter writing JSONL to IndexedDB / memory buffer.\n// TODO: implement createTelemetrySink({ store }) with append(event) and export() helpers.\nexport function createTelemetrySink(/* options */) {\n  throw new Error('touchTelemetry.createTelemetrySink not implemented');\n}\n

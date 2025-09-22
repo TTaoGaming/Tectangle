@@ -1,0 +1,219 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/unit/lookAheadCore.test.mjs
+  - [ ] tests/e2e/pinch_to_vendor_bridge.test.mjs
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Tectangle • Predictive Tube Demo (2-hand)</title>
+<style>
+  :root { --bg:#0b0d10; --fg:#e7edf3; --muted:#9fb3c8; --panel:#0c1117; }
+  *{ box-sizing:border-box; } body{ margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Arial, sans-serif; }
+  header{ padding:12px 16px; border-bottom:1px solid #1a222c; background:#0f141a; position:sticky; top:0; z-index:10; }
+  .row{ display:flex; flex-wrap:wrap; gap:12px; padding:12px 16px; }
+  .col{ flex:1 1 480px; min-width:320px; }
+  iframe, canvas{ width:100%; aspect-ratio:16/9; border:1px solid #1a222c; border-radius:12px; background:#000; display:block; }
+  .panel{ background:var(--panel); border:1px solid #1a222c; border-radius:10px; padding:12px; }
+  .kv{ display:grid; grid-template-columns: 1fr auto; gap:6px 10px; align-items:center; }
+  .tube{ height:80px; border:1px solid #223; border-radius:8px; background:linear-gradient(180deg,#0a0f14,#0f1218); padding:8px; position:relative; }
+  .track{ height:6px; background:#233142; border-radius:3px; position:absolute; left:8px; right:8px; top:calc(50% - 3px); }
+  .zone{ position:absolute; height:14px; top:calc(50% - 7px); border-radius:7px; background:rgba(0,255,140,0.15); border:1px solid rgba(0,255,140,0.35); }
+  .ball{ width:14px; height:14px; border-radius:7px; background:#7aa2ff; position:absolute; top:calc(50% - 7px); box-shadow:0 0 0 2px rgba(122,162,255,0.3) inset; }
+  .ghost{ width:14px; height:14px; border-radius:7px; position:absolute; top:calc(50% - 7px); border:2px solid #0fa; background:transparent; box-shadow:0 0 8px rgba(0,255,170,0.5); opacity:0.8; }
+  .armed{ outline:2px solid #0fa; outline-offset:2px; }
+</style>
+<!-- WEBWAY:ww-2025-003: PhysicsLookahead demo; self-contained visualization -->
+</head>
+<body>
+<header><h2>Predictive Tube Demo <small style="color:var(--muted); font-weight:400;">Two tubes, ghost lookahead, 2-frame confirm</small></h2></header>
+<div class="row">
+  <div class="col">
+    <div class="panel">
+      <div class="kv">
+        <div>Lookahead (ms)</div><div><input type="range" id="la" min="0" max="180" value="80"/></div>
+        <div>Inner (enter)</div><div><input type="range" id="inner" min="0.3" max="0.9" step="0.01" value="0.50"/></div>
+        <div>Outer (exit)</div><div><input type="range" id="outer" min="0.35" max="1.2" step="0.01" value="0.72"/></div>
+        <div>Accel weight</div><div><input type="range" id="aw" min="0" max="1" step="0.05" value="0.3"/></div>
+        <div>Confirm frames</div><div><input type="number" id="confirm" min="1" max="5" value="2"/></div>
+        <div>Telemetry</div>
+        <div>
+          <button id="rec5">Record 5s JSONL</button>
+          <a id="download" href="#" download style="margin-left:8px; color:var(--muted); pointer-events:none; opacity:0.6;">(no recording)</a>
+        </div>
+        <div>Status</div>
+        <div id="recStatus" style="color:var(--muted);">idle</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div>H1</div>
+      <div class="tube" id="tube1">
+        <div class="track"></div>
+        <div class="zone" id="zone1"></div>
+        <div class="ball" id="ball1"></div>
+        <div class="ghost" id="ghost1"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div>H2</div>
+      <div class="tube" id="tube2">
+        <div class="track"></div>
+        <div class="zone" id="zone2"></div>
+        <div class="ball" id="ball2"></div>
+        <div class="ghost" id="ghost2"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <iframe id="proto" src="canned_hand_id_test_prototype.html" loading="eager"></iframe>
+  </div>
+</div>
+
+<script type="module">
+  import { createPhysicsLookahead } from '../src/ports/physicsLookahead.js';
+  // Helper: clamp and lerp
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerp=(a,b,t)=>a+(b-a)*t;
+
+  const iframe = document.getElementById('proto');
+  const ui = {
+    la: document.getElementById('la'), inner: document.getElementById('inner'), outer: document.getElementById('outer'), aw: document.getElementById('aw'), confirm: document.getElementById('confirm'),
+    tube1: document.getElementById('tube1'), zone1: document.getElementById('zone1'), ball1: document.getElementById('ball1'), ghost1: document.getElementById('ghost1'),
+    tube2: document.getElementById('tube2'), zone2: document.getElementById('zone2'), ball2: document.getElementById('ball2'), ghost2: document.getElementById('ghost2'),
+  };
+
+  const look = createPhysicsLookahead();
+  function applyCfg(){ look.setConfig({ lookaheadMs:+ui.la.value, inner:+ui.inner.value, outer:+ui.outer.value, accelWeight:+ui.aw.value }); }
+  ui.la.oninput = ui.inner.oninput = ui.outer.oninput = ui.aw.oninput = applyCfg; applyCfg();
+
+  const C = { confirmFrames: 2 };
+  ui.confirm.oninput = ()=>{ C.confirmFrames = clamp(+ui.confirm.value,1,5); };
+
+  const conf = { H1:0, H2:0, down:{H1:false,H2:false} };
+
+  // WEBWAY:ww-2025-003: Telemetry recorder wiring (JSONL 5s)
+  const rec = {
+    active:false,
+    startTs:0,
+    frame:0,
+    lines:[],
+    prevArmed:{ H1:false, H2:false },
+    url:null,
+  };
+  const btnRec = document.getElementById('rec5');
+  const aDownload = document.getElementById('download');
+  const recStatus = document.getElementById('recStatus');
+  function resetDownload(){
+    if(rec.url){ URL.revokeObjectURL(rec.url); rec.url = null; }
+    aDownload.href = '#'; aDownload.textContent = '(no recording)'; aDownload.style.pointerEvents='none'; aDownload.style.opacity='0.6';
+  }
+  function startRecording(){
+    rec.active = true; rec.startTs = performance.now(); rec.frame = 0; rec.lines = []; rec.prevArmed = { H1:conf.down.H1, H2:conf.down.H2 };
+    recStatus.textContent = 'recording… 0.0s'; resetDownload();
+  }
+  function stopRecording(){
+    rec.active = false;
+    const nameTs = new Date().toISOString().replaceAll(':','-').replaceAll('.','-');
+    const blob = new Blob([rec.lines.join('\n')+'\n'], { type:'application/json' });
+    rec.url = URL.createObjectURL(blob);
+    aDownload.href = rec.url; aDownload.download = `predictive_telemetry_${nameTs}.jsonl`; aDownload.textContent = 'Download JSONL'; aDownload.style.pointerEvents='auto'; aDownload.style.opacity='1';
+    recStatus.textContent = 'done ('+rec.frame+' frames)';
+  }
+  btnRec.addEventListener('click', ()=>{ if(!rec.active){ startRecording(); } });
+
+  function layoutZones(){
+    for(const i of [1,2]){
+      const tube = ui['tube'+i]; const zone = ui['zone'+i];
+      const W = tube.clientWidth - 16; // padding 8+8
+      const x0 = 8, x1 = x0 + W;
+      const inner = +ui.inner.value, outer=+ui.outer.value; // normalized gaps
+      // Represent gaps as horizontal positions (0=>left far, 1=>right close)
+      const innerX = lerp(x0, x1, clamp(1-inner, 0, 1));
+      const outerX = lerp(x0, x1, clamp(1-outer, 0, 1));
+      const l = Math.min(innerX, outerX), r = Math.max(innerX, outerX);
+      zone.style.left = l + 'px'; zone.style.width = (r-l) + 'px';
+    }
+  }
+  window.addEventListener('resize', layoutZones); setTimeout(layoutZones, 0);
+
+  function place(i, norm, isGhost){
+    const tube = ui['tube'+i]; const el = isGhost? ui['ghost'+i] : ui['ball'+i];
+    const W = tube.clientWidth - 16; const x0 = 8, x1 = x0 + W;
+    const x = lerp(x0, x1, clamp(1-(norm||0),0,1));
+    el.style.left = (x - 7) + 'px'; // center 14px ball
+  }
+
+  function step(){
+    const wProto = iframe.contentWindow; if(!wProto) return requestAnimationFrame(step);
+    try{
+      const base = wProto.document?.getElementById('base');
+      const wBase = base?.contentWindow;
+      const hands = (wBase?.__hexLastHands)||null;
+      if(hands && Array.isArray(hands)){
+        const dets = hands.map(lm => ({ wrist:[lm?.[0]?.[0]||0, lm?.[0]?.[1]||0], indexMCP: lm?.[5]||null, pinkyMCP: lm?.[17]||null, thumbTip: lm?.[4]||null, indexTip: lm?.[8]||null, landmarks: lm }));
+        const t = performance.now();
+        const preds = look.update(dets, t);
+        layoutZones();
+        let frameEvent = null; // reserve per-frame if needed
+        let frameIdxIncremented = false;
+        for(let k=0;k<preds.length;k++){
+          const p = preds[k]; const id = p.id; const idx = id==='H1'? 1 : 2;
+          place(idx, p.normNow, false);
+          place(idx, p.normPred, true);
+          // 2-frame confirmation on predicted gap in zone
+          const inZone = p.ok && p.gated && p.normPred!=null && p.normPred <= +ui.inner.value;
+          if(inZone){ conf[id] = (conf[id]||0) + 1; }
+          else { conf[id] = 0; }
+          const armed = conf[id] >= C.confirmFrames;
+          ui['tube'+idx].classList.toggle('armed', armed);
+          conf.down[id] = armed;
+
+          // Telemetry capture per hand per frame (if recording)
+          if(rec.active){
+            if(!frameIdxIncremented){ rec.frame++; frameIdxIncremented = true; }
+            const ts = +(t - rec.startTs).toFixed(2);
+            const cfg = { inner:+ui.inner.value, outer:+ui.outer.value, lookahead:+ui.la.value, accel:+ui.aw.value, confirm:C.confirmFrames };
+            // Armed edge events
+            let event = null;
+            if(rec.prevArmed[id] !== armed){ event = armed ? 'armed_on' : 'armed_off'; rec.prevArmed[id] = armed; }
+            const row = {
+              ts, frame: rec.frame, id, ok: !!p.ok, gated: !!p.gated,
+              normNow: p.normNow ?? null, normPred: p.normPred ?? null,
+              inZone: !!inZone, armed: !!armed, confCount: conf[id]||0,
+              cfg
+            };
+            if(event){ row.event = event; }
+            rec.lines.push(JSON.stringify(row));
+          }
+        }
+
+        // Stop recording after 5 seconds
+        if(rec.active){
+          const elapsed = (performance.now() - rec.startTs) / 1000;
+          recStatus.textContent = `recording… ${elapsed.toFixed(1)}s`;
+          if(elapsed >= 5.0){ stopRecording(); }
+        }
+      }
+    }catch{}
+    requestAnimationFrame(step);
+  }
+  step();
+
+  // Tests hook
+  window.__hexPredictive = {
+    getState: ()=> ({ inner:+ui.inner.value, outer:+ui.outer.value, lookahead:+ui.la.value, accel:+ui.aw.value, confirm:C.confirmFrames, armed: { ...conf.down } })
+  };
+</script>
+</body>
+</html>

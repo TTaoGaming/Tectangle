@@ -1,0 +1,9 @@
+{
+  "page": "http://localhost:8091/September2025/TectangleHexagonal/dev/camera_landmarks_wrist_label_v2.html",
+  "clip": "September2025/TectangleHexagonal/videos/golden/golden.two_hands_pinch_seq.v1.mp4",
+  "lines": 102,
+  "labelsSeen": [
+    "Open_Palm",
+    "None"
+  ]
+}

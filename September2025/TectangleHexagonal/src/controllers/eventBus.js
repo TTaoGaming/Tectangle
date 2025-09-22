@@ -1,0 +1,1 @@
+﻿// Event bus facade for controller/tool communication.\n// TODO: replace with lightweight pub/sub (e.g., mitt-like).\nexport function createEventBus() {\n  throw new Error('eventBus.createEventBus not implemented');\n}\n

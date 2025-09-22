@@ -1,0 +1,244 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OPO Runner Demo – Offline Gesture FSM</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --md-surface: #0f151a;
+      --md-surface-variant: #1b2330;
+      --md-outline: #2e3c4f;
+      --md-on-surface: #e4ebf5;
+      --md-on-surface-variant: #9aa9bd;
+      --md-primary: #7cd4ff;
+      --md-secondary: #b5c7e6;
+      --md-tertiary: #ffd27f;
+      --md-error: #ffb4ab;
+      --seat-p1: #6fb3ff;
+      --seat-p2: #ff8d8d;
+      --seat-neutral: #8ea0b7;
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top left, rgba(124,212,255,0.08), transparent 38%),
+                  radial-gradient(circle at top right, rgba(255,141,141,0.07), transparent 40%),
+                  var(--md-surface);
+      color: var(--md-on-surface);
+      min-height: 100vh;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      padding: 18px 24px;
+      background: rgba(15,21,26,0.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--md-outline);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(124,212,255,0.16);
+      color: var(--md-on-surface);
+      font-size: 12px;
+      border: 1px solid rgba(124,212,255,0.35);
+    }
+    main {
+      padding: 24px;
+      display: grid;
+      gap: 24px;
+      grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr);
+    }
+    @media (max-width: 1080px) {
+      main { grid-template-columns: 1fr; }
+    }
+    section {
+      border-radius: 20px;
+      background: rgba(18,26,34,0.9);
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 24px 45px rgba(4,6,12,0.38);
+      padding: 20px;
+    }
+    .media {
+      display: grid;
+      gap: 18px;
+    }
+    .video-wrap {
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.05);
+      background: #05080d;
+    }
+    .video-wrap::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.28), transparent);
+      pointer-events: none;
+    }
+    video, canvas {
+      display: block;
+      width: 100%;
+    }
+    canvas { mix-blend-mode: lighten; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    button, label input[type="file"] + span {
+      background: rgba(124,212,255,0.12);
+      color: var(--md-on-surface);
+      border: 1px solid rgba(124,212,255,0.32);
+      border-radius: 999px;
+      padding: 8px 16px;
+      font: inherit;
+      cursor: pointer;
+      transition: background 0.16s ease, border 0.16s ease;
+    }
+    button:hover, label input[type="file"] + span:hover {
+      background: rgba(124,212,255,0.22);
+    }
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    label input[type="file"] { display: none; }
+    .states {
+      display: grid;
+      gap: 16px;
+    }
+    .seat-card {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.05);
+      background: var(--md-surface-variant);
+      display: grid;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    .seat-card::before {
+      content: "";
+      position: absolute;
+      inset: -60% auto auto -40%;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(124,212,255,0.28), transparent 65%);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+    }
+    .seat-card[data-seat="P2"]::before {
+      inset: -60% -40% auto auto;
+      background: radial-gradient(circle, rgba(255,141,141,0.26), transparent 65%);
+    }
+    .seat-card[data-active="true"]::before { opacity: 1; }
+    .seat-card h3 { margin: 0; font-size: 16px; font-weight: 600; }
+    .state-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      letter-spacing: 0.03em;
+      background: rgba(142,160,183,0.16);
+      color: var(--md-on-surface);
+    }
+    .state-label[data-state="READY"] { background: rgba(111,179,255,0.22); color: #d8ecff; }
+    .state-label[data-state="FIST_HELD"] { background: rgba(255,210,127,0.25); color: #ffe9c5; }
+    .state-label[data-state="MISSING"] { background: rgba(255,141,141,0.2); color: #ffd5d5; }
+    .state-label[data-state="SEARCH"] { background: rgba(142,160,183,0.18); color: #cad5e4; }
+    .metric-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--md-on-surface-variant); }
+    iframe {
+      width: 100%;
+      height: 240px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+      background: #000;
+    }
+    .events-log {
+      font-family: "SFMono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      background: rgba(9,14,20,0.77);
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+      max-height: 180px;
+      overflow: auto;
+      color: rgba(214,226,245,0.82);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>OPO Runner Demo</h1>
+    <span class="badge" id="status">booting</span>
+  </header>
+  <main>
+    <section class="media">
+      <div class="video-wrap">
+        <video id="video" playsinline muted></video>
+        <canvas id="overlay" width="960" height="720" style="position:absolute; inset:0; pointer-events:none;"></canvas>
+      </div>
+      <div class="controls">
+        <button id="btnStartCam">Start camera</button>
+        <button id="btnStopCam" disabled>Stop camera</button>
+        <label><input type="file" id="fileInput" accept="video/mp4,video/webm" /><span>Load MP4</span></label>
+        <button id="btnProcessLoaded" disabled>Process clip</button>
+        <button id="btnDownloadTelem" disabled>Download telemetry</button>
+        <button id="btnReset">Reset</button>
+      </div>
+    </section>
+    <section class="states">
+      <div class="seat-card" data-seat="P1" data-active="false">
+        <h3>P1 · Left zone</h3>
+        <div class="state-label" data-seat="P1" data-state="SEARCH">SEARCH</div>
+        <div class="metric-row"><span>Gesture</span><span id="labelP1">–</span></div>
+        <div class="metric-row"><span>Score</span><span id="scoreP1">0.00</span></div>
+        <div class="metric-row"><span>Open streak</span><span id="openStreakP1">0</span></div>
+        <div class="metric-row"><span>Fist streak</span><span id="fistStreakP1">0</span></div>
+        <div class="metric-row"><span>Frames</span><span id="framesP1">0</span></div>
+        <div class="metric-row"><span>Hand</span><span id="handedP1">–</span></div>
+      </div>
+      <div class="seat-card" data-seat="P2" data-active="false">
+        <h3>P2 · Right zone</h3>
+        <div class="state-label" data-seat="P2" data-state="SEARCH">SEARCH</div>
+        <div class="metric-row"><span>Gesture</span><span id="labelP2">–</span></div>
+        <div class="metric-row"><span>Score</span><span id="scoreP2">0.00</span></div>
+        <div class="metric-row"><span>Open streak</span><span id="openStreakP2">0</span></div>
+        <div class="metric-row"><span>Fist streak</span><span id="fistStreakP2">0</span></div>
+        <div class="metric-row"><span>Frames</span><span id="framesP2">0</span></div>
+        <div class="metric-row"><span>Hand</span><span id="handedP2">–</span></div>
+      </div>
+      <iframe id="dino" title="Chrome Dino Runner" src="/September2025/TectangleHexagonal/vendor/dino/index.html"></iframe>
+      <div>
+        <strong style="display:block; margin-bottom:6px; letter-spacing:0.04em; text-transform:uppercase; font-size:11px; color:var(--md-on-surface-variant);">Recent events</strong>
+        <div class="events-log" id="eventsLog">(none)</div>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="../src/opoRunner.js"></script>
+</body>
+</html>

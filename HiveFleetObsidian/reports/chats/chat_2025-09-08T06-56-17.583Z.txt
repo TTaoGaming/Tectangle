@@ -1,0 +1,6 @@
+TTao: Prompt: hello champions. We steer by simple, green checks.
+Thread Sovereign: [<fill>] One step: Run hive:daily and fill Board; commit one safe improvement (e.g., overview/standardize turn) | Win: dup==0 && smoke:pass && frozen:pass && miss==0
+Faultline Seeker: [<fill>] Probe: Design 1-3 micro-tests for riskiest assumption in Board; run replay on a new short trace. Stop when Stop rule hit (signal or timeout) on at least one probe.
+Prism Magus: [<fill>] Same goal-Run prism_reframe.mjs with goal from Board to compare baseline vs new angle. Keep the winner.
+Web Cartographer: [<fill>] Adopt ports/adapters for the next seam; land the smallest first step. Smallest step first.
+Silk Scribe: Logged chat | counsel: HiveFleetObsidian/reports/turns/turn_2025-09-08T06-56-13.579Z.json

@@ -1,0 +1,67 @@
+{
+  "counsel": {
+    "explore": {
+      "what": "Design 1–3 micro-tests for riskiest assumption in Board; run replay on a new short trace",
+      "why": "Reduce uncertainty before we scale parallel work",
+      "win": "Stop rule hit (signal or timeout) on at least one probe",
+      "warnings": "Keep experiments cheap; archive findings",
+      "how": [
+        "Name assumption in Board",
+        "Record 30–60s trace",
+        "Run replay and log result"
+      ]
+    },
+    "pivot": {
+      "what": "Run prism_reframe.mjs with goal from Board to compare baseline vs new angle",
+      "why": "Keep goal, change approach; choose easier path by EV",
+      "win": "EV_new > EV_old within constraints; no regressions",
+      "warnings": "A/B is a tactic; prefer simplest viable comparison",
+      "how": [
+        "Define metric and budget",
+        "Run prism_reframe.mjs --goal \"…\"",
+        "Keep winner; archive other"
+      ]
+    },
+    "reorient": {
+      "what": "Adopt ports/adapters for the next seam; land the smallest first step",
+      "why": "Pattern reduces drift and enables parallel adapters later",
+      "win": "Pattern named; first step merged; links mapped",
+      "warnings": "No heavy deps; prefer adapters over rewrites",
+      "how": [
+        "Name ports",
+        "Stub one adapter",
+        "Map links in web_map.md"
+      ]
+    },
+    "exploit": {
+      "what": "Run hive:daily and fill Board; commit one safe improvement (e.g., overview/standardize turn)",
+      "why": "Deterministic health first; then one reversible step today",
+      "win": "dup==0 && smoke:pass && frozen:pass && miss==0",
+      "warnings": "Ship only if frozen PASS; otherwise block and fix",
+      "how": [
+        "npm run hive:daily",
+        "Fix any MISS/dup",
+        "Append Scribe line"
+      ]
+    }
+  },
+  "guardrail": "Ship only if frozen smoke passes and duplicate titles == 0; otherwise block and report.",
+  "history": {
+    "snapshot": "Orchestrator turn generated (counsel + chat)",
+    "metric_delta": "dup:0; smoke:pass; frozen:pass; miss:0",
+    "lesson": "Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"
+  },
+  "chat": [
+    "TTao: Set course. Problem: Pinch gating drift. We sail for deterministic ground.",
+    "Thread Sovereign: One step today: run daily, fix any MISS, then cut the smallest reversible improvement.",
+    "Faultline Seeker: Probe the riskiest assumption with a 60s trace. Stop on signal or timeout.",
+    "Prism Magus: Same goal, easier route—compare baseline vs a reframe; keep the winner.",
+    "Web Cartographer: Adopt ports/adapters here; land the smallest first step and map links.",
+    "Silk Scribe: Logged: Orchestrator turn | dup:0; smoke:pass; frozen:pass; miss:0"
+  ],
+  "provenance": [
+    "HiveFleetObsidian/tools/hive_daily.mjs",
+    "HiveFleetObsidian/tools/champions_status.mjs",
+    "HiveFleetObsidian/honeycomb/CHAMPIONS_OVERVIEW.md"
+  ]
+}

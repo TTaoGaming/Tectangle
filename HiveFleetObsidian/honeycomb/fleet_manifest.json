@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2025-09-08T16:00:51Z",
+  "core": [
+    { "id": "thread_sovereign", "name": "Thread Sovereign", "seat": "exploit", "archetype": "Ruler", "element": "Earth" },
+    { "id": "faultline_seeker", "name": "Faultline Seeker", "seat": "explore", "archetype": "Explorer/Trickster", "element": "Fire" },
+    { "id": "prism_magus", "name": "Prism Magus", "seat": "pivot", "archetype": "Magician", "element": "Water" },
+    { "id": "web_cartographer", "name": "Web Cartographer", "seat": "reorient", "archetype": "Sage", "element": "Air" }
+  ],
+  "support": [
+    { "id": "silk_scribe", "name": "Silk Scribe", "role": "Scribe/Archive" },
+    { "id": "lattice_steward", "name": "Lattice Steward", "aka": ["Web Warden"], "role": "Stability/Guardrails" },
+    { "id": "window_hunter", "name": "Window Hunter", "role": "Finisher/Packaging" },
+    { "id": "signal_warden", "name": "Signal Warden", "role": "Safety/Integrity" },
+    { "id": "shadow_auditor", "name": "Shadow Auditor", "role": "Red-Team" }
+  ]
+}
+

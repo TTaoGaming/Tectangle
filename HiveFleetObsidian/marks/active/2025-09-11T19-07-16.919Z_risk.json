@@ -1,0 +1,9 @@
+{
+  "id": "mffs5s8n_ea7pkf",
+  "ts": "2025-09-11T19:07:16.919Z",
+  "type": "risk",
+  "topic": "archive_review",
+  "signal": "review first 19: cards_index.mjs, champions_status.mjs, champion_registry.mjs, concord_weaver_checklist.mjs, first_principles_summarize.mjs, generate_champions_overview.mjs, hfo.mjs, nest_paths.mjs, normalize_ascii.mjs, pinch_core_portable.mjs, prism_plan_pivot.mjs, prism_reframe.mjs, safebreaker_pivot.mjs, shadow_auditor_probes.mjs, signal_warden_audit.mjs, smith_enforce_arch.mjs, swarm_jester_ideas.mjs, thread_sovereign_decide.mjs, voice_renderer.mjs",
+  "decay_after_minutes": 1440,
+  "meta": {}
+}

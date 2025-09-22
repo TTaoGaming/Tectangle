@@ -1,0 +1,12 @@
+:root{
+  --m3-bg:#0b1020;
+  --m3-surface:#0f172a;
+  --m3-on-surface:#e5e7eb;
+  --m3-primary:#7c3aed;
+  --m3-outline:#334155;
+  --m3-card:#111827;
+  --m3-radius-xs:8px;
+  --m3-radius-sm:10px;
+  --m3-radius-md:12px;
+  --m3-radius-lg:16px;
+}

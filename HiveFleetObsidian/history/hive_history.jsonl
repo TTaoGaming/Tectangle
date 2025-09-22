@@ -1,0 +1,435 @@
+{"snapshot":"Initialized Obsidian Nest v1.1 (PascalCase, agent, Board, tools)","metric_delta":"n/a","lesson":"Solo Seat first; JSON-only; reversible steps"}
+{"snapshot":"Froze smoke expectations (2 traces)","metric_delta":"pass","lesson":"Detect regressions via fixed downs/ups"}
+{"snapshot":"nest:bootstrap","metric_delta":"init","lesson":"initialized board and nest"}
+{"snapshot":"Silk Scribe engaged; Tech Tango (6mo) consolidation","metric_delta":"start","lesson":"Create intake; seed memories; scan patterns next"}
+{"snapshot":"Decision: Pinch MVP ship now (Exploit)","metric_delta":"unblocks_demo","lesson":"Guard bootstrap; reuse baseline; pinch→keypress bridge; freeze CI"}
+{"snapshot":"Hardening sprint (1 week) planned","metric_delta":"plan","lesson":"OneEuro smoothing; kinematic clamp; KF TOI; telemetry; golden traces"}
+{"snapshot":"Detector redundancy: 3 checks","metric_delta":"design","lesson":"knuckle-span ratio; fingertip convergence velocity; finger bend angles"}
+{"snapshot":"Palm gate + hysteresis + debounce defaults","metric_delta":"defaults","lesson":"cone≈30°; enter 0.15–0.40; exit 0.22–0.75; 40ms debounce"}
+{"snapshot":"UX/ops backlog condensed","metric_delta":"todo","lesson":"Sidepanel unify; one telemetry button; UI cleanup; dead zones; multi-hand; smoothing slider"}
+{"snapshot":"CI: frozen smoke expectations","metric_delta":"pass","lesson":"Detect regressions via downs/ups; gate PRs"}
+{"snapshot":"Doc: TommyNotesAugust2025","metric_delta":"note","lesson":"can you help me add to my todo list. 1 a config option for keyboard mapping so wrist quaternion key mapping + 4 pinch per hand. 2, help me create sdk and api for this app. so it's easy to work with a…"}
+{"snapshot":"Doc: AiChatArchitecture20250904","metric_delta":"note","lesson":"Plain-language summary — 4-state pinch FSM (what it *feels* like)"}
+{"snapshot":"Doc: PinchFSM TwoPager 2025 09 04T23 45 00Z","metric_delta":"note","lesson":"PinchFSM — Two‑Pager (Games now → Medical later)"}
+{"snapshot":"Doc: PinchFSM Deterministic TwoPager 2025 09 05","metric_delta":"note","lesson":"PinchFSM — Deterministic vNext"}
+{"snapshot":"Doc: TODO 2025 09 01T20 50 07 MDT","metric_delta":"note","lesson":"Tectangle — Daily TODO & Rollout Plan"}
+{"snapshot":"Doc: TODO 2025 09 03T09 05 30 MDT","metric_delta":"note","lesson":"TODO — Pinch 4-way + Palm/Orientation Gating + Basic TOI"}
+{"snapshot":"Doc: TODO MVP 2025 09 03T10 20 03 MDT","metric_delta":"note","lesson":"Tectangle — MVP TODO & Narrow-Scope Plan"}
+{"snapshot":"Doc: Tectangle Summary 2025 09 02T18 27 10Z","metric_delta":"note","lesson":"Tectangle Manager Audit — 2025-09-02T18:27:10Z"}
+{"snapshot":"Doc: tommy notes august2025","metric_delta":"note","lesson":"can you help me add to my todo list. 1 a config option for keyboard mapping so wrist quaternion key mapping + 4 pinch per hand. 2, help me create sdk and api for this app. so it's easy to work with a…"}
+{"snapshot":"Doc: pinch feature plan","metric_delta":"note","lesson":"Pinch Feature Plan — Minimal Palm‑Gated Pinch for MVP"}
+{"snapshot":"Doc: pinch feature plan EARS","metric_delta":"note","lesson":"Pinch Feature Plan — EARS additions (compact)"}
+{"snapshot":"Doc: pinch mvp decision","metric_delta":"note","lesson":"Pinch MVP Decision & Implementation Plan — Palm‑gated index↔thumb pinch (Pinch Piano MVP)"}
+{"snapshot":"Doc: PinchFSM TwoPager 2025 09 04T23 59 30Z","metric_delta":"note","lesson":"PinchFSM — Two‑Pager (Deterministic vNext)"}
+{"snapshot":"Doc: PinchFSM TwoPager VideoGoldens 2025 09 04T23 58 00Z","metric_delta":"note","lesson":"PinchFSM — Two‑Pager (Video Golden Masters — Timestamped)"}
+{"snapshot":"Doc: Rapier TwoPager 2025 09 05","metric_delta":"note","lesson":"Rapier — Tech → Application for PinchFSM"}
+{"snapshot":"Doc: VideoGoldens TwoPager 2025 09 05","metric_delta":"note","lesson":"PinchFSM — Video Golden Masters (Replay Harness)"}
+{"snapshot":"Doc: Rapier TwoPager 2025 09 05T00 06 00Z","metric_delta":"note","lesson":"Rapier — Tech → Application for PinchFSM"}
+{"snapshot":"Doc: VideoGoldens TwoPager 2025 09 05T00 05 00Z","metric_delta":"note","lesson":"PinchFSM — Video Golden Masters (Replay Harness)"}
+{"snapshot":"Doc: GPT5 Tectangle OnePager 2025 09 04T23 30 00Z","metric_delta":"note","lesson":"GPT‑5 Tectangle — Gesture Input Platform One‑Pager"}
+{"snapshot":"Doc: PinchFSM Deterministic 2025 09 05T00 00 00Z","metric_delta":"note","lesson":"PinchFSM — Deterministic vNext"}
+{"snapshot":"Doc: TODO mediapipe trace generator","metric_delta":"note","lesson":"PinchFSM — MediaPipe Trace Generator (TODO)"}
+{"snapshot":"Doc: TODO PinchFSM 2025 09 05T00 36 00Z","metric_delta":"note","lesson":"PinchFSM — One‑Pager TODO (Deterministic, CI‑Gated)"}
+{"snapshot":"Doc: TODO mediapipe trace generator","metric_delta":"note","lesson":"PinchFSM — MediaPipe Trace Generator (TODO)"}
+{"snapshot":"Doc: CI Foundations TwoPager 2025 09 05","metric_delta":"note","lesson":"CI Foundations — Deterministic, Fast, Observable"}
+{"snapshot":"Doc: Golden Master Testing TwoPager 2025 09 05","metric_delta":"note","lesson":"Golden Master Testing — Lock Inputs, Gate Regressions"}
+{"snapshot":"Notes: Consolidated Pinch Report (2025-09-06)","metric_delta":"knowledge","lesson":"Exploit now; golden‑trace CI; 1‑week hardening; pinch→keypress; bootstrap guard"}
+{"snapshot":"Honeycomb Smith index built","metric_delta":"knowledge","lesson":"Indexed 95 docs into honeycomb; see docs/knowledge/honeycomb/honeycomb_index.md"}
+{"snapshot":"bootstrap:portable","metric_delta":"init","lesson":"Initialized nest and starting internal checks"}
+{"snapshot":"bootstrap:portable:ok","metric_delta":"pass","lesson":"Honeycomb + portable smoke passed"}
+{"snapshot":"Portable nest ready","metric_delta":"deterministic","lesson":"Local core+runner+traces; bootstrap+smith; pack command added"}
+{"snapshot":"Web Cartographer online","metric_delta":"map","lesson":"Mapped 432 pages; see HiveFleetObsidian/cartography/web_map.md"}
+{"snapshot":"Champions status report","metric_delta":"checklist","lesson":"OK: Scribe/Smith/Cartographer/Exploit/Explore/Stability/Finisher; MISS: Pivot harness"}
+{"snapshot":"Champions roster expanded","metric_delta":"catalog","lesson":"Added extended roles (Safebreaker, First Principles, Swarm Jester, Concord Weaver, Signal Warden, Shadow Auditor); status shows OK/MISS"}
+{"snapshot":"Honeycomb forge + routing","metric_delta":"structure","lesson":"Forged champion hexes; routed indices; status now reports tools vs space"}
+{"snapshot":"Champion registry + PascalCase","metric_delta":"naming","lesson":"Centralized roster with PascalCase dirs; forge/smith/status updated; enforce tool added"}
+{"snapshot":"Champion personas drafted (core set)","metric_delta":"roster","lesson":"Intro + bias/tradeoffs + myth/historical lineages + alt names for 7 champions"}
+{"snapshot":"Thread Sovereign arises","metric_delta":"readme","lesson":"First-person manifesto added to champion README (ports, playbook, guardrails)"}
+{"snapshot":"Canon stamped and indexed","metric_delta":"canon","lesson":"Stamped honeycomb docs with timestamps; champion canon report written; newest wins bias"}
+{"snapshot":"Smith re-indexed; archive ignored; dup titles 4?1; frozen smoke PASS","metric_delta":"dup_titles:-3; smoke:pass","lesson":"Exclude archive by default; plan include-archive flag; pair Smith+Steward for safe cleanup"}
+{"snapshot":"Consolidated duplicates to archive; dup titles -> 0","metric_delta":"dup_titles:-1; smith:index69","lesson":"Use canon=docs/two-pagers; move shadow copies next to source under archive/ for safe rollback"}
+{"snapshot":"Doc: AiChatArchitecture20250904","metric_delta":"note","lesson":"Plain-language summary — 4-state pinch FSM (what it *feels* like)"}
+{"snapshot":"Doc: PinchFSM TwoPager 2025 09 04T23 45 00Z","metric_delta":"note","lesson":"PinchFSM — Two‑Pager (Games now → Medical later)"}
+{"snapshot":"Doc: PinchFSM Deterministic TwoPager 2025 09 05","metric_delta":"note","lesson":"PinchFSM — Deterministic vNext"}
+{"snapshot":"Doc: pinch mvp decision","metric_delta":"note","lesson":"Pinch MVP Decision & Implementation Plan — Palm‑gated index↔thumb pinch (Pinch Piano MVP)"}
+{"snapshot":"Doc: PinchFSM TwoPager 2025 09 04T23 59 30Z","metric_delta":"note","lesson":"PinchFSM — Two‑Pager (Deterministic vNext)"}
+{"snapshot":"Champions canon seeded (14) with one-liners + rules","metric_delta":"canon:+14; smith:index","lesson":"Keep roles project-agnostic; seats define action; A/B is Prism tactic, not identity"}
+{"snapshot":"Canon success criteria added; personas lineaged","metric_delta":"canon:+14; persona:+7","lesson":"Keep champions project-agnostic; add myth/history to guide tone and tradeoffs"}
+{"snapshot":"All champion honeycombs complete (tools OK)","metric_delta":"champions:14/14 OK","lesson":"Scaffold minimal tools per champion; keep roles project-agnostic and composable"}
+{"snapshot":"Personas completed for leadership champions","metric_delta":"persona:+7; smith:index","lesson":"Define intros/bias/tradeoffs/lineage; keep project-agnostic for swarm"}
+{"snapshot":"Smith standardize: champions ok, dup=0","metric_delta":"standardize:pass; dup:0","lesson":"Use hive:standardize regularly; summoner+smith keep evolution safe and reversible"}
+{"snapshot":"Frozen smoke updated + verified","metric_delta":"frozen:pass; traces:2","lesson":"Freeze expectations from replay; stamp canon; re-index honeycomb"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"Faultline Seeker micro-tests","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Hive healthy: standardize ok; smoke/frozen pass; champions all OK; dup=0"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"bootstrap:portable","metric_delta":"init","lesson":"Initialized nest and starting internal checks"}
+{"snapshot":"bootstrap:portable:ok","metric_delta":"pass","lesson":"Honeycomb + portable smoke passed"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"append_history_path_probe","metric_delta":"check","lesson":"Path resolution logic works"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"counsel+2_intros","metric_delta":"start:pass; smoke:pass; frozen:pass; champions:ok","lesson":"Champions introduced; start verified; focus: reliable startup + standardization"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"response_style_update","metric_delta":"shape:plain+glossary+champion_voice","lesson":"Adopt plain-language Quick Answer, glossary of terms, champion voice block; limit bullets/line length"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"heading: plain-language librarian; HFO deterministic persona-enforced","metric_delta":"plain:on; gloss:on; aim:reduce_hallucinations; rag:path","lesson":"Enforce plain language with brief term glosses; keep JSON for tools and conversational chat for humans; champion personas drive voice; align 1h/1d/1w/1m horizons."}
+{"snapshot":"core_principles:set (elements+archetypes)","metric_delta":"core4:earth,fire,water,air; voices:plain+gloss; registry:stable","lesson":"Set Jungian archetypes + elements for core seats; keep plain language with brief term glosses; support roles noted (Web Warden alias for Lattice)."}
+{"snapshot":"heading: Tao@09:55 Sep 8 2025 set long-term tool virtualization path","metric_delta":"goal:tool_virtualization; near:pinch->key+one_button_games","lesson":"Fleet as mnemonic construct; reduce hallucinations; persona-enforced; start with small games for funding, expand to wide tool emulation."}
+{"snapshot":"alias:set lattice->Web Warden (docs only)","metric_delta":"stability:steady; naming:web-themed","lesson":"Keep registry stable; use 'Web Warden' as alt name in docs and manifest until full rename is planned."}
+{"snapshot":"prism_magus:pivot_canon_set","metric_delta":"element:water; mirror-mask; options:5","lesson":"Keep the aim; change the path. Use method/horizon/constraint/resource/analogy pivots in plain language."}
+{"snapshot":"prep: smith->tests->freeze->verify->pack","metric_delta":"smith:run; tests:smoke; frozen:verify; pack:portable","lesson":"Run smith index; verify smoke and frozen; freeze expectations; package portable nest with drop-in README for LLM."}
+{"snapshot":"goals:tick","metric_delta":"created:daily,weekly,monthly,quarterly,annual,decade","lesson":"Generate horizon goal/review docs; keep plain-language templates per horizon"}
+{"snapshot":"goals:tick","metric_delta":"created:weekly","lesson":"Generate horizon goal/review docs; keep plain-language templates per horizon"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"heartbeat","metric_delta":"ok:4; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"snapshot":"heartbeat","metric_delta":"ok:6; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"snapshot":"goals:tick","metric_delta":"created:weekly","lesson":"Generate horizon goal/review docs; keep plain-language templates per horizon"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"heartbeat","metric_delta":"ok:6; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"snapshot":"goals:tick","metric_delta":"created:weekly","lesson":"Generate horizon goal/review docs; keep plain-language templates per horizon"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"snapshot":"canon:chat_interface_counsel_always_on","metric_delta":"counsel:4+scribe; mode:mentor; help:banner","lesson":"The chat is the interface. Always show counsel-of-4 in plain language; intros on request; single guardrail in final call; Board refresh if stale."}
+{"snapshot":"goals:tick","metric_delta":"created:weekly","lesson":"Generate horizon goal/review docs; keep plain-language templates per horizon"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"snapshot":"goals:tick","metric_delta":"created:weekly","lesson":"Generate horizon goal/review docs; keep plain-language templates per horizon"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"snapshot":"cards: Thread Sovereign PW minted; next up Faultline Seeker variants proposed","metric_delta":"cards:sovereign_pw; next:seeker_2x_variants","lesson":"Cards are flavor anchors, not constraints; record choices and keep counsel conversational."}
+{"snapshot":"goals:tick","metric_delta":"created:weekly","lesson":"Generate horizon goal/review docs; keep plain-language templates per horizon"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"snapshot":"goals:tick","metric_delta":"created:weekly","lesson":"Generate horizon goal/review docs; keep plain-language templates per horizon"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"snapshot":"goals:tick","metric_delta":"created:weekly","lesson":"Generate horizon goal/review docs; keep plain-language templates per horizon"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"goals:tick","metric_delta":"created:weekly","lesson":"Generate horizon goal/review docs; keep plain-language templates per horizon"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"cards_canon","metric_delta":"created:3; templates:2","lesson":"Minted Obsidian Voyage (Saga), Memetic Ship (Vehicle), TTao PW; added Saga/Vehicle templates."}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"goals:tick","metric_delta":"created:daily","lesson":"Generate horizon goal/review docs; keep plain-language templates per horizon"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"heartbeat","metric_delta":"ok:6; warn:1; fail:1","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"snapshot":"goals:tick","metric_delta":"created:none","lesson":"Generate horizon goal/review docs; keep plain-language templates per horizon"}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"snapshot":"scribe:portable_council_setup","metric_delta":"start:1; pastein:1; tasks:1; provider:auto","lesson":"Chat is the helm: council via CLI; paste-in counsel lane; VS Code tasks; provider optional; frozen gate guards shipping."}
+{"snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"ts":"2025-09-11T17:55:47.565Z","type":"warn","snapshot":"board_stale","metric_delta":"dup:0","lesson":"Board stale warning emitted"}
+{"ts":"2025-09-11T17:55:47.611Z","type":"turn","snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"ts":"2025-09-11T17:55:47.658Z","type":"turn-hb","snapshot":"turn_heartbeat","metric_delta":"dup:0;miss:0","lesson":"Turn executed (heartbeat)"}
+{"ts":"2025-09-11T17:55:47.814Z","type":"chat-mini","snapshot":"chat_turn","metric_delta":"lines:8","lesson":"no prompt"}
+{"ts":"2025-09-11T18:21:00.362Z","type":"turn","snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"ts":"2025-09-11T18:21:00.409Z","type":"turn-hb","snapshot":"turn_heartbeat","metric_delta":"dup:0;miss:0","lesson":"Turn executed (heartbeat)"}
+{"ts":"2025-09-11T18:21:00.747Z","type":"orchestrate","snapshot":"orchestrator_facade","metric_delta":"status:OK; champion:web_cartographer","lesson":"Adopt ports/adapters at next seam; land smallest step"}
+{"ts":"2025-09-11T19:05:25.564Z","type":"chat-mini","snapshot":"chat_turn","metric_delta":"lines:7","lesson":"no prompt"}
+{"ts":"2025-09-11T19:36:43.786Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-11T19:39:21.871Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-11T19:52:15.486Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-11T19:57:20.703Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-11T20:02:51.883Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T00:41:52.173Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T06:00:02.307Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T07:00:02.959Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T08:00:02.882Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T09:00:02.918Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T10:00:03.072Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T11:00:02.956Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T12:00:03.026Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T13:00:03.147Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T14:00:03.307Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T15:00:03.327Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T16:00:03.257Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T17:00:03.298Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T18:00:03.591Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T19:00:03.300Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T20:00:03.032Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T21:00:03.177Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T22:00:03.199Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-12T23:00:03.064Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T00:00:03.487Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T01:00:03.216Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T02:00:03.813Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T03:00:03.556Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T04:00:04.295Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T05:00:03.227Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T06:00:03.541Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T07:00:03.094Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T08:00:03.271Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T09:00:03.250Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T10:00:03.309Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T11:00:03.258Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T12:00:03.318Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T13:00:03.319Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T14:00:02.402Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T15:00:02.427Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T16:00:02.554Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T17:00:02.323Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T18:00:02.379Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T19:00:02.401Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T20:00:02.349Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T21:00:02.247Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T22:00:02.385Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T22:39:50.691Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-13T23:00:02.378Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T00:00:02.566Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T01:00:02.285Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T02:00:02.651Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T02:04:25.432Z","type":"srl","snapshot":"Adopted official BSD-3 Dino Runner under vendor/dino","metric_delta":"vendor+1","lesson":"Pinch→Space bridge enables deterministic 1-button demo"}
+{"ts":"2025-09-14T02:46:04.554Z","type":"srl","snapshot":"Froze Working Dino (pinch→Space) snapshot with hysteresis tube","metric_delta":"freeze+1","lesson":"Stable 1-button demo archived for reference"}
+{"ts":"2025-09-14T02:46:04.618Z","type":"srl","snapshot":"Prototype works; needs tuning + local multiplayer plan","metric_delta":"todo:next","lesson":"Add orientation gate strictness, bone-ratio hash, greedy-neighbor hand ID"}
+{"ts":"2025-09-14T02:55:41.081Z","type":"srl","snapshot":"Scaffolded ports/adapters for Sigil Rings lab","metric_delta":"scaffold+1","lesson":"HandInputPort & RingRenderPort; canvas adapter + lab page"}
+{"ts":"2025-09-14T02:55:41.152Z","type":"srl","snapshot":"Vision logged: education playground, multiplayer, tilt rings","metric_delta":"vision","lesson":"Physics + Net ports to follow; bone-ratio hash & greedy neighbor for hand ID"}
+{"ts":"2025-09-14T03:00:02.288Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T04:00:02.548Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T05:00:02.508Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T06:00:02.337Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T07:00:02.606Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T08:00:02.304Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T09:00:02.310Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T10:00:02.410Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T11:00:02.377Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T12:00:02.407Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T13:00:02.462Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T14:00:02.446Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T15:00:02.424Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T16:00:02.703Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T17:00:02.599Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T18:00:02.610Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T19:00:02.447Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T20:00:02.939Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T21:00:02.563Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T22:00:02.594Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-14T23:00:02.784Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T00:00:03.106Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T01:00:02.677Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T02:00:03.015Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T04:00:02.745Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T04:42:32.562Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T05:00:02.702Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T06:00:03.046Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:6; warn:1; fail:1","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T07:00:02.600Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T08:00:02.522Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T09:00:02.796Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T10:00:02.610Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T11:00:02.560Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T12:00:02.597Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T13:00:02.669Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T14:00:02.599Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T15:00:02.614Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T16:00:02.865Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T17:00:03.158Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T18:00:03.606Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T19:00:03.314Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T20:00:03.110Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T21:00:03.029Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T22:00:02.917Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-15T23:00:02.971Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T00:00:03.105Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T01:00:02.980Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T02:00:02.904Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T03:00:02.973Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T04:00:02.894Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T05:00:02.902Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T06:00:03.160Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:6; warn:1; fail:1","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T07:00:03.036Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T08:00:02.907Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T09:00:02.282Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T10:00:02.209Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T11:00:02.207Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T12:00:02.179Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T13:00:02.191Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T14:00:02.427Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T16:00:02.550Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T16:18:33.349Z","type":"srl","snapshot":"SRL: Seat pairing refactor stable; smoke path not yet capturing seats reliably; headful+30s policy pending; chatmode guard added.","metric_delta":"+unit_tests; -smoke_reliability","lesson":"Pair-on-first-pinch works in unit tests; live pipeline harness must wait for non-empty seat map; enforce headful+30s across e2e to stabilize."}
+{"ts":"2025-09-16T17:00:02.493Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T18:00:02.499Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T19:00:02.691Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T20:00:02.628Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T21:00:02.546Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T22:00:02.492Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-16T22:38:36.262Z","type":"srl","snapshot":"Adopted tiered hooks (cached boundary + focused tests + strict pre-push)","metric_delta":"ops+1","lesson":"Faster commits (<3s) with daily full golden verification"}
+{"ts":"2025-09-16T22:38:36.310Z","type":"srl","snapshot":"Added depcruise hash cache & daily workflow","metric_delta":"quality+cache","lesson":"Pre-commit skip when no structural change; daily ensures drift detection"}
+{"ts":"2025-09-16T23:00:02.513Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T00:00:02.528Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T01:00:02.570Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T02:00:03.363Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T03:00:02.638Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T04:00:02.554Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T05:00:02.930Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T06:00:02.516Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T07:00:03.192Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T08:00:03.281Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T09:00:02.747Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T10:00:03.002Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T11:00:03.537Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T12:00:02.903Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T13:00:02.590Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T14:00:02.858Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T15:00:02.784Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T16:01:08.988Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T17:00:03.471Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T18:00:03.556Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T19:00:04.912Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T20:00:03.360Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T21:00:03.489Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T22:00:03.531Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-17T23:00:03.690Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T00:00:03.583Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T01:00:03.420Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T02:00:03.040Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T03:00:03.686Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T04:00:02.827Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T05:00:03.125Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T06:00:03.446Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T07:00:03.202Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T08:00:03.071Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T09:00:03.854Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T10:00:02.979Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T11:00:03.216Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T12:00:02.804Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T13:00:03.002Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T13:32:27.576Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T14:00:03.678Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T15:00:04.559Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T16:00:03.069Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T17:00:03.151Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T18:00:03.054Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T19:00:03.036Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T19:32:01.321Z","type":"event","snapshot":"goals:tick","metric_delta":"created:daily,weekly","lesson":"Generate horizon goal/review docs; keep plain-language templates per horizon"}
+{"ts":"2025-09-18T19:32:06.333Z","type":"event","snapshot":"Daily maintenance run","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Normalize->Smith->Standardize->Freeze->Verify->Map; automate daily"}
+{"ts":"2025-09-18T19:32:06.989Z","type":"warn","snapshot":"board_stale","metric_delta":"dup:0","lesson":"Board stale warning emitted"}
+{"ts":"2025-09-18T19:32:07.058Z","type":"turn","snapshot":"Orchestrator turn generated (counsel + chat)","metric_delta":"dup:0; smoke:pass; frozen:pass; miss:0","lesson":"Keep JSON for tools + chat for humans; cite evidence and append Scribe each turn"}
+{"ts":"2025-09-18T19:32:07.135Z","type":"turn-hb","snapshot":"turn_heartbeat","metric_delta":"dup:0;miss:0","lesson":"Turn executed (heartbeat)"}
+{"ts":"2025-09-18T19:32:07.540Z","type":"chat","snapshot":"moe_chat","metric_delta":"seats:6; counsel:present","lesson":"Persona/canon tinted MoE chat"}
+{"ts":"2025-09-18T19:32:07.597Z","type":"chat-mini","snapshot":"chat_turn","metric_delta":"lines:8","lesson":"no prompt"}
+{"ts":"2025-09-18T19:32:08.218Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T20:00:03.693Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T21:00:03.359Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T22:00:03.257Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-18T23:00:03.693Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T00:00:03.855Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T01:00:04.272Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T02:00:04.014Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T03:00:15.294Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T04:00:28.708Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T05:00:03.999Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T06:00:02.968Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T07:00:02.912Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T08:00:03.332Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T09:00:03.035Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T10:00:02.963Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T11:00:02.941Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T12:00:03.252Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T13:00:02.927Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T14:00:03.057Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T15:00:03.253Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T16:00:03.142Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T17:00:03.063Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T18:00:03.184Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T19:00:03.002Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T20:00:03.059Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T21:00:03.018Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T22:00:03.161Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-19T23:00:03.088Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T00:00:03.378Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T01:00:03.229Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T02:00:03.272Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T03:00:03.393Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T04:00:03.810Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T05:00:03.764Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T06:00:03.215Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T07:00:03.332Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T08:00:04.435Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T09:00:03.225Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T10:00:03.370Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T11:00:03.367Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T12:00:03.694Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T13:00:03.098Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T14:00:03.275Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T15:00:02.287Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T16:00:02.881Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T17:00:03.050Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T18:00:02.331Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T19:00:02.373Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T20:00:02.414Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T21:00:02.306Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T22:00:02.364Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-20T23:00:02.439Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T00:00:02.667Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T01:00:02.557Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T02:00:02.330Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T03:00:02.405Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T04:00:02.529Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T05:00:02.432Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T06:00:03.644Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T07:00:02.919Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T08:00:02.583Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T09:00:02.607Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T10:00:02.842Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T11:00:02.524Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T12:00:02.535Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T13:00:02.868Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T14:00:02.367Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T15:00:02.389Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T16:00:02.440Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T17:00:03.369Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T18:00:02.629Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T19:00:02.585Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T20:00:02.498Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T21:00:03.218Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-21T22:00:03.194Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:7; warn:1; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-22T17:00:03.384Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:6; warn:2; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-22T18:00:03.281Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:6; warn:2; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}
+{"ts":"2025-09-22T19:00:03.325Z","type":"event","snapshot":"heartbeat","metric_delta":"ok:6; warn:2; fail:0","lesson":"Ensure champion voices present; turn shape; glossary; frozen pass"}

@@ -1,0 +1,252 @@
+<!doctype html>
+<!--
+Hand Console V2 Prototype
+Status: ACTIVE (experimental)  
+Created: 2025-09-16  
+Revert path: delete this file & any references; fall back to legacy `integrated_hand_console.html`.
+Feature Flag: FEATURE_HAND_CONSOLE_V2
+Goals:
+- Clean separation: capture -> core (hex) -> event bus -> UI projection (this page only).
+- Stable overlay (correct cover scaling) independent from telemetry collection.
+- Parallel P1 & P2 panels (no provisional conflation) + raw hand preview when unassigned.
+- One-way data flow: shell.onEvent -> state store -> render loop.
+-->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Integrated Hand Console V2</title>
+  <style>
+    body { margin:0; font-family: system-ui, sans-serif; background:#0c1117; color:#e5e7eb; height:100vh; display:grid; grid-template-columns: 2fr 1fr; }
+    #left { position:relative; }
+    video { width:100%; height:100%; object-fit:cover; background:#000; }
+    canvas { position:absolute; inset:0; pointer-events:none; }
+    #right { padding:12px; overflow:auto; display:flex; flex-direction:column; gap:14px; }
+    h3 { margin:0 0 6px; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; opacity:0.85; }
+    .panel { background:#131a23; border:1px solid #1e2833; border-radius:10px; padding:10px 12px; }
+    .row { display:flex; gap:6px; align-items:center; margin:2px 0; font-size:12px; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+    #log { font-size:11px; line-height:1.25; max-height:160px; overflow:auto; background:#0d141c; padding:6px; border-radius:6px; }
+    .seatHdr { font-weight:600; font-size:12px; margin:4px 0 6px; display:flex; justify-content:space-between; }
+    .badge { padding:2px 6px; border-radius:4px; background:#374151; font-size:11px; }
+    .badge.P1 { background:#2563eb; }
+    .badge.P2 { background:#8b5cf6; }
+    .grid { display:grid; grid-template-columns:auto 1fr; gap:2px 8px; font-size:12px; }
+    .warn { color:#fbbf24; }
+    .err { color:#f87171; }
+    button, select { font-size:12px; }
+  </style>
+</head>
+<body>
+  <div id="left">
+    <video id="cam" playsinline muted></video>
+    <canvas id="overlay"></canvas>
+  </div>
+  <div id="right">
+    <div class="panel">
+      <h3>Capture</h3>
+      <div class="row">
+        <button id="startCam">Start Camera</button>
+        <button id="runClip">Run Clip</button>
+        <select id="clipSel">
+          <option value="../videos/two_hands_baseline_idle_v1.mp4">Idle</option>
+          <option value="../videos/two_hands_stationary_right_then_left_index_pinch_hold_1s_v1.mp4">P1->P2 Pinch/Hold</option>
+        </select>
+      </div>
+      <div class="row"><label><input type="checkbox" id="flagOrient" checked /> Orientation</label><label><input type="checkbox" id="flagFlex" checked /> Flexion</label></div>
+      <div class="row"><span id="statusMsg" class="mono" style="font-size:11px; opacity:.8;">idle</span></div>
+    </div>
+
+    <div class="panel" id="seatPanel">
+      <h3>Seats</h3>
+      <div class="row mono" id="seatSummary">(none)</div>
+    </div>
+
+    <div class="panel" id="p1Panel">
+      <div class="seatHdr"><span>P1</span><span class="badge P1" id="p1Key">-</span></div>
+      <div class="grid" id="p1Data"></div>
+    </div>
+    <div class="panel" id="p2Panel">
+      <div class="seatHdr"><span>P2</span><span class="badge P2" id="p2Key">-</span></div>
+      <div class="grid" id="p2Data"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Recent Pinch Events</h3>
+      <pre id="log"></pre>
+    </div>
+  </div>
+  <script type="module">
+    import { createAppShell } from '../src/app/appShell.js';
+    globalThis.__flags = Object.assign({}, globalThis.__flags||{}, { FEATURE_HAND_CONSOLE_V2: true });
+
+    const video = document.getElementById('cam');
+    const overlay = document.getElementById('overlay');
+    const octx = overlay.getContext('2d');
+
+    const shell = createAppShell({});
+    shell.hsm && shell.hsm.on(()=>{}); // ensure init side-effects
+
+    const state = {
+      hands: {},              // handKey -> { lastPinch, lastOrient, lastFlex, lastVel }
+      seats: { P1: null, P2: null },
+      pinchLog: [],
+      frame: null,
+      lastHandsRaw: null,
+      errors: { overlay:false }
+    };
+    // Diagnostics surface for automation
+    globalThis.__ihcDiag = {
+      overlayFrames: 0,
+      overlayHandsDrawn: 0,
+      overlayMode,
+      firstHandSample: null,
+      errors: [],
+      lastFrameVideoSize: null,
+      lastCover: null
+    };
+
+    shell.onEvent(e => {
+      const hk = e.handKey;
+      if(hk){ state.hands[hk] = state.hands[hk] || {}; }
+      if(e.type.startsWith('pinch:')){ state.hands[hk].lastPinch = e; pushPinchLog(e); }
+      if(e.type === 'wrist:orientation'){ state.hands[hk].lastOrient = e; }
+      if(e.type === 'wrist:orientationVel'){ state.hands[hk].lastVel = e; }
+      if(e.type === 'finger:index:angles'){ state.hands[hk].lastFlex = e; }
+      if(e.seat === 'P1' && state.seats.P1 !== hk) state.seats.P1 = hk;
+      if(e.seat === 'P2' && state.seats.P2 !== hk) state.seats.P2 = hk;
+    });
+
+    function pushPinchLog(e){
+      state.pinchLog.push({ t:e.t, type:e.type, seat:e.seat||'', key:e.handKey });
+      if(state.pinchLog.length > 120) state.pinchLog.splice(0, state.pinchLog.length-120);
+    }
+
+    // Overlay modes:
+    // simple: per-hand landmark dots + thumb-index connector only
+    // full: previous skeleton (kept for reference) selected by ?overlay=full
+    const params = new URLSearchParams(location.search);
+    const overlayMode = params.get('overlay') === 'full' ? 'full' : 'simple';
+    if(!state.__overlayModeLogged){ console.info('[hand console v2] overlay mode =', overlayMode); state.__overlayModeLogged=true; }
+
+    function drawOverlay(){
+      const st = shell.getState();
+      const frame = st.lastFrame; state.frame = frame;
+      if(!frame){ octx.clearRect(0,0,overlay.width,overlay.height); return; }
+      const dpr = window.devicePixelRatio||1;
+      const cw = overlay.clientWidth; const ch = overlay.clientHeight;
+      if(overlay.width !== Math.round(cw*dpr) || overlay.height !== Math.round(ch*dpr)){
+        overlay.width = Math.round(cw*dpr); overlay.height = Math.round(ch*dpr); octx.setTransform(1,0,0,1,0,0); octx.scale(dpr,dpr);
+      }
+      octx.clearRect(0,0,cw,ch);
+      const vw = video.videoWidth||cw, vh = video.videoHeight||ch;
+      const coverScale = Math.max(cw/vw, ch/vh);
+      const drawW = vw*coverScale, drawH = vh*coverScale;
+      const dx = (cw-drawW)/2, dy = (ch-drawH)/2;
+      globalThis.__ihcDiag.lastFrameVideoSize = { vw, vh, cw, ch };
+      let handsRaw = null;
+      try {
+        if(window.__hexLastHands && Array.isArray(window.__hexLastHands)) handsRaw = window.__hexLastHands;
+        else if(frame.landmarks && Array.isArray(frame.landmarks) && frame.landmarks.length && Array.isArray(frame.landmarks[0])) handsRaw = [frame.landmarks];
+      } catch {}
+      const hands = Array.isArray(handsRaw) ? handsRaw.filter(h=>Array.isArray(h) && h.length>=21) : [];
+      if(!hands.length){ return; }
+      if(!state.__loggedHandShape){
+        state.__loggedHandShape = true;
+        try { console.info('[v2 overlay] hand sample shape', { count:hands.length, firstLen:hands[0]?.length, sample:hands[0]?.[0] }); } catch {}
+        try { globalThis.__ihcDiag.firstHandSample = { len: hands[0]?.length, sample: hands[0]?.[0] }; } catch {}
+      }
+      // Full skeleton connection list (used only in full mode)
+      const CONN = [ [0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[0,17],[17,18],[18,19],[19,20],[20,0] ];
+      function mapHand(raw){
+        return raw.map(lm => {
+          if(lm==null) return { sx:-9999, sy:-9999, z:0, __bad:true };
+          let x,y,z;
+          if(typeof lm.x==='number' && typeof lm.y==='number'){ x=lm.x; y=lm.y; z=typeof lm.z==='number'? lm.z:0; }
+          else if(Array.isArray(lm) && lm.length>=2){ x=lm[0]; y=lm[1]; z=lm[2]||0; }
+          else if(typeof lm==='object'){ // attempt numeric props
+            x = Number(lm.x||lm[0]||0); y=Number(lm.y||lm[1]||0); z=Number(lm.z||lm[2]||0);
+          } else { x=0; y=0; z=0; }
+          if(!isFinite(x)||!isFinite(y)){ x=0; y=0; }
+          const norm = (x<=1 && y<=1 && x>=0 && y>=0);
+          const sx = dx + (norm ? x*drawW : (x/vw)*drawW);
+          const sy = dy + (norm ? y*drawH : (y/vh)*drawH);
+          return { sx, sy, z };
+        });
+      }
+      const screenHands = hands.map(mapHand);
+      globalThis.__ihcDiag.overlayFrames++;
+      globalThis.__ihcDiag.overlayHandsDrawn += screenHands.length;
+      if(overlayMode === 'simple'){
+        screenHands.forEach((pts,i)=>{
+          if(!pts.length) return;
+            // Draw just thumb-index line + points
+            const thumb = pts[4]; const index = pts[8];
+            if(thumb && index){
+              octx.strokeStyle = i===0?'#3b82f6':'#8b5cf6';
+              octx.lineWidth = 4; octx.beginPath(); octx.moveTo(thumb.sx, thumb.sy); octx.lineTo(index.sx, index.sy); octx.stroke();
+            }
+            pts.forEach((p,idx)=>{
+              if(p.__bad) return;
+              const base = i===0 ? '#10b981' : '#f59e0b';
+              const special = (idx===4||idx===8) ? (i===0?'#ffffff':'#ffffff') : base;
+              octx.fillStyle = special;
+              octx.beginPath(); octx.arc(p.sx, p.sy, (idx===4||idx===8)?4:2.5, 0, Math.PI*2); octx.fill();
+            });
+        });
+      } else {
+        const allZ = screenHands.flat().map(p=>p.z).filter(Number.isFinite); const zMin = allZ.length?Math.min(...allZ):-0.1; const zMax = allZ.length?Math.max(...allZ):0.1; const zR=(zMax-zMin)||1;
+        screenHands.forEach((pts,i)=>{
+          if(!pts.length) return; octx.lineJoin='round'; octx.lineCap='round';
+          CONN.forEach(([a,b])=>{ const A=pts[a],B=pts[b]; if(!A||!B)return; octx.strokeStyle = i===0?'rgba(59,130,246,0.85)':'rgba(139,92,246,0.85)'; octx.lineWidth=3; octx.beginPath(); octx.moveTo(A.sx,A.sy); octx.lineTo(B.sx,B.sy); octx.stroke(); });
+          pts.forEach((p,idx)=>{ const dz=(p.z-zMin)/zR; const r=2+(1-dz)*3.5; octx.beginPath(); octx.fillStyle = i===0? (idx<=4?'#f59e0b':'#10b981') : (idx<=4?'#fbbf24':'#ec4899'); octx.arc(p.sx,p.sy,r,0,Math.PI*2); octx.fill(); });
+        });
+      }
+    }
+
+    function fmt(n,d=1){ return (n==null||!isFinite(n))?'-':(+n).toFixed(d); }
+
+    function render(){
+      try { drawOverlay(); } catch(err){ if(!state.errors.overlay){ console.warn('overlay error', err); } state.errors.overlay=true; try{ globalThis.__ihcDiag.errors.push(String(err&&err.message||err)); }catch{} }
+      // Seat summary
+      const seatSummary = document.getElementById('seatSummary');
+      const P1 = state.seats.P1, P2 = state.seats.P2; seatSummary.textContent = `P1=${P1||'-'} | P2=${P2||'-'}`;
+      document.getElementById('p1Key').textContent = P1||'-';
+      document.getElementById('p2Key').textContent = P2||'-';
+      fillSeat('p1Data', P1);
+      fillSeat('p2Data', P2);
+      document.getElementById('log').textContent = state.pinchLog.slice(-80).map(e=>`${e.t} ${e.type} ${e.seat} ${e.key}`).join('\n');
+    }
+
+    function fillSeat(elId, handKey){
+      const el = document.getElementById(elId); el.innerHTML='';
+      if(!handKey){ el.innerHTML='<span style="opacity:.6">Unassigned</span>'; return; }
+      const h = state.hands[handKey]; if(!h){ el.innerHTML='<span class="warn">No data</span>'; return; }
+      const pinch = h.lastPinch; const orient = h.lastOrient; const flex = h.lastFlex; const vel = h.lastVel;
+      const rows = [];
+      if(pinch){ rows.push(['PinchState', pinch.type.replace('pinch:','')]); rows.push(['Norm', fmt(pinch.normalizedGap??pinch.norm,3)]); if(pinch.thresholds){ rows.push(['Enter/Exit', fmt(pinch.thresholds.enter,2)+' / '+fmt(pinch.thresholds.exit,2)]); } }
+      if(orient){ rows.push(['OrientRaw', fmt(orient.angleDeg,1)+'°']); rows.push(['OrientSmooth', fmt(orient.smoothAngleDeg,1)+'°']); rows.push(['Bucket', orient.bucket]); }
+      if(vel){ rows.push(['OrientVel', fmt(vel.velDegPerSec,0)+'°/s']); }
+      if(flex){ rows.push(['Index MCP/PIP/DIP', `${fmt(flex.mcpDeg,0)}/${fmt(flex.pipDeg,0)}/${fmt(flex.dipDeg,0)}`]); }
+      if(!rows.length){ rows.push(['(no signals)','']); }
+      rows.forEach(r=>{
+        const k=document.createElement('div'); k.textContent=r[0]; const v=document.createElement('div'); v.textContent=r[1]; el.appendChild(k); el.appendChild(v);
+      });
+    }
+
+    setInterval(render, 180);
+
+    async function runClip(){
+      const url = document.getElementById('clipSel').value; try { await shell.startVideoUrl(video,url); document.getElementById('statusMsg').textContent='clip:'+url; } catch(e){ document.getElementById('statusMsg').textContent='ERR clip'; }
+    }
+    document.getElementById('startCam').onclick = async()=>{ await shell.startCamera(video); document.getElementById('statusMsg').textContent='camera'; };
+    document.getElementById('runClip').onclick = runClip;
+
+    // Query params (?clip=&autostart=1)
+    (function(){
+      const Q = new URLSearchParams(location.search); const qpClip = Q.get('clip'); const auto = Q.get('autostart')==='1'||Q.get('auto')==='1';
+      if(qpClip){ let clip=qpClip.trim(); if(!clip.startsWith('/')){ if(clip.startsWith('September2025/')) clip='/'+clip; else if(!clip.startsWith('..')){ if(!clip.startsWith('videos/')) clip='videos/'+clip; clip='../'+clip; } } const sel=document.getElementById('clipSel'); let matched=false; for(const o of sel.options){ if(o.value===clip){ sel.value=clip; matched=true; break; } } if(!matched){ const o=document.createElement('option'); o.value=clip; o.textContent='Query Clip'; sel.appendChild(o); sel.value=clip; } if(auto){ setTimeout(()=>runClip(),160); } }
+      else if(auto){ setTimeout(()=>runClip(),160); }
+    })();
+  </script>
+</body>
+</html>

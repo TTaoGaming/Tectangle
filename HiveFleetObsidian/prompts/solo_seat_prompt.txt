@@ -1,0 +1,9 @@
+Seat=<Explore|Pivot|Reorient|Exploit>. JSON card only.
+Fields: what/why/win/warnings/how[3].
+Context (Board):
+Problem: <paste>
+Metric: <paste>
+Constraint: <paste>
+Horizons: <paste>
+Current: <paste>
+

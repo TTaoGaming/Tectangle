@@ -1,0 +1,43 @@
+{
+  "generatedAt": "2025-09-09T04:04:43.692Z",
+  "prompt": "",
+  "board": {
+    "problem": "",
+    "metric": "hfo_sailworthy",
+    "constraint": "Node>=18; reversible steps; reuse goldens",
+    "horizons": "1h=<today> | 1d=<tomorrow> | 1w=<this week> | 1m=<this month>",
+    "current": "test; updated: 2025-09-08T21:51:25.8889525-06:00"
+  },
+  "chat": [
+    "TTao: Problem: (unset). Let's keep it green and simple.",
+    "Thread Sovereign: Run hive:daily and fill Board; commit one safe improvement (e.g., overview/standardize turn) (Win: dup==0 && smoke:pass && frozen:pass && miss==0)",
+    "Faultline Seeker: Design 1–3 micro-tests for riskiest assumption in Board; run replay on a new short trace (Stop: Stop rule hit (signal or timeout) on at least one probe)",
+    "Prism Magus: Run prism_reframe.mjs with goal from Board to compare baseline vs new angle (Keep when EV_new > EV_old within constraints; no regressions)",
+    "Web Cartographer: Adopt ports/adapters for the next seam; land the smallest first step",
+    "Silk Scribe: Logged chat | counsel: HiveFleetObsidian/reports/turns/turn_2025-09-09T04-04-43.450Z.json",
+    "Help: Ask anything. Controls — tone=casual|formal, rounds=1|2, --strict, --council, --provider <p>, seed=<text>. Private: sovereign decide | prism plan. Edit BOARD.current.txt to steer."
+  ],
+  "voices": {
+    "exploit": {
+      "persona": "I cut indecision; we move one safe step.",
+      "canon": "<fill>",
+      "pascal": "ThreadSovereign"
+    },
+    "explore": {
+      "persona": "I probe the crack that breaks assumptions fastest.",
+      "canon": "<fill>",
+      "pascal": "FaultlineSeeker"
+    },
+    "pivot": {
+      "persona": "I change the path, not the goal; I turn complicated into constrained.",
+      "canon": "<fill>",
+      "pascal": "PrismMagus"
+    },
+    "reorient": {
+      "persona": "I reveal the map so we can choose a better path.",
+      "canon": "<fill>",
+      "pascal": "WebCartographer"
+    }
+  },
+  "counselRef": "HiveFleetObsidian/reports/turns/turn_2025-09-09T04-04-43.450Z.json"
+}

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="360">
+  <style>text{font-family: Arial, Helvetica, sans-serif; fill:#222}</style>
+  <rect width="100%" height="100%" fill="#fff"/>
+  <text x="60" y="15" font-size="14" font-weight="bold">Git activity (commits) — last 7 months</text>
+  <line x1="54" y1="300" x2="60" y2="300" stroke="#666"/>
+<text x="50" y="304" font-size="11" text-anchor="end">0</text>
+<line x1="54" y1="243" x2="60" y2="243" stroke="#666"/>
+<text x="50" y="247" font-size="11" text-anchor="end">30</text>
+<line x1="54" y1="188" x2="60" y2="188" stroke="#666"/>
+<text x="50" y="192" font-size="11" text-anchor="end">59</text>
+<line x1="54" y1="132" x2="60" y2="132" stroke="#666"/>
+<text x="50" y="136" font-size="11" text-anchor="end">89</text>
+<line x1="54" y1="77" x2="60" y2="77" stroke="#666"/>
+<text x="50" y="81" font-size="11" text-anchor="end">118</text>
+<line x1="54" y1="20" x2="60" y2="20" stroke="#666"/>
+<text x="50" y="24" font-size="11" text-anchor="end">148</text>
+
+  <g><rect x="60.0" y="20" width="436.0" height="280" fill="#4C9AFF" />
+<rect x="504.0" y="219" width="436.0" height="81" fill="#4C9AFF" />
+</g>
+  <polyline fill="none" stroke="#FF7A54" stroke-width="2" points="278.0,83.0 722.0,20.0" />
+
+  <g><text x="278.0" y="320" font-size="11" text-anchor="middle">2025-08</text>
+<text x="722.0" y="320" font-size="11" text-anchor="middle">2025-09</text>
+</g>
+  </svg>

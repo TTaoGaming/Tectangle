@@ -1,0 +1,29 @@
+{
+  "acceptance": [],
+  "emits": [
+    {
+      "detailSchema": {},
+      "event": "CameraManager"
+    }
+  ],
+  "generatedFrom": "src/EventBusManager.js",
+  "name": "EventBusManager",
+  "tests": [
+    "tests/archive/eventbus.normalization.test.mjs",
+    "tests/smoke/kinematic.plausibility.smoke.test.mjs",
+    "tests/unit/_debug_landmarkSmooth.oneEuro.log.test.mjs",
+    "tests/unit/camera.frame.test.mjs",
+    "tests/unit/eventbus.normalization.test.mjs",
+    "tests/unit/eventbus.red.test.mjs",
+    "tests/unit/landmarkSmooth.kalman.noisy.test.mjs",
+    "tests/unit/landmarkSmooth.kalman.test.mjs",
+    "tests/unit/landmarkSmooth.oneEuro.test.mjs",
+    "tests/unit/landmarkSmooth.red.kalman.test.mjs",
+    "tests/unit/landmarkSmooth.red.oneEuro.test.mjs",
+    "tests/unit/landmarkraw.filter.red.test.mjs",
+    "tests/unit/landmarkraw.red.test.mjs",
+    "tests/unit/predictiveLatency.red.test.mjs"
+  ],
+  "timestamp": "2025-09-01T16:40:33.268Z",
+  "version": "0.1.0"
+}

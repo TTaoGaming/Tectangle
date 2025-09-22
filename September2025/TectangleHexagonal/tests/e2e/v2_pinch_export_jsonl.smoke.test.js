@@ -1,0 +1,95 @@
+// Jest-Puppeteer e2e: Replay pinch sequence golden MP4 on v2 page and export JSONL telemetry
+// Outputs: HiveFleetObsidian/reports/telemetry/v2_pinch_<timestamp>.jsonl and summary JSON
+const fs = require('node:fs');
+const fsp = require('node:fs/promises');
+const path = require('node:path');
+
+describe('v2 pinch golden → JSONL export', () => {
+  const port = Number(process.env.E2E_PORT || process.env.PORT || 8091);
+  const base = `http://localhost:${port}`;
+  const pageUrl = `${base}/September2025/TectangleHexagonal/dev/camera_landmarks_wrist_label_v2.html`;
+  const clip = process.env.CLIP || 'September2025/TectangleHexagonal/videos/golden/golden.two_hands_pinch_seq.v1.mp4';
+  const outDir = 'HiveFleetObsidian/reports/telemetry';
+  const ts = new Date().toISOString().replace(/[:.]/g,'-');
+  const outJsonl = path.join(outDir, `v2_pinch_${ts}.jsonl`);
+  const outSummary = path.join(outDir, `v2_pinch_${ts}.summary.json`);
+
+  beforeAll(async () => {
+    // Install getUserMedia shim that plays the golden MP4
+    const mockUrl = `${base}/${clip.replace(/^\/+/, '')}`;
+    await page.evaluateOnNewDocument((url) => {
+      const ensureVideo = async () => {
+        if (navigator.__mockVideoEl) return navigator.__mockVideoEl;
+        const v = document.createElement('video');
+        v.src = url; v.muted = true; v.playsInline = true; v.setAttribute('playsinline','');
+        v.style.cssText='position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;';
+        document.addEventListener('DOMContentLoaded', ()=>{ try{ document.body.appendChild(v); }catch{} });
+        try{ await v.play(); }catch{}
+        if (!v.readyState || v.readyState < 2) {
+          await new Promise(r => v.addEventListener('loadeddata', r, { once:true }));
+        }
+        navigator.__mockVideoEl = v; return v;
+      };
+      const orig = (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) ? navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices) : null;
+      const shim = async (constraints) => {
+        try{
+          const v = await ensureVideo();
+          const ms = v.captureStream ? v.captureStream() : (v.mozCaptureStream ? v.mozCaptureStream() : null);
+          if(!ms) throw new Error('captureStream not supported');
+          return ms;
+        }catch(e){ if(orig) return orig(constraints); throw e; }
+      };
+      if(!navigator.mediaDevices) navigator.mediaDevices = {};
+      navigator.mediaDevices.getUserMedia = shim;
+      window.__mockInstalled = true;
+    }, mockUrl);
+  });
+
+  it('exports JSONL telemetry (pinch sequence)', async () => {
+    await fsp.mkdir(outDir, { recursive: true });
+    const fh = fs.openSync(outJsonl, 'w');
+    try{
+      await page.goto(pageUrl, { waitUntil: 'domcontentloaded' });
+
+      // Wait for FPS to start and models to initialize
+      const ok = await page.waitForFunction(() => {
+        const fps = parseFloat(document.getElementById('fps')?.textContent || '0') || 0;
+        const hasLm = !!(window.__cam && window.__cam.hasHandLandmarker && window.__cam.hasHandLandmarker());
+        const hasGr = !!(window.__cam && window.__cam.hasGestureRecognizer && window.__cam.hasGestureRecognizer());
+        return fps > 0.1 && hasLm && hasGr;
+      }, { timeout: 30000 }).catch(()=> null);
+      expect(ok).toBeTruthy();
+
+      // Sample for ~10 seconds at ~15 Hz to capture transitions
+      const start = Date.now();
+      let count = 0; let downs = 0; let ups = 0; let labelsSeen = new Set();
+      while(Date.now() - start < 10000){
+        const frame = await page.evaluate(() => {
+          const ts = Date.now();
+          const fps = parseFloat(document.getElementById('fps')?.textContent || '0') || 0;
+          const ids = (window.__cam?.getStableIds?.() || []);
+          const seat = (window.__cam?.getSeat?.() || {});
+          const gest = (window.__cam?.getGesture?.() || null);
+          const last = (window.__cam?.getLast?.() || null);
+          const wrists = Array.isArray(last?.landmarks) ? last.landmarks.map(h => (Array.isArray(h)&&h[0]) ? { x:h[0].x, y:h[0].y, z:h[0].z||0 } : null) : [];
+          const labels = Array.isArray(gest?.gestures) ? gest.gestures.map(arr => (arr && arr[0]) ? { name: arr[0].categoryName, score: arr[0].score } : null) : [];
+          return { ts, fps, ids, seat, labels, wrists };
+        });
+        // track labels across frames
+        for(const l of frame.labels){ if(l && l.name) labelsSeen.add(l.name); }
+        // write JSONL
+        fs.writeSync(fh, JSON.stringify(frame) + '\n');
+        count++;
+        await new Promise(r=>setTimeout(r, 66));
+      }
+
+      const summary = { page: pageUrl, clip, lines: count, labelsSeen: Array.from(labelsSeen) };
+      await fsp.writeFile(outSummary, JSON.stringify(summary, null, 2), 'utf8');
+      // Minimal guard: ensure we collected enough lines and observed any gesture labels (taxonomy may not include explicit "Pinch")
+      expect(summary.lines).toBeGreaterThanOrEqual(40);
+      expect(summary.labelsSeen.length).toBeGreaterThanOrEqual(1);
+    } finally {
+      try{ fs.closeSync(fh); }catch{}
+    }
+  });
+});

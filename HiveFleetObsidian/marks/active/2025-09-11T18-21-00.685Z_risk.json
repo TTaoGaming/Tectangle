@@ -1,0 +1,9 @@
+{
+  "id": "mffqia31_v8brf8",
+  "ts": "2025-09-11T18:21:00.685Z",
+  "type": "risk",
+  "topic": "archive_review",
+  "signal": "review first 10: cards_index.mjs, champions_status.mjs, champion_registry.mjs, concord_weaver_checklist.mjs, first_principles_summarize.mjs, generate_champions_overview.mjs, hfo.mjs, nest_paths.mjs, normalize_ascii.mjs, pinch_core_portable.mjs",
+  "decay_after_minutes": 1440,
+  "meta": {}
+}

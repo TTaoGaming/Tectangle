@@ -1,0 +1,263 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/unit/pinchCore.test.mjs
+  - [ ] tests/unit/lookAheadCore.test.mjs
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Tectangle • Ghost-Assisted Hysteresis (1D)</title>
+  <style>
+    :root { --bg:#0b0d10; --fg:#e7edf3; --muted:#9fb3c8; --tube:#24425f; --enter:#2ecc71; --exit:#e67e22; --actual:#4aa3ff; --ghost:#ff7ab6; }
+    *{ box-sizing:border-box; }
+    body{ margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif; }
+    header{ padding:12px 16px; border-bottom:1px solid #1a222c; background:#0f141a; position:sticky; top:0; z-index:5; }
+    .row{ display:flex; gap:12px; padding:12px 16px; flex-wrap:wrap; }
+    video, canvas{ width:100%; max-width:960px; border:1px solid #1a222c; border-radius:12px; background:#0c1117; display:block; }
+    .panel{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+    label{ font-size:12px; color:var(--muted); }
+    input[type="number"]{ width:80px; padding:4px 6px; border-radius:6px; border:1px solid #1a222c; background:#0e131a; color:var(--fg); }
+    input[type="checkbox"]{ transform: translateY(1px); }
+    .stat{ font-size:12px; color:var(--muted); }
+    .sp{ flex:1 1 auto; }
+  </style>
+  <!-- Safe point: this page is a visualization lab only; no core changes. Automation hooks mirror other dev pages (window.__hex).* -->
+  <!-- Scribe note: Ghost ring projects lookahead Δt onto 1D pinch norm using v and a; goal is to observe negative latency (tActual - tGhost > 0). -->
+  </head>
+<body>
+  <header>
+    <h2>Ghost-Assisted Hysteresis <small class="stat">1D norm (index↔thumb / palm width)</small></h2>
+    <div class="panel">
+      <label>Enter <input id="enter" type="number" step="0.01" value="0.50"/></label>
+      <label>Exit <input id="exit" type="number" step="0.01" value="0.72"/></label>
+      <label>Lookahead ms <input id="lookaheadMs" type="number" step="10" value="150"/></label>
+      <label><input id="palmGate" type="checkbox" checked/> Palm gate</label>
+      <label>Cone° <input id="cone" type="number" step="1" value="30"/></label>
+      <span class="sp"></span>
+      <span class="stat">Downs: <b id="downs">0</b> (ghost <b id="gdowns">0</b>) • Ups: <b id="ups">0</b> (ghost <b id="gups">0</b>) • Δt enter(ms): <b id="dEnter">–</b> • Δt exit(ms): <b id="dExit">–</b></span>
+    </div>
+  </header>
+
+  <div class="row">
+    <video id="cam" playsinline muted autoplay></video>
+    <canvas id="overlay" width="960" height="320"></canvas>
+  </div>
+
+  <script type="module">
+    import { createMediaPipeSource } from '../src/ports/mediapipe.js';
+    import { clamp } from '../src/core/filters.js';
+
+    const video = document.getElementById('cam');
+    const canvas = document.getElementById('overlay');
+    const ctx = canvas.getContext('2d');
+
+    const ui = {
+      enter: document.getElementById('enter'),
+      exit: document.getElementById('exit'),
+      lookaheadMs: document.getElementById('lookaheadMs'),
+      palmGate: document.getElementById('palmGate'),
+      cone: document.getElementById('cone'),
+      downs: document.getElementById('downs'),
+      ups: document.getElementById('ups'),
+      gdowns: document.getElementById('gdowns'),
+      gups: document.getElementById('gups'),
+      dEnter: document.getElementById('dEnter'),
+      dExit: document.getElementById('dExit')
+    };
+
+    const st = { mp:null, frames:0, downs:0, ups:0, gdowns:0, gups:0, lastState:'Idle', lastGhostState:'Idle', lastT:null, lastN:null, vRel:0, aRel:0,
+      lastCrossEnterActual:null, lastCrossEnterGhost:null, lastCrossExitActual:null, lastCrossExitGhost:null,
+      golden:[], landmarks:[], telemetry:{}, debugTicks:0 };
+
+    function palmAngle(wrist, indexMCP, pinkyMCP){
+      if(!wrist || !indexMCP || !pinkyMCP) return null;
+      const vx=indexMCP[0]-wrist[0], vy=indexMCP[1]-wrist[1], vz=(indexMCP[2]??0)-(wrist[2]??0);
+      const ux=pinkyMCP[0]-wrist[0], uy=pinkyMCP[1]-wrist[1], uz=(pinkyMCP[2]??0)-(wrist[2]??0);
+      const nx=vy*uz - vz*uy, ny=vz*ux - vx*uz, nz=vx*uy - vy*ux;
+      const nzNorm=Math.hypot(nx,ny,nz)||1; const cos=(-nz)/nzNorm;
+      return Math.acos(clamp(cos,-1,1))*180/Math.PI;
+    }
+
+    function drawTube(norm, nGhost, enter, exit){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const W=canvas.width, H=canvas.height;
+      const pad=32; const y=H/2; const min=0, max=1.2; // norm range to display
+      const xFromN = n=> pad + (W-2*pad) * clamp((n - min)/(max - min), 0, 1);
+      // Tube
+      ctx.strokeStyle = 'rgba(36,66,95,0.9)'; ctx.lineWidth=12; ctx.beginPath(); ctx.moveTo(xFromN(min), y); ctx.lineTo(xFromN(max), y); ctx.stroke();
+      // Enter/Exit marks
+      ctx.strokeStyle = 'rgba(46,204,113,0.6)'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(xFromN(enter), y-24); ctx.lineTo(xFromN(enter), y+24); ctx.stroke();
+      ctx.strokeStyle = 'rgba(230,126,34,0.6)'; ctx.beginPath(); ctx.moveTo(xFromN(exit), y-24); ctx.lineTo(xFromN(exit), y+24); ctx.stroke();
+      // Actual ring
+      const xa = xFromN(norm);
+      ctx.fillStyle = '#4aa3ff'; ctx.beginPath(); ctx.arc(xa, y, 10, 0, Math.PI*2); ctx.fill();
+      // Ghost ring
+      const xg = xFromN(nGhost);
+      ctx.strokeStyle = '#ff7ab6'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(xg, y, 16, 0, Math.PI*2); ctx.stroke();
+    }
+
+    function updateCounters(){ ui.downs.textContent = st.downs; ui.ups.textContent=st.ups; ui.gdowns.textContent=st.gdowns; ui.gups.textContent=st.gups; }
+
+    function interpolateCross(prevT, prevN, currT, currN, target){
+      const dn = currN - prevN; const dt = currT - prevT; if(!isFinite(dn) || Math.abs(dn) < 1e-9 || !isFinite(dt) || Math.abs(dt) < 1) return currT;
+      const alpha = (target - prevN) / dn; const a = Math.max(0, Math.min(1, alpha)); return Math.round(prevT + a*dt);
+    }
+
+    function evalStates(t, n, nGhost, enter, exit, gate){
+      // actual
+      if(gate){
+        if(st.lastState==='Idle' && n < enter){ st.lastState='Pinched'; st.downs++; st.lastCrossEnterActual = interpolateCross(st.lastT??t, st.lastN??n, t, n, enter); st.golden.push(JSON.stringify({t:st.lastCrossEnterActual, type:'actual:down'})); }
+        else if(st.lastState==='Pinched' && n > exit){ st.lastState='Idle'; st.ups++; st.lastCrossExitActual = interpolateCross(st.lastT??t, st.lastN??n, t, n, exit); st.golden.push(JSON.stringify({t:st.lastCrossExitActual, type:'actual:up'})); }
+      } else {
+        // gate off returns to Idle
+        if(st.lastState==='Pinched'){ st.lastState='Idle'; }
+      }
+      // ghost assisted
+      if(gate){
+        if(st.lastGhostState==='Idle' && nGhost < enter){ st.lastGhostState='Pinched'; st.gdowns++; st.lastCrossEnterGhost = t; st.golden.push(JSON.stringify({t, type:'ghost:down'})); }
+        else if(st.lastGhostState==='Pinched' && nGhost > exit){ st.lastGhostState='Idle'; st.gups++; st.lastCrossExitGhost = t; st.golden.push(JSON.stringify({t, type:'ghost:up'})); }
+      } else {
+        if(st.lastGhostState==='Pinched'){ st.lastGhostState='Idle'; }
+      }
+      // latency metrics (only at first new crossings)
+      if(st.lastCrossEnterActual!=null && st.lastCrossEnterGhost!=null){ ui.dEnter.textContent = String(st.lastCrossEnterActual - st.lastCrossEnterGhost); }
+      if(st.lastCrossExitActual!=null && st.lastCrossExitGhost!=null){ ui.dExit.textContent = String(st.lastCrossExitActual - st.lastCrossExitGhost); }
+      updateCounters();
+    }
+
+    function cfg(){ return {
+      enter: +ui.enter.value, exit: +ui.exit.value,
+      lookaheadMs: Math.max(0, +ui.lookaheadMs.value||150),
+      palmGate: !!ui.palmGate.checked, cone: +ui.cone.value
+    }; }
+
+    function gateOk(f, C){
+      if(!C.palmGate) return true;
+      const ang = palmAngle(f.wrist, f.indexMCP, f.pinkyMCP);
+      return (ang==null) ? true : (ang <= C.cone);
+    }
+
+    function resetState(){
+      Object.assign(st, { mp:null, frames:0, downs:0, ups:0, gdowns:0, gups:0, lastState:'Idle', lastGhostState:'Idle', lastT:null, lastN:null, vRel:0, aRel:0,
+        lastCrossEnterActual:null, lastCrossEnterGhost:null, lastCrossExitActual:null, lastCrossExitGhost:null, golden:[], landmarks:[] });
+      updateCounters(); ui.dEnter.textContent='–'; ui.dExit.textContent='–';
+    }
+
+    async function startProcessingCurrentVideo(){
+      const C = cfg();
+      st.mp = createMediaPipeSource(video, f=>{
+        if(!f || !f.indexTip || !f.thumbTip || !f.indexMCP || !f.pinkyMCP) return;
+        st.frames++;
+        const t = f.t;
+        // normalize distance by palm width
+        const kn = Math.hypot(f.indexMCP[0]-f.pinkyMCP[0], f.indexMCP[1]-f.pinkyMCP[1]) || 0.08;
+        const dist = Math.hypot(f.indexTip[0]-f.thumbTip[0], f.indexTip[1]-f.thumbTip[1]);
+        const n = dist/kn;
+        if(st.lastT!=null){ const dt = Math.max(1, (t - st.lastT)); const dv = (n - (st.lastN??n))/(dt/1000); st.aRel = (dv - st.vRel)/(dt/1000); st.vRel = dv; }
+        st.lastT = t; st.lastN = n;
+
+        // ghost projection (lookahead Δ)
+        const dtAhead = (cfg().lookaheadMs)/1000;
+        const nGhost = n + st.vRel*dtAhead + 0.5*st.aRel*dtAhead*dtAhead;
+
+        // draw
+        drawTube(n, nGhost, C.enter, C.exit);
+
+        // evaluate states
+        const gate = gateOk(f, C);
+        evalStates(t, n, nGhost, C.enter, C.exit, gate);
+      });
+  console.log('[ghost] starting mediapipe loop');
+  await st.mp.start();
+    }
+
+  async function startVideoUrl(fileUrl){
+      try{
+        resetState();
+        if(st.mp){ try{ st.mp.stop(); }catch{} }
+  // Canonicalize to absolute URL if a relative path was provided
+  const u = new URL(String(fileUrl||''), location.origin);
+  const src = u.toString() + (u.search ? '&' : '?') + 'cb=' + Date.now();
+  video.srcObject=null; video.crossOrigin = 'anonymous'; video.src = src;
+    // Wait for readiness to ensure MediaPipe reads frames
+  await new Promise(res=> video.addEventListener('loadedmetadata', ()=>{ console.log('[ghost] loadedmetadata', { duration: video.duration, src: video.currentSrc }); res(); }, { once:true }));
+    if(video.readyState < 2){ await new Promise(res=> video.addEventListener('canplay', res, { once:true })); }
+  video.addEventListener('timeupdate', ()=>{ st.debugTicks++; if(st.debugTicks%30===0) console.log('[ghost] timeupdate', { t: video.currentTime, dur: video.duration }); });
+    await video.play();
+  console.log('[ghost] video.play() resolved', { readyState: video.readyState, width: video.videoWidth, height: video.videoHeight });
+        await startProcessingCurrentVideo();
+      }
+      catch(e){ console.error('Could not play URL', fileUrl, e); throw e; }
+      const waitForEnd = (timeoutMs=300000)=> new Promise((resolve)=>{
+        let done=false, tid=null;
+        const finish=()=>{ if(done) return; done=true; if(tid) clearInterval(tid); resolve(); };
+        video.addEventListener('ended', ()=>{ console.log('[ghost] video ended'); finish(); }, { once:true });
+        video.addEventListener('error', (e)=>{ console.log('[ghost] video error', e?.message||e); finish(); }, { once:true });
+        const t0=Date.now();
+        tid=setInterval(()=>{
+          const dur = (video.duration && isFinite(video.duration)) ? video.duration : NaN;
+          if(video.ended || (isFinite(dur) && video.currentTime>=dur-0.05) || (Date.now()-t0)>timeoutMs){ console.log('[ghost] finishing wait', { ct: video.currentTime, dur }); finish(); }
+        }, 250);
+      });
+  const pageTimeout = (typeof window !== 'undefined' && window.__hexProcessTimeoutMs) ? Math.max(5000, Number(window.__hexProcessTimeoutMs)||300000) : 300000;
+  await waitForEnd(pageTimeout);
+      try{ st.mp.stop(); }catch{}
+      const telemetry = {
+        frames: st.frames, downs: st.downs, ups: st.ups, gdowns: st.gdowns, gups: st.gups,
+        dEnterMs: (st.lastCrossEnterActual!=null && st.lastCrossEnterGhost!=null)? (st.lastCrossEnterActual - st.lastCrossEnterGhost) : null,
+        dExitMs: (st.lastCrossExitActual!=null && st.lastCrossExitGhost!=null)? (st.lastCrossExitActual - st.lastCrossExitGhost) : null
+      };
+      return { golden: st.golden, landmarks: st.landmarks, telemetry };
+    }
+
+  async function startWebcam(){
+      resetState();
+      if(st.mp){ try{ st.mp.stop(); }catch{} }
+      try{
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        video.srcObject = stream; video.removeAttribute('src');
+    await new Promise(res=> video.addEventListener('loadedmetadata', res, { once:true }));
+    if(video.readyState < 2){ await new Promise(res=> video.addEventListener('canplay', res, { once:true })); }
+    await video.play();
+        await startProcessingCurrentVideo();
+      } catch(e){ console.warn('Webcam start failed (likely permission or insecure context).', e); throw e; }
+    }
+
+    const api = {
+      async startVideoUrl(u){ return await startVideoUrl(u); },
+      async processVideoUrl(u){ return await startVideoUrl(u); },
+      async startWebcam(){ try{ await startWebcam(); } catch(e){ return { error: String(e) }; } },
+      applyConfigToCores(){ /* no-op; UI reads values live */ }
+    };
+    Object.defineProperty(window,'__hex',{ get(){ return api; } });
+    window.__hexReady = true;
+
+    // Auto-start: if ?src=<mp4 url> present, play it; otherwise attempt webcam.
+  (async function autoStart(){
+      try{
+        const qs = new URLSearchParams(location.search);
+    if(qs.has('noauto')){ console.info('[ghost] noauto flag present; skipping auto-start'); return; }
+        const src = qs.get('src') || qs.get('mp4');
+        if(src){ await startVideoUrl(src); }
+        else {
+          try{ await startWebcam(); }
+          catch(e){ console.info('Webcam unavailable; waiting for external runner or provide ?src=...'); }
+        }
+      } catch(e){ console.error('Auto-start failed', e); }
+    })();
+
+    // Allow external runners to set controls by id via events (already supported by run_video_collect_golden.js)
+  </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "acceptance": [],
+  "emits": [],
+  "generatedFrom": "src/QuantizationManager.js",
+  "name": "QuantizationManager",
+  "tests": [],
+  "timestamp": "2025-09-01T16:40:33.376Z",
+  "version": "0.1.0"
+}

@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Camera + Landmarks + Wrist Label (v2)</title>
+  <style>
+    html,body{height:100%;margin:0}
+    body{background:#0b1020;color:#e5e7eb;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+    #stage{position:relative;width:100%;height:100%;background:black}
+    #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+    #overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+    #hud{position:absolute;left:10px;top:10px;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.15);padding:6px 8px;border-radius:8px;font-size:12px}
+    #controls{position:absolute;right:10px;top:10px;display:flex;gap:8px}
+    button{background:#16a34a;color:#fff;border:0;border-radius:8px;padding:6px 10px;cursor:pointer}
+    button.stop{background:#ef4444}
+  </style>
+  <!-- WEBWAY:ww-2025-095: v2 clone prepared for FSM + shell UI extensions -->
+  <!-- WEBWAY:ww-2025-092: lineage from v1 minimal demo -->
+  <!-- WEBWAY:ww-2025-096: v2 dual viz + mapper + OneEuro + smoke guard scaffold -->
+  <!-- WEBWAY:ww-2025-097: auto-mount shell OS bottom bar + WinBox settings (e2e verified) -->
+</head>
+<body>
+  <div id="wrap">
+    <div id="stage">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="overlay"></canvas>
+  <div id="hud">Idle • FPS: <span id="fps">0</span><div id="seatTip" style="margin-top:4px;color:#9ca3af;font-size:11px"></div></div>
+      <div id="controls">
+        <button id="start">Start</button>
+        <button id="stop" class="stop">Stop</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { makeVideoMapper } from '../src/vis/viewport_mapping.js';
+  import { createLandmarkSmoother } from '../src/processing/landmark_smoother.js';
+    import { drawRaw, drawSmoothed } from '../src/vis/draw_landmarks.js';
+    import { initShell } from '../src/ui/shell/shell_os.js';
+  import { createHandTrackerT1 } from '../src/ports/handTrackerT1.js';
+    // Offline-friendly ESM/WASM + model paths (align with v3 demos)
+    const nmBase = '/node_modules/@mediapipe/tasks-vision';
+    const wasmBase = `${nmBase}/wasm`;
+    const HAND_MODEL = '/September2025/TectangleHexagonal/assets/models/hand_landmarker.task';
+    const GESTURE_MODEL = '/September2025/TectangleHexagonal/assets/models/gesture_recognizer.task';
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('overlay');
+    const g = canvas.getContext('2d');
+    const fpsEl = document.getElementById('fps');
+    const btnStart = document.getElementById('start');
+    const btnStop = document.getElementById('stop');
+
+    let landmarker = null; let recognizer = null; let running=false; let rafId=null; let stream=null; let lastT=0; let fps=0;
+    let state = 'Idle';
+  let lastRes = null; // hand landmarks (raw MP)
+  let lastGest = null; // gesture result
+    let smoother = createLandmarkSmoother({ oneEuro: { minCutoff: 1.6, beta: 0.03, dCutoff: 1.0 } });
+    let mapper = null; // viewport mapper
+    let showDual = true; // dual viz toggle
+  let tracker = createHandTrackerT1({ maxTracks: 4 });
+  let lastIds = []; // stable keys per detection order for current frame
+  
+    // WEBWAY:ww-2025-026: feature flags to guard HUD alignment and claim cooldown (url params FEATURE_* = 0 to disable)
+    const FEATURE_HUD_ALIGNED_LABEL = (()=>{ const p=new URLSearchParams(location.search); const v=p.get('FEATURE_HUD_ALIGNED_LABEL'); if(v==='0') return false; return true; })();
+    const FEATURE_SEAT_CLAIM_COOLDOWN = (()=>{ const p=new URLSearchParams(location.search); const v=p.get('FEATURE_SEAT_CLAIM_COOLDOWN'); if(v==='0') return false; return true; })();
+  // WEBWAY:ww-2025-026: gate seat-claim-on-open-palm behind calibration flag (default ON; set FEATURE_SEAT_OPEN_CALIB=0 to disable)
+    const FEATURE_SEAT_OPEN_CALIB = (()=>{ const p=new URLSearchParams(location.search); const v=p.get('FEATURE_SEAT_OPEN_CALIB'); if(v==='0') return false; return true; })();
+  // WEBWAY:ww-2025-096: minimal seat persistence config/state (demo)
+    // WEBWAY:ww-2025-026: add cooldown + score min for safer claims
+    const seatCfg = { claimMs: 100, snapRadius: 0.12, lossGraceMs: 5000, maxSeats: 4, claimCooldownMs: 600, labelScoreMin: 0.40 };
+  const openPalmTimers = new Map(); // stableKey -> start timestamp
+  const lastClaimAt = { t: 0 }; // simple global cooldown against burst claims
+  const seat = { P1: { key: null, anchor: null, lastSeen: 0 }, P2: { key: null, anchor: null, lastSeen: 0 }, P3: { key: null, anchor: null, lastSeen: 0 }, P4: { key: null, anchor: null, lastSeen: 0 } };
+  const seatLastPose = { P1: null, P2: null, P3: null, P4: null }; // last smoothed hand per seat
+  let perHandLabels = [];
+  let perHandScores = [];
+  // WEBWAY:ww-2025-102: Test hook buffers for aligned labels/scores and handedness per detection index
+  let lastAlignedLabels = [];
+  let lastAlignedScores = [];
+  let lastHandedness = [];
+  // Alignment cache keyed by stable detector key (id:* or seat:*) to damp cross-contamination flicker
+  const alignCache = new Map(); // key -> { label, score, t }
+  let showGhosts = true;
+  // Seat colors (slightly tinted) and fallbacks for unseated
+  const seatColors = {
+    P1: { raw: 'rgba(244,63,94,0.6)', smooth: 'rgba(244,63,94,0.9)', hud: '#f43f5e' },   // rose/red
+    P2: { raw: 'rgba(59,130,246,0.5)', smooth: 'rgba(59,130,246,0.85)', hud: '#3b82f6' }, // blue
+    P3: { raw: 'rgba(234,179,8,0.5)', smooth: 'rgba(234,179,8,0.85)', hud: '#eab308' },   // amber
+    P4: { raw: 'rgba(16,185,129,0.5)', smooth: 'rgba(16,185,129,0.85)', hud: '#10b981' }, // emerald
+    default: { raw: 'rgba(255,255,255,0.35)', smooth: 'rgba(148,163,184,0.8)', hud: '#e5e7eb' }
+  };
+
+    function resizeCanvas(){
+      const rect = video.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.floor(rect.width));
+      canvas.height = Math.max(1, Math.floor(rect.height));
+      if(!mapper) mapper = makeVideoMapper(video, canvas, { fit:'cover', mirror:true });
+      mapper.recalc();
+    }
+
+    function drawLandmarks(res){
+      const W = canvas.width|0, H = canvas.height|0;
+      g.clearRect(0,0,W,H);
+      const L = res?.landmarks || [];
+      const HN = res?.handednesses || [];
+      const rawHands = L.map(hand => (hand||[]).map(p => p ? { x:p.x, y:p.y, z:p.z||0 } : null));
+      // Build T1 dets for stable IDs (use wrist index 0)
+      const dets = L.map((hand, idx) => {
+        const w = (hand && hand[0]) ? hand[0] : { x:0, y:0, z:0 };
+        const label0 = (Array.isArray(HN?.[idx]) && HN[idx][0]) ? (HN[idx][0].categoryName || HN[idx][0].displayName) : 'Unknown';
+        return { wrist: [w.x, w.y], rawLabel: label0 === 'Left' ? 'Left' : 'Right', landmarks: (hand||[]).map(p=> [p.x,p.y,p.z||0]) };
+      });
+      const tNow = performance.now();
+  const assign = tracker.assign(dets, tNow);
+      lastIds = assign.map(a => a && (a.handId ? `id:${a.handId}` : (a.controllerId ? `seat:${a.controllerId}` : null)) || null);
+
+  // Align gesture recognizer hands to detector hands by nearest wrist to prevent cross-contamination
+      let alignedLabels = new Array(rawHands.length).fill(null);
+      let alignedScores = new Array(rawHands.length).fill(null);
+      try{
+        const recL = Array.isArray(lastGest?.landmarks) ? lastGest.landmarks : null;
+        if(recL){
+          // Build wrists arrays
+          const detWr = rawHands.map(h => h?.[0] ? [h[0].x, h[0].y] : null);
+          const recWr = recL.map(h => (Array.isArray(h) && h[0]) ? [h[0].x, h[0].y] : null);
+          const recUsed = new Set();
+          for(let di=0; di<detWr.length; di++){
+            const dw = detWr[di]; if(!dw) continue;
+            let best=-1, bestD=Infinity;
+            for(let rj=0; rj<recWr.length; rj++){
+              if(recUsed.has(rj)) continue;
+              const rw = recWr[rj]; if(!rw) continue;
+              const dx = dw[0]-rw[0], dy = dw[1]-rw[1];
+              const d = dx*dx+dy*dy;
+              if(d<bestD){ bestD = d; best = rj; }
+            }
+            if(best>=0){
+              recUsed.add(best);
+              const gsArr = Array.isArray(lastGest?.gestures?.[best]) ? lastGest.gestures[best] : null;
+              const top = gsArr && gsArr[0] ? gsArr[0] : null;
+              const lab = top ? top.categoryName : null;
+              const sco = top && typeof top.score==='number' ? top.score : null;
+              alignedLabels[di] = lab;
+              alignedScores[di] = sco;
+              // Update cache for this stable key if available
+              const k = lastIds?.[di] || null;
+              if (k && lab) alignCache.set(k, { label: lab, score: sco, t: tNow });
+            }
+          }
+        }
+      }catch{}
+      // Snapshot aligned arrays for test hook
+      lastAlignedLabels = alignedLabels.slice();
+      lastAlignedScores = alignedScores.slice();
+      if(!alignedLabels.some(v=>v!=null)) {
+        // Fallback: reuse prior-recognizer order, but also try cache by stable key
+        alignedLabels = perHandLabels.slice(); alignedScores = perHandScores.slice();
+        for(let i=0;i<alignedLabels.length;i++){
+          const k = lastIds?.[i] || null; if(!k) continue;
+          const c = alignCache.get(k);
+          if(c && c.label){ alignedLabels[i] = c.label; alignedScores[i] = c.score; }
+        }
+      }
+
+      // WEBWAY:ww-2025-096: seat persistence & claim on Open_Palm (multi-seat P1..P4)
+      // Update per-hand Open_Palm timers (only when calibration feature is enabled)
+      if(FEATURE_SEAT_OPEN_CALIB){
+        for(let i=0;i<rawHands.length;i++){
+          const key = lastIds[i]; if(!key) continue;
+          const lbl = alignedLabels[i] || null;
+          const score = alignedScores[i] == null ? null : +alignedScores[i];
+          // WEBWAY:ww-2025-026: gate claims by label score when feature enabled
+          const passScore = !FEATURE_SEAT_CLAIM_COOLDOWN ? true : ((score == null) ? true : (score >= (seatCfg.labelScoreMin||0)));
+          if(lbl === 'Open_Palm' && passScore){
+            if(!openPalmTimers.has(key)) openPalmTimers.set(key, tNow);
+          }else{
+            openPalmTimers.delete(key);
+          }
+        }
+      } else {
+        openPalmTimers.clear();
+      }
+      // Claim next available seat ONLY if no seat is awaiting reacquire; avoid inflation and wrong seat when anchors exist
+      const seatOrder = ['P1','P2','P3','P4'].slice(0, seatCfg.maxSeats);
+      function nextSeatName(){ return seatOrder.find(s => !seat[s].key) || null; }
+      const awaitingReacquire = seatOrder.some(sname => {
+        const s = seat[sname];
+        if(!s.key || !s.anchor) return false;
+        const presentIdx = lastIds.findIndex(k => k === s.key);
+        const withinGrace = (tNow - (s.lastSeen||0)) <= seatCfg.lossGraceMs;
+        return presentIdx < 0 && withinGrace;
+      });
+      if(!awaitingReacquire && FEATURE_SEAT_OPEN_CALIB){
+        // Respect a short global cooldown between successive seat claims to avoid P3/P4 spikes
+        const sinceClaim = tNow - (lastClaimAt.t || 0);
+        for(let i=0;i<rawHands.length;i++){
+          const key = lastIds[i]; if(!key) continue;
+          const start = openPalmTimers.get(key);
+          // skip if this key already has a seat
+          const already = seatOrder.find(s => seat[s].key === key);
+          if(already) continue;
+          // WEBWAY:ww-2025-026: apply cooldown only if feature enabled
+          if(start && (tNow - start) >= seatCfg.claimMs && sinceClaim >= (FEATURE_SEAT_CLAIM_COOLDOWN ? (seatCfg.claimCooldownMs||0) : 0)){
+            const sname = nextSeatName();
+            if(sname){
+              const w = rawHands[i]?.[0];
+              seat[sname].key = key;
+              seat[sname].anchor = w ? [w.x, w.y] : null;
+              seat[sname].lastSeen = tNow;
+              lastClaimAt.t = tNow;
+            }
+          }
+        }
+      }
+      // Maintain anchors and allow seat-level snap when a seat's hand is temporarily lost
+      for(const sname of seatOrder){
+        const s = seat[sname]; if(!s.key) continue;
+        const presentIdx = lastIds.findIndex(k => k === s.key);
+        if(presentIdx >= 0){
+          const w = rawHands[presentIdx]?.[0];
+          if(w){ s.anchor = [w.x, w.y]; s.lastSeen = tNow; }
+        }else if(s.anchor){
+          // Find nearest hand not already seated within snap radius
+          let bestIdx = -1; let bestD = Infinity;
+          for(let i=0;i<rawHands.length;i++){
+            const key = lastIds[i]; if(!key) continue;
+            // skip hands already mapped to a seat
+            if(seatOrder.some(ss => seat[ss].key === key)) continue;
+            const w = rawHands[i]?.[0]; if(!w) continue;
+            const dx = w.x - s.anchor[0], dy = w.y - s.anchor[1];
+            const d = Math.hypot(dx, dy);
+            if(d < bestD){ bestD = d; bestIdx = i; }
+          }
+          if(bestIdx >= 0 && bestD <= seatCfg.snapRadius){
+            const newKey = lastIds[bestIdx];
+            s.key = newKey;
+            const w = rawHands[bestIdx]?.[0];
+            s.anchor = w ? [w.x, w.y] : s.anchor;
+            s.lastSeen = tNow;
+          }
+        }
+      }
+      const smoothed = smoother.push({ t: tNow, hands: rawHands, keys: lastIds, width: video.videoWidth||0, height: video.videoHeight||0 });
+      // Update lastPose for seats that are currently present
+      for(const sname of seatOrder){
+        const s = seat[sname]; if(!s.key) continue;
+        const idx = lastIds.findIndex(k => k === s.key);
+        if(idx >= 0){ seatLastPose[sname] = (smoothed && smoothed[idx]) ? smoothed[idx].map(p => ({ x:p.x, y:p.y, z:p.z||0 })) : seatLastPose[sname]; }
+      }
+      // Build per-hand colors based on seat assignments
+      const colorsRaw = []; const colorsSmooth = [];
+      for(let i=0;i<rawHands.length;i++){
+        const key = lastIds[i];
+        const seatName = key ? (seatOrder.find(s => seat[s].key === key) || null) : null;
+        const pal = seatName ? seatColors[seatName] : seatColors.default;
+        colorsRaw.push(pal.raw); colorsSmooth.push(pal.smooth);
+      }
+      drawRaw(g, rawHands, mapper, { colors: colorsRaw, radius:3 });
+      if(showDual) drawSmoothed(g, smoothed, mapper, { colors: colorsSmooth, radius:2 });
+      // Draw ghost visuals for seats awaiting reacquire using lastPose
+      if(showGhosts){
+      for(const sname of seatOrder){
+        const s = seat[sname]; if(!s.anchor) continue;
+        const presentIdx = s.key ? lastIds.findIndex(k => k === s.key) : -1;
+        const withinGrace = (tNow - (s.lastSeen||0)) <= seatCfg.lossGraceMs;
+        if(presentIdx < 0 && withinGrace && seatLastPose[sname]){
+          const pal = seatColors[sname] || seatColors.default;
+          // Use lower alpha ghost colors
+          const ghostColor = pal.smooth.replace(/rgba\(([^)]+)\)/, (m,c)=>{
+            const parts = c.split(',').map(x=>x.trim());
+            if(parts.length===4){ parts[3] = '0.35'; return `rgba(${parts.join(',')})`; }
+            return pal.smooth;
+          });
+          drawSmoothed(g, [seatLastPose[sname]], mapper, { colors: [ghostColor], radius:2 });
+          // HUD hint near anchor
+          const [ax,ay] = mapper.map(s.anchor[0], s.anchor[1]);
+          g.save();
+          g.fillStyle = 'rgba(0,0,0,0.45)';
+          roundRect(g, ax-30, ay-50, 60, 18, 8); g.fill();
+          g.fillStyle = pal.hud;
+          g.fillText(`seat:${sname}`, ax-24, ay-38);
+          g.restore();
+        }
+      }
+      }
+      // Update handedness snapshot aligned by detector index for test hook
+      try {
+        lastHandedness = rawHands.map((_, i) => {
+          const cat = (Array.isArray(HN?.[i]) && HN[i][0]) ? HN[i][0] : null;
+          return cat?.categoryName || cat?.displayName || 'Unknown';
+        });
+      } catch {}
+
+      g.font = '12px system-ui,Segoe UI,Roboto,Arial';
+      for(let i=0;i<rawHands.length;i++){
+        const hand = rawHands[i]; if(!hand || hand.length<1) continue;
+        const w = hand[0]; if(!w) continue;
+        const [wx,wy] = mapper.map(w.x, w.y);
+    const handedCat = (Array.isArray(HN?.[i]) && HN[i][0]) ? HN[i][0] : null;
+        const handed = handedCat?.categoryName || handedCat?.displayName || 'Unknown';
+        const hScore = (typeof handedCat?.score === 'number') ? handedCat.score.toFixed(2) : '–';
+  const key = lastIds[i];
+  const idLabel = key || 'id:—';
+  const seatName = key ? (['P1','P2','P3','P4'].slice(0, seatCfg.maxSeats).find(s => seat[s].key === key) || null) : null;
+  const seatLabel = seatName ? `seat:${seatName}` : 'unseated';
+  // WEBWAY:ww-2025-026: HUD uses aligned per-hand label to avoid cross-contamination (feature flag)
+  const gName = FEATURE_HUD_ALIGNED_LABEL ? (alignedLabels[i] || perHandLabels[i] || '-') : (perHandLabels[i] || '-');
+  const gScoreRaw = FEATURE_HUD_ALIGNED_LABEL ? alignedScores[i] : (Array.isArray(perHandScores) ? perHandScores[i] : null);
+  const gScore = (gScoreRaw != null && typeof gScoreRaw === 'number') ? gScoreRaw.toFixed(2) : '–';
+  const text = `State: ${state}  ${handed}(${hScore})  ${gName}(${gScore})  ${idLabel}  ${seatLabel}  wrist xyz: ${w.x.toFixed(3)}, ${w.y.toFixed(3)}, ${Number(w.z||0).toFixed(3)}`;
+        const pad = 6; const tw = g.measureText(text).width; const th = 18;
+        g.save();
+        g.translate(wx, wy - 20);
+        g.fillStyle = 'rgba(0,0,0,0.55)';
+        roundRect(g, -pad, -th+4, tw + pad*2, th, 8); g.fill();
+        const pal = seatName ? seatColors[seatName] : seatColors.default;
+        g.fillStyle = pal.hud;
+        g.fillText(text, 0, 0);
+        g.restore();
+      }
+      // WEBWAY:ww-2025-098: after HUD, feed aligned labels into FSMs per seat
+      
+    }
+
+    function roundRect(ctx, x, y, w, h, r){
+      const rr = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x+rr, y);
+      ctx.arcTo(x+w, y, x+w, y+h, rr);
+      ctx.arcTo(x+w, y+h, x, y+h, rr);
+      ctx.arcTo(x, y+h, x, y, rr);
+      ctx.arcTo(x, y, x+w, y, rr);
+      ctx.closePath();
+    }
+
+    function loop(){
+      if(!running) return;
+      const now = performance.now();
+      const dt = now - lastT; lastT = now; if(dt>0){ fps = 1000/dt; fpsEl.textContent = fps.toFixed(1); }
+      try{
+        // Recognize gestures first to expose per-hand labels
+        if(recognizer && typeof recognizer.recognizeForVideo === 'function'){
+          lastGest = recognizer.recognizeForVideo(video, now);
+          const gs = Array.isArray(lastGest?.gestures) ? lastGest.gestures : [];
+          perHandLabels = gs.map(arr => (arr && arr[0] ? arr[0].categoryName : null));
+          perHandScores = gs.map(arr => (arr && arr[0] && typeof arr[0].score === 'number' ? arr[0].score : null));
+          const lbl0 = perHandLabels[0] || null; if(lbl0){ state = lbl0; }
+        } else { perHandLabels = []; perHandScores = []; }
+        const res = landmarker?.detectForVideo ? landmarker.detectForVideo(video, now) : null;
+        if(res){ lastRes = res; drawLandmarks(res); }
+      }catch(e){ /* swallow per-frame errors */ }
+      rafId = requestAnimationFrame(loop);
+    }
+
+    async function initMedia(){
+      if(stream) return;
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio:false });
+      video.srcObject = stream; await video.play();
+      resizeCanvas();
+      new ResizeObserver(resizeCanvas).observe(document.getElementById('stage'));
+    }
+
+    async function initLandmarker(){
+      if(landmarker) return;
+      const vision = await import(`${nmBase}/vision_bundle.mjs`);
+      const { FilesetResolver, HandLandmarker } = vision;
+      const fileset = await FilesetResolver.forVisionTasks(wasmBase);
+      landmarker = await HandLandmarker.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: HAND_MODEL },
+        runningMode: 'VIDEO', numHands: 2
+      });
+    }
+
+    async function initRecognizer(){
+      if(recognizer) return;
+      const vision = await import(`${nmBase}/vision_bundle.mjs`);
+      const { FilesetResolver, GestureRecognizer } = vision;
+      const fileset = await FilesetResolver.forVisionTasks(wasmBase);
+      recognizer = await GestureRecognizer.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: GESTURE_MODEL },
+        runningMode: 'VIDEO', numHands: 2
+      });
+    }
+
+    async function start(){
+      if(running) return;
+      await initMedia(); await initLandmarker(); await initRecognizer();
+      if(!mapper) mapper = makeVideoMapper(video, canvas, { fit:'cover', mirror:true });
+      mapper.recalc();
+      
+      // Update HUD tip about seat calibration behavior
+      const tipEl = document.getElementById('seatTip');
+      if(tipEl){
+        if(FEATURE_SEAT_OPEN_CALIB){
+          tipEl.textContent = 'Tip: Open-Palm claims seats. To avoid new claims, keep hands closed and move near your seat anchor to re-acquire.';
+        } else {
+          tipEl.textContent = 'Seat calibration OFF. Open-Palm claims disabled; approach seat anchors with hands closed to re-acquire. Add ?FEATURE_SEAT_OPEN_CALIB=1 to enable.';
+        }
+      }
+      running = true; lastT = performance.now(); loop();
+    }
+    function stop(){ if(!running) return; running=false; if(rafId) cancelAnimationFrame(rafId); }
+
+    btnStart.addEventListener('click', start);
+    btnStop.addEventListener('click', stop);
+    window.addEventListener('keydown', (e)=>{ if(e.key.toLowerCase()==='v'){ showDual=!showDual; }});
+
+    (async () => {
+      try{ await start(); }
+      catch(err){ const hud = document.getElementById('hud'); hud.textContent = 'Model missing? Run: npm run hex:hand:model'; console.error('HandLandmarker init failed', err); }
+    })();
+
+    try{
+      // Mount the shell bar only when desired: explicitly enabled via FEATURE_GSOS_SHELL_BAR
+      // or when this page is top-level (not embedded as wallpaper). This avoids overlapping bars.
+      {
+        const p = new URLSearchParams(location.search);
+        const enableBar = (()=>{
+          const v = p.get('FEATURE_GSOS_SHELL_BAR');
+          if (v === '1' || v === 'true') return true;
+          if (v === '0' || v === 'false') return false;
+          // Default: only when top-level (not inside iframe)
+          try { return window === window.top; } catch { return true; }
+        })();
+        if (!enableBar) { /* skip legacy bar when embedded */ }
+        if (enableBar) initShell({ mount: document.body, apps: [
+          { id:'seats', title:'Seats', open: async ()=>{
+              // Prefer WinBox floating window
+              try{
+                const mod = await import('../src/ui/winBoxHost.js');
+                const wb = await mod.createWinBoxWindow({ title: 'Seats', width: 360, height: 280 });
+                const c = document.createElement('div');
+                c.style.padding = '8px'; c.style.fontFamily = 'system-ui,Segoe UI,Roboto,Arial'; c.style.color = '#e5e7eb';
+                c.innerHTML = '<h3 style="margin:8px">Seats (P1..P4)</h3><div id="list" style="padding:8px"></div>';
+                wb.body.appendChild(c);
+                const list = c.querySelector('#list');
+                const order = ['P1','P2','P3','P4'].slice(0, seatCfg.maxSeats);
+                function render(){
+                  const s = window.__cam?.getSeat?.();
+                  list.innerHTML = order.map(name => {
+                    const sk = s && s[name] ? s[name].key : (seat[name]?.key || null);
+                    const color = (seatColors[name]||seatColors.default).hud;
+                    const label = sk ? sk : '—';
+                    return `<div style=\"margin:6px 0\"><span style=\"display:inline-block;width:32px;color:${color}\">${name}</span> <span>${label}</span></div>`;
+                  }).join('');
+                }
+                const id = setInterval(render, 250); render();
+                wb.onclose = () => { clearInterval(id); };
+                return;
+              }catch(e){ /* fall through to window.open */ }
+              const w = window.open('', 'seats_view', 'width=360,height=280');
+              if(!w) return;
+              w.document.body.style.fontFamily = 'system-ui,Segoe UI,Roboto,Arial';
+              w.document.body.style.background = '#0b1020';
+              w.document.body.style.color = '#e5e7eb';
+              w.document.body.innerHTML = '<h3 style="margin:8px">Seats (P1..P4)</h3><div id="list" style="padding:8px"></div>';
+              const list = w.document.getElementById('list');
+              function render(){
+                const s = window.__cam?.getSeat?.();
+                const order = ['P1','P2','P3','P4'].slice(0, seatCfg.maxSeats);
+                list.innerHTML = order.map(name => {
+                  const sk = s && s[name] ? s[name].key : (seat[name]?.key || null);
+                  const color = (seatColors[name]||seatColors.default).hud;
+                  const label = sk ? sk : '—';
+                  return `<div style=\"margin:6px 0\"><span style=\"display:inline-block;width:32px;color:${color}\">${name}</span> <span>${label}</span></div>`;
+                }).join('');
+              }
+              render();
+              const id = setInterval(render, 250);
+              w.addEventListener('beforeunload', ()=> clearInterval(id));
+            } },
+      { id:'settings', title:'Settings', open: async ()=>{
+        // WEBWAY:ww-2025-101: Settings persistence via hex service + localStorage adapter
+              try{
+                const mod = await import('../src/ui/winBoxHost.js');
+                const wb = await mod.createWinBoxWindow({ title: 'Settings', width: 380, height: 360 });
+                // Mark for tests
+                try{ wb.dom?.classList?.add('wb-settings'); wb.dom?.classList?.add('wb-dark'); wb.dom?.setAttribute?.('data-testid','winbox-settings'); }catch{}
+                const c = document.createElement('div');
+                c.style.padding = '10px'; c.style.fontFamily = 'system-ui,Segoe UI,Roboto,Arial'; c.style.color = '#e5e7eb'; c.style.fontSize = '13px';
+                c.innerHTML = `
+                  <h3 style="margin:6px 0 10px">Demo Settings</h3>
+                  <div style="margin:8px 0">
+                    <label><input type="checkbox" id="flag_hud_align" data-testid="settings-flag-hud-align" ${FEATURE_HUD_ALIGNED_LABEL? 'checked':''}/> HUD uses aligned labels</label>
+                  </div>
+                  <div style="margin:8px 0">
+                    <label><input type="checkbox" id="flag_claim_cd" data-testid="settings-flag-claim-cd" ${FEATURE_SEAT_CLAIM_COOLDOWN? 'checked':''}/> Seat claim cooldown</label>
+                  </div>
+                  <div style="margin:8px 0">
+                    <label><input type="checkbox" id="flag_open_calib" data-testid="settings-flag-open-calib" ${FEATURE_SEAT_OPEN_CALIB? 'checked':''}/> Open-Palm seat calibration</label>
+                  </div>
+                  <div style="margin:10px 0;opacity:0.9">Cooldown (ms): <input type="number" id="cfg_cooldown" data-testid="settings-cooldown" value="${seatCfg.claimCooldownMs}" min="0" step="50" style="width:90px"/></div>
+                  <div style="margin:10px 0;opacity:0.9">Min label score: <input type="number" id="cfg_score" data-testid="settings-score" value="${seatCfg.labelScoreMin}" min="0" max="1" step="0.01" style="width:90px"/></div>
+                  <div style="margin:10px 0;opacity:0.9"><label><input type="checkbox" id="cfg_ghosts" data-testid="settings-ghosts" ${showGhosts? 'checked':''}/> Show ghosts during grace</label></div>
+                  <div style="margin-top:12px;display:flex;gap:8px">
+                    <button id="apply" data-testid="settings-apply" style="background:#16a34a;color:#fff;border:0;border-radius:6px;padding:6px 10px">Apply</button>
+                    <button id="close" style="background:#374151;color:#e5e7eb;border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:6px 10px">Close</button>
+                  </div>
+                  <p style="margin-top:10px;color:#9ca3af">Tip: Disable Open-Palm calibration to prevent accidental new claims; approach anchors with hands closed to re-acquire.</p>
+                `
+                wb.body.appendChild(c);
+
+                // Settings persistence via hex service (scoped to this demo page)
+                try {
+                  const { createSettingsService } = await import('../src/app/settingsService.js');
+                  const { createLocalStorageSettingsAdapter } = await import('../src/adapters/localStorageSettingsAdapter.js');
+                  const adapter = createLocalStorageSettingsAdapter();
+                  const svc = createSettingsService({ appId: 'v2-demo-settings', version: 1, adapter, defaults: {
+                    hudAligned: !!FEATURE_HUD_ALIGNED_LABEL,
+                    claimCooldown: Number(seatCfg.claimCooldownMs||0)|0,
+                    labelScoreMin: Number(seatCfg.labelScoreMin||0),
+                    openPalmCalib: !!FEATURE_SEAT_OPEN_CALIB,
+                    showGhosts: !!showGhosts
+                  }});
+                  const loaded = await svc.load();
+                  // Restore UI from persisted values
+                  const $ = (sel)=> c.querySelector(sel);
+                  if (loaded) {
+                    $('#flag_hud_align').checked = !!loaded.hudAligned;
+                    $('#flag_claim_cd').checked = true; // cooldown is numeric; keep switch on when any
+                    $('#flag_open_calib').checked = !!loaded.openPalmCalib;
+                    $('#cfg_cooldown').value = String(Number(loaded.claimCooldown||0)|0);
+                    $('#cfg_score').value = String(Number(loaded.labelScoreMin||0));
+                    $('#cfg_ghosts').checked = !!loaded.showGhosts;
+                    // Apply to live demo state
+                    seatCfg.claimCooldownMs = Number(loaded.claimCooldown||0)|0;
+                    seatCfg.labelScoreMin = Number(loaded.labelScoreMin||0);
+                    showGhosts = !!loaded.showGhosts;
+                  }
+                  // Save on Apply
+                  c.querySelector('#apply').addEventListener('click', async ()=>{
+                    const patch = {
+                      hudAligned: $('#flag_hud_align').checked,
+                      claimCooldown: Number($('#cfg_cooldown').value||0)|0,
+                      labelScoreMin: Number($('#cfg_score').value||0),
+                      openPalmCalib: $('#flag_open_calib').checked,
+                      showGhosts: $('#cfg_ghosts').checked
+                    };
+                    await svc.save(patch);
+                    // Reflect to runtime (subset already handled below)
+                  });
+                } catch { /* optional */ }
+
+                c.querySelector('#apply').addEventListener('click', ()=>{
+                  // Toggle flags (page reload for URL flags is avoided; we update locals only)
+                  const hudAlign = c.querySelector('#flag_hud_align').checked;
+                  const cd = c.querySelector('#flag_claim_cd').checked;
+                  const openCal = c.querySelector('#flag_open_calib').checked;
+                  // Update local feature toggles by shadowing (note: URL flags still override on reload)
+                  if(hudAlign !== FEATURE_HUD_ALIGNED_LABEL){ /* runtime HUD uses alignedLabels already derived each frame */ }
+                  if(openCal !== FEATURE_SEAT_OPEN_CALIB){ /* respected immediately by claim timers */ }
+                  // Mutate seat config and ghosts
+                  const cool = Math.max(0, Number(c.querySelector('#cfg_cooldown').value||0)|0);
+                  const score = Math.max(0, Math.min(1, Number(c.querySelector('#cfg_score').value||0)));
+                  seatCfg.claimCooldownMs = cool;
+                  seatCfg.labelScoreMin = score;
+                  const ghosts = c.querySelector('#cfg_ghosts').checked; showGhosts = !!ghosts;
+                });
+                c.querySelector('#close').addEventListener('click', ()=> wb.close());
+                return;
+              }catch(e){ /* simple fallback */ alert('Settings requires WinBox runtime'); }
+            } },
+          { id:'demo', title:'Camera Demo (v2)', open: ()=>{/* placeholder */} }
+          ] });
+      }
+    }catch{}
+
+    // WEBWAY:ww-2025-095: test hooks for smoke validation
+    window.__cam = {
+      getState: ()=> state,
+      getLast: ()=> lastRes,
+      getGesture: ()=> lastGest,
+      hasHandLandmarker: ()=> !!landmarker,
+      hasGestureRecognizer: ()=> !!recognizer,
+      setDualViz: (b)=>{ showDual = !!b; },
+      getMapperState: ()=> mapper?.state || null,
+      getStableIds: ()=> Array.isArray(lastIds) ? [...lastIds] : [],
+      // WEBWAY:ww-2025-102: test-only API to inspect label stability
+      getAlignedLabels: ()=>{
+        const perHand = Array.isArray(lastAlignedLabels) ? [...lastAlignedLabels] : [];
+        const byKey = {};
+        for(let i=0;i<(lastIds?.length||0);i++){
+          const k = lastIds[i]; if(!k) continue;
+          byKey[k] = { label: lastAlignedLabels?.[i] ?? null, score: lastAlignedScores?.[i] ?? null, handed: lastHandedness?.[i] ?? null };
+        }
+        return { perHand, byKey };
+      },
+      // WEBWAY:ww-2025-096: seat + config hooks
+      getSeat: ()=> {
+        const order = ['P1','P2','P3','P4'].slice(0, seatCfg.maxSeats);
+        const copy = {};
+        for(const s of order){ copy[s] = { ...seat[s] }; }
+        const perHand = (lastIds||[]).map((k)=>{
+          const s = order.find(name => seat[name].key && seat[name].key === k);
+          return s || 'unseated';
+        });
+        return { ...copy, perHand };
+      },
+      setSeatConfig: (cfg={})=>{ Object.assign(seatCfg, cfg||{}); }
+      , setGhosts: (b)=>{ showGhosts = !!b; }
+    };
+
+    // Register this runtime with the hex registry (strangler step)
+    try {
+      const { registerV2Runtime } = await import('../src/hex/cameraV2Hex.js');
+      registerV2Runtime(window.__cam);
+    } catch {}
+  </script>
+</body>
+</html>

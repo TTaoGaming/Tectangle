@@ -1,0 +1,31 @@
+name: hex-daily
+
+on:
+  schedule:
+    - cron: '15 3 * * *' # 03:15 UTC daily
+  workflow_dispatch:
+
+jobs:
+  daily-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install deps
+        run: npm ci
+      - name: Fast verify (sanity)
+        run: npm run hex:verify:fast
+      - name: Full verify + goldens
+        run: npm run hex:verify:daily
+      - name: Artifact out (optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hex-daily-out
+          path: |
+            September2025/TectangleHexagonal/out/**

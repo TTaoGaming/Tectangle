@@ -1,0 +1,9 @@
+{
+  "acceptance": [],
+  "emits": [],
+  "generatedFrom": "src/TelemetryManager.js",
+  "name": "TelemetryManager",
+  "tests": [],
+  "timestamp": "2025-09-01T16:40:33.399Z",
+  "version": "0.1.0"
+}

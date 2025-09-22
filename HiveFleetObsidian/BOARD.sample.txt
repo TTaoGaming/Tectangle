@@ -1,0 +1,6 @@
+Problem: <what blocks progress right now>
+Metric: <one number/boolean to move, e.g., demo_unblocked or median_trigger_delay_ms>
+Constraint: <limits: time, device, deps>
+Horizons: 1h=<...> | 1d=<...> | 1w=<...> | 1m=<...>
+Current: <current method/approach>
+

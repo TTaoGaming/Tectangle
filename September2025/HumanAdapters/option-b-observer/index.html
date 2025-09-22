@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Option B — Demo Observer (No Fork)</title>
+  <link rel="stylesheet" href="../shared.css" />
+</head>
+<body>
+  <div class="layout">
+    <div class="toolbar" id="toolbar"></div>
+    <div class="left">
+  <iframe id="demo" src="/human-main-referenceonly/human-main/demo/index.html?backend=webgl&worker=false&results=false&export=true" allow="camera; microphone; autoplay; clipboard-read; clipboard-write; fullscreen; display-capture"></iframe>
+    </div>
+    <div class="right" id="right"></div>
+  </div>
+  <script type="module">
+    import { makeToolbar, getMediaOrVideo, ensureOverlay, fitCanvasToVideo, drawTips } from '../shared.js';
+
+    const toolbar = makeToolbar(document);
+    document.getElementById('toolbar').replaceWith(toolbar);
+
+    const {wrap, video, canvas} = ensureOverlay(document);
+    document.getElementById('right').appendChild(wrap);
+    const ctx = canvas.getContext('2d');
+
+    function getHumanFromDemo(){
+      const frame = document.getElementById('demo');
+      try {
+        return frame.contentWindow?.__human || frame.contentWindow?.human;
+      } catch {}
+      return null;
+    }
+
+    async function start(choice){
+      const status = document.getElementById('status');
+      status.textContent = 'loading input...';
+      // For observer, we can optionally run our own video for drawing, independent of demo
+      let srcVideo;
+      if(choice === 'custom-file'){
+        const file = document.getElementById('filePick').files?.[0];
+        if(!file){ status.textContent = 'pick a file first'; return; }
+        const url = URL.createObjectURL(file);
+        srcVideo = await getMediaOrVideo(document, url);
+      } else {
+        srcVideo = await getMediaOrVideo(document, document.getElementById('inputSel').value);
+      }
+      video.srcObject = srcVideo.srcObject || null;
+      if(!video.srcObject){ video.src = srcVideo.src; }
+      await video.play();
+
+      function loop(){
+        const human = getHumanFromDemo();
+        if(human && human.result){
+          fitCanvasToVideo(canvas, video);
+          const w = video.videoWidth||1, hgt = video.videoHeight||1;
+          const hands = (human.result.hands || human.result.hand || []).map(h=>{
+            const lm = (h.landmarks||h.keypoints||[]).map(p=>({ x: p.x<=1? p.x : p.x/w, y: p.y<=1? p.y : p.y/hgt }));
+            return { ...h, landmarks: lm };
+          });
+          window.__lastHands = hands;
+          drawTips(ctx, hands, canvas);
+        }
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+      status.textContent = 'running';
+    }
+
+    toolbar.querySelector('#startBtn').addEventListener('click', ()=> start());
+    toolbar.querySelector('#filePick').addEventListener('change', ()=> start('custom-file'));
+  </script>
+</body>
+</html>

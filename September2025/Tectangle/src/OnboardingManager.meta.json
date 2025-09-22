@@ -1,0 +1,14 @@
+{
+  "acceptance": [],
+  "emits": [
+    {
+      "detailSchema": {},
+      "event": "onboarding:destroyed"
+    }
+  ],
+  "generatedFrom": "src/OnboardingManager.js",
+  "name": "OnboardingManager",
+  "tests": [],
+  "timestamp": "2025-09-01T16:40:33.350Z",
+  "version": "0.1.0"
+}

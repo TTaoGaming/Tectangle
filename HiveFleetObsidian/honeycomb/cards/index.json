@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2025-09-18T19:32:03.201Z",
+  "champions": [
+    {
+      "champion": "ThreadSovereign",
+      "cards": [
+        {
+          "id": "",
+          "name": "ts_mountain_regent_pw.md",
+          "file": "HiveFleetObsidian/honeycomb/champions/ThreadSovereign/cards/ts_mountain_regent_pw.md"
+        }
+      ]
+    },
+    {
+      "champion": "FaultlineSeeker",
+      "cards": [
+        {
+          "id": "",
+          "name": "fs_seam_whisperer_pw.md",
+          "file": "HiveFleetObsidian/honeycomb/champions/FaultlineSeeker/cards/fs_seam_whisperer_pw.md"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "acceptance": [],
+  "emits": [],
+  "generatedFrom": "src/PinchRecognitionManager.js",
+  "name": "PinchRecognitionManager",
+  "tests": [],
+  "timestamp": "2025-09-01T16:40:33.358Z",
+  "version": "0.1.0"
+}

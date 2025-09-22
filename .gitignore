@@ -1,0 +1,31 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Logs
+*.log
+out/
+
+# OS/editor
+.DS_Store
+.vscode/
+.history/
+
+# Build caches
+.cache/
+tmp/
+
+# Reports/heartbeat artifacts
+HiveFleetObsidian/reports/heartbeat/
+HiveFleetObsidian/historythread/hourly/
+HiveFleetObsidian/historythread/daily/
+HiveFleetObsidian/historythread/weekly/
+
+# Archives/backups
+archive-*/
+Archivetest/
+"Knowledge backup 20250912"/
+archive-2025-09-01T19-13-05Z/root_contents/**/scene.bin
+archive-stale/**/scene.bin
+archive-stale/**/workspace-*.zip
+archive-stale/**/workspace-*.zip

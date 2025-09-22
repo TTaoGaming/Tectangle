@@ -1,0 +1,1 @@
+﻿// TODO: implement helper to diff generated JSONL vs golden with tolerances.\nexport function diffGolden(/* actualRows, goldenRows, options */) {\n  throw new Error('goldenDiff.diffGolden not implemented');\n}\n

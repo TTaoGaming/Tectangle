@@ -1,0 +1,186 @@
+<!doctype html>
+<!--
+Hand Console V4 (Minimal Video + Signal Panels)
+Status: EXPERIMENTAL (scaffold)
+Feature Flag: FEATURE_HAND_CONSOLE_V4
+TTL: 2025-10-07 (remove or graduate)
+Revert: delete this file + unset feature flag; fallback to v3 or min console.
+Goals:
+ - Eliminate overlay/canvas to isolate white-screen crash cause.
+ - Show raw webcam (or clip) only; all derived signals listed in side panel.
+ - Provide clear structure for future per-signal widgets (pinch, orient, flex, velocity, seat assign).
+ - Camera-first autostart (will be added after scaffold) with fallback logic.
+-->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Hand Console V4</title>
+  <link rel="stylesheet" href="./hexui.css" />
+  <style>
+    body { margin:0; background:var(--hex-bg,#0b1117); color:var(--hex-text,#e5e7eb); font:12px system-ui,sans-serif; display:grid; grid-template-columns: 2fr 1fr; height:100vh; }
+    #left { position:relative; }
+    video { width:100%; height:100%; object-fit:cover; background:#000; }
+    #right { display:flex; flex-direction:column; gap:12px; padding:12px; overflow:auto; }
+    h3 { margin:0 0 6px; font-size:13px; text-transform:uppercase; letter-spacing:.5px; opacity:.85; }
+    .panel { background:var(--hex-panel-bg,#131a23); border:1px solid var(--hex-panel-border,#1e2833); border-radius:10px; padding:10px 12px; }
+    .grid { display:grid; grid-template-columns:auto 1fr; gap:2px 8px; }
+    .mono { font-family:var(--hex-mono,ui-monospace,Menlo,Consolas,monospace); }
+    .small { font-size:11px; opacity:.75; }
+    .row { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+    .badge { padding:2px 6px; border-radius:4px; background:#374151; font-size:11px; }
+    .badge.P1 { background:#2563eb; }
+    .badge.P2 { background:#8b5cf6; }
+  </style>
+</head>
+<body>
+  <div id="left">
+    <video id="cam" playsinline muted></video>
+    <div id="bootMsg" style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.55);padding:6px 8px;border-radius:6px;font:12px system-ui,sans-serif;color:#e5e7eb;max-width:220px;line-height:1.3;z-index:10;">Loading…<br><span style="opacity:.7">Waiting for camera or clip</span></div>
+  </div>
+  <div id="right">
+    <div class="panel" id="capturePanel">
+      <h3>Capture</h3>
+      <div class="row">
+        <button id="startCam">Camera</button>
+        <button id="runClip">Clip</button>
+        <select id="clipSel" style="font-size:12px;">
+          <option value="../videos/two_hands_baseline_idle_v1.mp4">Idle</option>
+          <option value="../videos/two_hands_stationary_right_then_left_index_pinch_hold_1s_v1.mp4">Pinch Seq</option>
+        </select>
+      </div>
+      <div class="row small mono" id="statusMsg">idle</div>
+    </div>
+
+    <div class="panel" id="seatPanel">
+      <h3>Seats</h3>
+      <div class="mono" id="seatSummary">P1=- | P2=-</div>
+    </div>
+
+    <div class="panel" id="signalsPanel">
+      <h3>Signals</h3>
+      <div class="small" style="opacity:.7;margin-bottom:4px;">(Future widgets will attach here)</div>
+      <div class="grid mono small" id="signalsGrid"></div>
+    </div>
+
+    <div class="panel" id="logPanel">
+      <h3>Recent Pinch</h3>
+      <pre id="log" class="mono" style="font-size:11px;max-height:140px;overflow:auto;margin:0;"></pre>
+    </div>
+
+    <div class="panel small" id="diagPanel">
+      <h3>Diag</h3>
+      <div id="diagText" class="mono small">frames=0</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createAppShell } from '../src/app/appShell.js';
+    import { createHandConsoleViewModel } from '../src/ui/createHandConsoleViewModel.js'; // WEBWAY:ww-2025-008
+    globalThis.__flags = Object.assign({}, globalThis.__flags||{}, { FEATURE_HAND_CONSOLE_V4:true });
+
+    const video = document.getElementById('cam');
+    const shell = createAppShell({});
+    shell.hsm && shell.hsm.on(()=>{});
+
+    // WEBWAY:ww-2025-008: optional unified view model (flag controlled)
+    const useVM = (globalThis.__flags.FEATURE_HAND_CONSOLE_VM===true);
+    const vmCore = useVM ? createHandConsoleViewModel() : null;
+    const vm = useVM ? vmCore._state : {
+      seats:{P1:null,P2:null},
+      hands:{},
+      pinchLog:[],
+      frames:0,
+      errors:[],
+      lastHandCount:0
+    };
+    globalThis.__hexVizDiagV4 = { frames:0, errors:vm.errors||[], lastHandCount:0 };
+
+    function pushPinchLog(e){
+      vm.pinchLog.push({ t:e.t, type:e.type, seat:e.seat||'', key:e.handKey });
+      if(vm.pinchLog.length>140) vm.pinchLog.splice(0, vm.pinchLog.length-140);
+    }
+
+    if(useVM && vmCore){
+      vmCore.attach(h => shell.onEvent(h)); // not needed; kept for symmetry
+      shell.onEvent(ev=> vmCore.onEvent(ev));
+    } else {
+      shell.onEvent(e=>{
+        const hk=e.handKey; if(hk){ vm.hands[hk]=vm.hands[hk]||{}; }
+        if(e.type.startsWith('pinch:')){ vm.hands[hk].pinch=e; pushPinchLog(e); }
+        if(e.type==='wrist:orientation'){ vm.hands[hk].orient=e; }
+        if(e.type==='wrist:orientationVel'){ vm.hands[hk].vel=e; }
+        if(e.type==='finger:index:angles'){ vm.hands[hk].flex=e; }
+        if(e.seat==='P1' && vm.seats.P1!==hk) vm.seats.P1=hk;
+        if(e.seat==='P2' && vm.seats.P2!==hk) vm.seats.P2=hk;
+      });
+    }
+
+    function fmt(n,d=1){ return (n==null||!isFinite(n))?'-':(+n).toFixed(d); }
+
+    function fillSignals(){
+      const grid=document.getElementById('signalsGrid');
+      grid.innerHTML='';
+      const keys=Object.keys(vm.hands);
+      vm.lastHandCount=keys.length; globalThis.__hexVizDiagV4.lastHandCount=keys.length;
+      if(!keys.length){ grid.innerHTML='<span style="opacity:.6">No hands yet</span>'; return; }
+      for(const hk of keys){
+        const h=vm.hands[hk];
+        const pinch=h.pinch; const orient=h.orient; const vel=h.vel; const flex=h.flex;
+        const rowPairs=[ ['Hand', hk] ];
+        if(pinch){ rowPairs.push(['Pinch', pinch.type.replace('pinch:','')]); rowPairs.push(['Gap', fmt(pinch.normalizedGap??pinch.norm,3)]); }
+        if(orient){ rowPairs.push(['Orient', fmt(orient.angleDeg,1)+'°']); rowPairs.push(['Bucket', orient.bucket]); }
+        if(vel){ rowPairs.push(['Vel', fmt(vel.velDegPerSec,0)+'°/s']); }
+        if(flex){ rowPairs.push(['Index MCP/PIP/DIP', `${fmt(flex.mcpDeg,0)}/${fmt(flex.pipDeg,0)}/${fmt(flex.dipDeg,0)}`]); }
+        for(const rp of rowPairs){ const k=document.createElement('div'); k.textContent=rp[0]; const v=document.createElement('div'); v.textContent=rp[1]; grid.appendChild(k); grid.appendChild(v); }
+      }
+    }
+
+    function render(){
+      document.getElementById('seatSummary').textContent=`P1=${vm.seats.P1||'-'} | P2=${vm.seats.P2||'-'}`;
+      fillSignals();
+      document.getElementById('log').textContent = (vm.pinchLog||[]).slice(-80).map(e=>`${e.t} ${e.type} ${e.seat} ${e.handKey||e.key||''}`).join('\n');
+      const vReady=video.readyState; const vW=video.videoWidth; const vH=video.videoHeight;
+      document.getElementById('diagText').textContent=`frames=${vm.frames} hands=${vm.lastHandCount} vReady=${vReady} v=${vW}x${vH} vm=${useVM?'on':'off'}`;
+      const boot=document.getElementById('bootMsg');
+      if(boot){ if(vm.frames>25 || vm.lastHandCount>0 || vReady>=2) boot.style.display='none'; else boot.innerHTML='Idle – no frames yet.<br><span style="opacity:.7">Click Camera or Clip to start. (Auto soon)</span>'; }
+    }
+
+    function loop(){
+      try {
+        vm.frames++;
+        if(useVM && vmCore) vmCore.tick();
+        globalThis.__hexVizDiagV4.frames=vm.frames;
+        render();
+      } catch(err){ if((vm.errors||[]).length<5) console.warn('[v4] loop error', err); (vm.errors||[]).push(String(err&&err.message||err)); }
+      requestAnimationFrame(loop);
+    }
+    loop();
+
+    async function runClip(){
+      const url=document.getElementById('clipSel').value; try { await shell.startVideoUrl(video,url); document.getElementById('statusMsg').textContent='clip:'+url; } catch(e){ document.getElementById('statusMsg').textContent='ERR clip'; }
+    }
+    document.getElementById('runClip').onclick=runClip;
+    document.getElementById('startCam').onclick=async()=>{ try { await shell.startCamera(video); document.getElementById('statusMsg').textContent='camera'; } catch(e){ document.getElementById('statusMsg').textContent='ERR cam'; } };
+
+    // Query params & autostart (camera-first like v3 but simplified)
+    (function(){
+      const Q=new URLSearchParams(location.search);
+      const qpClip=Q.get('clip');
+      const auto=Q.get('autostart')==='1'||Q.get('auto')==='1';
+      const noauto=Q.get('noauto')==='1';
+      const nocam=Q.get('nocam')==='1';
+      function normalizeClip(path){ if(!path.startsWith('/')){ if(path.startsWith('September2025/')) path='/'+path; else if(!path.startsWith('..')){ if(!path.startsWith('videos/')) path='videos/'+path; path='../'+path; } } return path; }
+      async function tryCameraThenFallback(){ try { await shell.startCamera(video); document.getElementById('statusMsg').textContent='camera'; } catch(err){ console.warn('[v4] camera autostart failed, fallback clip', err); runClip(); } }
+      if(qpClip){
+        const clip=normalizeClip(qpClip.trim());
+        const sel=document.getElementById('clipSel'); let matched=false; for(const o of sel.options){ if(o.value===clip){ matched=true; sel.value=clip; break; } }
+        if(!matched){ const o=document.createElement('option'); o.value=clip; o.textContent='Query Clip'; sel.appendChild(o); sel.value=clip; }
+        if(auto){ setTimeout(runClip,140); }
+        else if(!noauto && !nocam){ setTimeout(tryCameraThenFallback,300); }
+      } else if(auto){ if(!nocam) setTimeout(tryCameraThenFallback,140); else setTimeout(runClip,140); }
+      else if(!noauto){ if(!nocam) setTimeout(tryCameraThenFallback,300); else setTimeout(runClip,500); }
+    })();
+  </script>
+  </script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+Search results and findings (regex: EventBusManager|CameraManager|LandmarkRawManager|favicon.ico|index-src.html|landmark-smooth|landmark-raw)
+Date: 2025-09-03T23:51Z
+
+Summary:
+- Many unit and smoke tests import managers from src/ (EventBusManager, CameraManager, LandmarkRawManager, LandmarkSmoothManager). See examples below.
+- Prototype console showed a 404 for /favicon.ico and the src-backed prototype can fail if manager-bootstrap rejects (top-level await).
+- Key diagnostic note: docs/Tectangle_Summary identifies an unguarded top-level await (manager bootstrap) as the immediate cause of the "src prototype" appearing to do nothing.
+
+Representative matches (file:line):
+- [`September2025/Tectangle/tests/unit/landmarkraw.filter.red.test.mjs`](September2025/Tectangle/tests/unit/landmarkraw.filter.red.test.mjs:1) — imports:
+    import EventBus from "../../src/EventBusManager.js";
+    import LandmarkRawManager from "../../src/LandmarkRawManager.js";
+
+- [`September2025/Tectangle/tests/smoke/pinch.baseline.smoke.test.mjs`](September2025/Tectangle/tests/smoke/pinch.baseline.smoke.test.mjs:3) — imports:
+    import defaultBus from "../../src/EventBusManager.js";
+    import { init as pinchInit, start as pinchStart } from "../../src/gesture/pinchBaseline.js";
+
+- [`September2025/Tectangle/src/CameraManager.js`](September2025/Tectangle/src/CameraManager.js:113) — default export class CameraManager; constructor logs and registers window.__MANAGERS__.CameraManager (see `console.info("CameraManager.ctor", ...)`).
+
+- [`September2025/Tectangle/src/LandmarkRawManager.js`](September2025/Tectangle/src/LandmarkRawManager.js:31) — default export LandmarkRawManager; contains diagnostic debug lines (e.g. "LandmarkRawManager: useMediaPipe requested but no videoElement provided").
+
+- [`September2025/Tectangle/prototype/landmark-smooth/index-src.html`](September2025/Tectangle/prototype/landmark-smooth/index-src.html:224) — top-level:
+    import ready from "../common/manager-bootstrap.js";
+    const managers = await ready;   <-- unguarded top-level await noted in docs as blocking UI wiring
+
+- [`September2025/Tectangle/prototype/common/manager-bootstrap.js`](September2025/Tectangle/prototype/common/manager-bootstrap.js:233) — manager-bootstrap imports CameraManager:
+    const CamMod = await import("../../src/CameraManager.js");
+    ...
+    if (!maybeInstance) { throw new Error("manager-bootstrap: CameraManager import succeeded but instance could not be created"); }
+  (This code path can cause ready promise to reject and abort module execution in src-backed prototypes.)
+
+- Server console (http-server) / browser console captured:
+    - 404: GET /favicon.ico  (observed when loading /prototype/landmark-smooth/index-src.html)
+    - No explicit 404s for `src/EventBusManager.js`, `src/CameraManager.js`, `src/LandmarkRawManager.js` during raw prototype navigation (server returned requests; client-side may still throw if instantiation fails).
+
+Actionable notes from search:
+- The src-backed prototype habitually awaits manager-bootstrap at module top-level — convert top-level await to a guarded try/catch or make manager-bootstrap resolve even on partial failures so UI wiring always happens. (See [`September2025/Tectangle/docs/Tectangle_Summary_2025-09-02T18-27-10Z.md`](September2025/Tectangle/docs/Tectangle_Summary_2025-09-02T18-27-10Z.md:5))
+- The prototype/common/manager-bootstrap.js treats CameraManager instantiation as fatal; change to non-fatal and surface errors in the resolved object (so pages can fallback).
+- favicon.ico 404 is cosmetic; ensure a favicon exists at project root or ignore.
+
+Files worth inspecting immediately:
+- [`September2025/Tectangle/prototype/landmark-smooth/index-src.html`](September2025/Tectangle/prototype/landmark-smooth/index-src.html:224)
+- [`September2025/Tectangle/prototype/common/manager-bootstrap.js`](September2025/Tectangle/prototype/common/manager-bootstrap.js:233)
+- [`September2025/Tectangle/src/CameraManager.js`](September2025/Tectangle/src/CameraManager.js:115)
+- [`September2025/Tectangle/src/LandmarkRawManager.js`](September2025/Tectangle/src/LandmarkRawManager.js:31)
+- [`September2025/Tectangle/src/EventBusManager.js`](September2025/Tectangle/src/EventBusManager.js:88)
+
+End of search-results.txt

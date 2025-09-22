@@ -1,0 +1,42 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/unit/controllerRouterCore.pairing.test.mjs
+  - [ ] tests/unit/controllerRouterCore.concurrent.test.mjs
+  - [ ] tests/e2e/p1p2_lockin.test.cjs
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Lab • Floating Sigil Rings</title>
+  <style> body{margin:0;background:#0b0d10;color:#e7edf3;font:14px system-ui;} header{padding:10px 14px;border-bottom:1px solid #1a222c;background:#0f141a} canvas{display:block;width:100vw;height:70vh;border:1px solid #1a222c;border-radius:12px;background:#0c1117} .row{padding:12px 16px} .muted{color:#9fb3c8} </style>
+</head>
+<body>
+  <header><h3>Floating Sigil Rings <span class="muted">(tilt, glyphs)</span></h3></header>
+  <div class="row"><canvas id="c" width="960" height="540"></canvas></div>
+  <script type="module">
+    import { createCanvasRingRenderer } from '../src/adapters/canvas_ring_renderer.mjs';
+    const c = document.getElementById('c');
+    const rr = createCanvasRingRenderer(c);
+    let t=0; function frame(){
+      t+=0.016; const cx = 480 + Math.cos(t)*120; const cy = 270 + Math.sin(t*0.8)*80;
+      rr.draw([
+        { screen:{x:cx,y:cy}, radiusPx:80, tilt: Math.sin(t)*0.6, glyphs:['E','D','U','C','A','T','E']},
+        { screen:{x:cx+160,y:cy-60}, radiusPx:48, tilt: Math.cos(t*0.7)*0.9, glyphs:['P','A','R','E','N','T']}
+      ]);
+      requestAnimationFrame(frame);
+    }
+    frame();
+  </script>
+</body>
+</html>

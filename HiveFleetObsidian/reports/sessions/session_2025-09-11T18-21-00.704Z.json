@@ -1,0 +1,59 @@
+{
+  "summary": {
+    "generatedAt": "2025-09-11T18:21:00.707Z",
+    "board": {
+      "problem": "(see BOARD)",
+      "metric": "(see BOARD)"
+    },
+    "preflight": {
+      "generated": "2025-09-11T18:20:59.873Z",
+      "seeds": {
+        "code": 0,
+        "ok": true
+      },
+      "board": {
+        "code": 0,
+        "ok": true
+      },
+      "history_gap": {
+        "code": 0,
+        "ok": true
+      },
+      "status": "OK"
+    },
+    "guardrail": "Ship only if frozen smoke passes.",
+    "recommended": {
+      "champion": "web_cartographer",
+      "step": "Adopt ports/adapters at next seam; land smallest step",
+      "why": "Reduce drift; enable parallel adapters",
+      "plan": [
+        "Name ports",
+        "Stub one adapter",
+        "Map links"
+      ]
+    },
+    "provenance": {
+      "counsel": "orchestrator_turn",
+      "marksDir": "marks/active",
+      "cartography": "cartography/web_map.md"
+    }
+  },
+  "preflight": {
+    "generated": "2025-09-11T18:20:59.873Z",
+    "seeds": {
+      "code": 0,
+      "ok": true
+    },
+    "board": {
+      "code": 0,
+      "ok": true
+    },
+    "history_gap": {
+      "code": 0,
+      "ok": true
+    },
+    "status": "OK"
+  },
+  "counsel": {},
+  "chat": null
+}

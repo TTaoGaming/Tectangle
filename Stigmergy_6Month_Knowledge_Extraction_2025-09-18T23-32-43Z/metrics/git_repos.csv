@@ -1,0 +1,43 @@
+relative_path,status,branch,head,latest_commit,latest_committed,latest_author,latest_subject,remotes
+handsfree\handsfree,ok,(detached),79df12ede53ca6dba228eb31a43ce87c99d73c2d,79df12ede53ca6dba228eb31a43ce87c99d73c2d,2025-06-10T02:32:02-06:00,Tommy,working production file and fixing fullscreen button,"origin https://github.com/CreativeInquiry/handsfree (fetch)
+origin https://github.com/CreativeInquiry/handsfree (push)
+upstream https://github.com/dDab-panda/handsfree.git (fetch)
+upstream https://github.com/dDab-panda/handsfree.git (push)"
+Spatial Anchor MPE v25.7.10,ok,main,b0d79dc0a19ad7659737fa894aa278f547a24250,b0d79dc0a19ad7659737fa894aa278f547a24250,2025-06-19T16:26:10-06:00,Tommy,"Refactor and extract MPE Expression System from index.html to js/core/MPEExpressionSystem.js. This change modularizes the MPE expression mapping functionality, improving maintainability and performance. The new module includes comprehensive configuration options, real-time audio integration, and enhanced expression handling. Removed approximately 700 lines of duplicate code from index.html, ensuring a cleaner architecture and reducing complexity. Updated index.html to include the new module and initialized the MPE Expression System during application startup. This refactor aligns with existing coding standards and enhances clarity for future development.","origin https://github.com/YOUR_USERNAME/TAGS.git (fetch)
+origin https://github.com/YOUR_USERNAME/TAGS.git (push)"
+Spatial Anchor MPE v25.7.10\TAGS-MVP-Modular-Monolith,error: fatal: not a git repository: 'C:\Users\tommy\OneDrive\Desktop\Tectangle Archive v25.8.5\Spatial Anchor MPE v25.7.10\TAGS-MVP-Modular-Monolith\.git',,,,,,,
+Spatial Anchor MPE v25.7.10\TAGS-MVP-Modular-Monolith\archive\external-projects\piano-genie-clone,error: fatal: not a git repository: 'C:\Users\tommy\OneDrive\Desktop\Tectangle Archive v25.8.5\Spatial Anchor MPE v25.7.10\TAGS-MVP-Modular-Monolith\archive\external-projects\piano-genie-clone\.git',,,,,,,
+Spatial Anchor MPE v25.7.10\TAGS-MVP-Modular-Monolith\piano-genie-clone,error: fatal: not a git repository: 'C:\Users\tommy\OneDrive\Desktop\Tectangle Archive v25.8.5\Spatial Anchor MPE v25.7.10\TAGS-MVP-Modular-Monolith\piano-genie-clone\.git',,,,,,,
+Spatial Anchor MPE v25.7.10\TAGS-MVP-Modular-Monolith\piano-genie-clone\piano-genie-clone,error: fatal: not a git repository: 'C:\Users\tommy\OneDrive\Desktop\Tectangle Archive v25.8.5\Spatial Anchor MPE v25.7.10\TAGS-MVP-Modular-Monolith\piano-genie-clone\piano-genie-clone\.git',,,,,,,
+Spatial Anchor MPE v25.7.10\TAGS-MVP-Modular-Monolith-backup,ok,(detached),0de457c92feccd99e879dc28c3f96e95bea362e0,0de457c92feccd99e879dc28c3f96e95bea362e0,2025-07-07T16:42:39-06:00,Tommy,"Initial commit: TAGS-MVP-Modular-Monolith v25.6.29 - Complete spatial anchor MPE system with hand tracking, pinch detection, and multi-instrument support","origin https://github.com/TTaoGaming/TAGS.git (fetch)
+origin https://github.com/TTaoGaming/TAGS.git (push)"
+Spatial Anchor MPE v25.7.10\TAGS-MVP-Modular-Monolith-backup\archive\external-projects\piano-genie-clone,error: fatal: not a git repository: 'C:\Users\tommy\OneDrive\Desktop\Tectangle Archive v25.8.5\Spatial Anchor MPE v25.7.10\TAGS-MVP-Modular-Monolith-backup\archive\external-projects\piano-genie-clone\.git',,,,,,,
+Spatial Anchor MPE v25.7.10\TAGS-MVP-Modular-Monolith-backup\piano-genie-clone,ok,master,f4ded6cb3e91603c9955ca0aeddda6f267743afa,f4ded6cb3e91603c9955ca0aeddda6f267743afa,2022-01-19T21:18:45+01:00,Christian Stussak,Bump version to 1.2.1,"origin https://github.com/IMAGINARY/piano-genie.git (fetch)
+origin https://github.com/IMAGINARY/piano-genie.git (push)"
+Spatial Anchor MPE v25.7.10\TAGS-MVP-Modular-Monolith-backup\piano-genie-clone\piano-genie-clone,error: fatal: not a git repository: 'C:\Users\tommy\OneDrive\Desktop\Tectangle Archive v25.8.5\Spatial Anchor MPE v25.7.10\TAGS-MVP-Modular-Monolith-backup\piano-genie-clone\piano-genie-clone\.git',,,,,,,
+Tectangle code backups\04012025\.history,error: fatal: not a git repository: 'C:\Users\tommy\OneDrive\Desktop\Tectangle Archive v25.8.5\Tectangle code backups\04012025\.history\.git',,,,,,,
+Tectangle Project folder\4_RECTANGLE_DRUMPAD,ok,(detached),fa4cc248b847f238e4221178e4c38c3948b109d2,fa4cc248b847f238e4221178e4c38c3948b109d2,2025-04-16T21:28:47-06:00,Tommy,es lint stuff hopefully better coding,
+Tectangle Project folder\Drumpad4RectangleMVP,ok,main,e6c785af169244037a7583dbd07491ce36f0d531,e6c785af169244037a7583dbd07491ce36f0d531,2025-04-30T14:03:50-06:00,Tommy,"Update ESLint configuration, enhance restart scripts, and improve documentation",
+Tectangle Project folder\Drumpad_HTML_LIT,ok,(detached),d08ef918909d6dce8968fd90e24f284e6c50fd83,d08ef918909d6dce8968fd90e24f284e6c50fd83,2025-04-16T22:06:06-06:00,Tommy,attempt grid detector,
+Tectangle Project folder\Project Apollo 4,"error: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'",,,,,,,
+Tectangle Project folder\React ECS Drumpad Tectangle,ok,(detached),3bfcfcdbb1cd103f40268eaaa83ac0a1253da2ea,3bfcfcdbb1cd103f40268eaaa83ac0a1253da2ea,2025-04-13T23:57:32-06:00,Tommy,removed app fps counter,
+Tectangle Project folder\React ECS Drumpad Tectangle - Copy,ok,(detached),3bfcfcdbb1cd103f40268eaaa83ac0a1253da2ea,3bfcfcdbb1cd103f40268eaaa83ac0a1253da2ea,2025-04-13T23:57:32-06:00,Tommy,removed app fps counter,
+Tectangle Project folder\Tectangle\my-project,"error: fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'",,,,,,,
+Tectangle Project folder\Tectangle\opencv-contrib-wasm,ok,master,305bf243e77baee7fc33f27ac392a880a1622cc1,305bf243e77baee7fc33f27ac392a880a1622cc1,2021-09-13T11:36:15-04:00,Mason Ginter,Correct info in README.md for this fork,"origin https://github.com/Hpmason/opencv-contrib-wasm.git (fetch)
+origin https://github.com/Hpmason/opencv-contrib-wasm.git (push)
+upstream https://github.com/echamudi/opencv-wasm.git (fetch)
+upstream https://github.com/echamudi/opencv-wasm.git (push)"
+Tectangle Project folder\Tectangle code,ok,(detached),8f837e9f2633ba2ba7752595eeb1841321c176ce,8f837e9f2633ba2ba7752595eeb1841321c176ce,2025-04-17T01:39:20-06:00,Tommy,working object pooling attempt we really need eslint,"origin https://github.com/TTaoGaming/Tectangle-code.git (fetch)
+origin https://github.com/TTaoGaming/Tectangle-code.git (push)"
+Tectangle Project folder\Tectangle code\.history,error: fatal: not a git repository: 'C:\Users\tommy\OneDrive\Desktop\Tectangle Archive v25.8.5\Tectangle Project folder\Tectangle code\.history\.git',,,,,,,
+Tectangle Project folder\Tectangle code\ModularDrumpad,ok,master,d67f86db5c945cfd684ffc5dde38e8777590e177,d67f86db5c945cfd684ffc5dde38e8777590e177,2025-04-28T20:42:06-06:00,Tommy,Initial commit: Project setup with core functionality,"origin https://github.com/TTaoGaming/drumpadv04292025.git (fetch)
+origin https://github.com/TTaoGaming/drumpadv04292025.git (push)"
+Tectangle Project folder\Tectangle ECS Drumpad,ok,(detached),e0b0bc9022785af515c581ed819c188194256838,e0b0bc9022785af515c581ed819c188194256838,2025-04-06T01:25:50-06:00,Tommy,attempt new ts settings and documentation,
+Tectangle Project folder\Tectangle-Drumpad,error: fatal: not a git repository: 'C:\Users\tommy\OneDrive\Desktop\Tectangle Archive v25.8.5\Tectangle Project folder\Tectangle-Drumpad\.git',,,,,,,
+Tectangle Project folder\tectangle-drumpad-ecs-event,ok,master,78bb258e19aeedc1ddf5a25efcbc6d2dcccd89e9,78bb258e19aeedc1ddf5a25efcbc6d2dcccd89e9,2025-04-08T11:10:14-06:00,Tommy,attempt 3,
+Tectangle Project folder\Tectangle-Drumpad-ReplitV04292025,ok,main,c62d2e3bf6e110746e8cd1c31f73a493d701646c,c62d2e3bf6e110746e8cd1c31f73a493d701646c,2025-04-29T14:05:15-06:00,Tommy,Merge working build with improved tracking and performance optimizations,"origin https://github.com/TTaoGaming/drumpad-04292025.git (fetch)
+origin https://github.com/TTaoGaming/drumpad-04292025.git (push)"

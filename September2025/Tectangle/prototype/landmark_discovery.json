@@ -1,0 +1,41 @@
+{
+  "total_files": 6,
+  "files": [
+    "prototype/camera-manager/camera-export-20250828T213649.csv",
+    "prototype/camera-manager/camera-export-20250828T215927.csv",
+    "prototype/camera-manager/index.html",
+    "prototype/landmark-raw/index.html",
+    "prototype/landmark-raw/landmark-raw-20250829T120157.jsonl",
+    "demo/index.html"
+  ],
+  "candidates": [
+    {
+      "path": "prototype/landmark-raw/index.html",
+      "description": "Minimal single-file prototype that imports CameraManager + LandmarkRawManager, consumes 'landmark:raw' events and renders 21 landmarks onto a 2D canvas overlay (plus a coordinate table). Low complexity and easy to extend to a dual-view by adding a second canvas/pane for smoothed landmarks.",
+      "snippet": "function drawLandmarksFromArray(landmarks) {\\n  ctx.clearRect(0, 0, canvas.width, canvas.height);\\n  if (!overlayEnabled) return;\\n  if (!landmarks || landmarks.length === 0) return;\\n  const chains = [ [0,1,2,3,4], [0,5,6,7,8], [0,9,10,11,12] ];\\n  ctx.lineWidth = 2;\\n  ctx.strokeStyle = 'rgba(0,200,120,0.75)';\\n  // ... drawing code"
+    },
+    {
+      "path": "demo/index.html",
+      "description": "Three.js overlay demo wiring CameraManager -> LandmarkRawManager -> LandmarkSmoothManager. Raw frames are forwarded into the smoother and smoothed output is rendered as 3D spheres + line mesh — demonstrates raw->smooth pipeline and richer rendering.",
+      "snippet": "rawManager.addEventListener('landmark:raw', (evt)=>{\\n  const p = evt.detail || evt;\\n  const frame = { frameId: p.frameId || Date.now(), timestamp: p.timestamp || Date.now(), landmarks: p.landmarks || [] };\\n  // forward into smoother\\n  smoothManager.observeFrame(frame);\\n});"
+    },
+    {
+      "path": "prototype/camera-manager/index.html",
+      "description": "CameraManager prototype that emits camera:params and camera:frame events and can run in 'synthetic' mode. Useful as a standalone source to feed LandmarkRawManager.",
+      "snippet": "appendLog({ event: 'camera:params', source: 'synthetic', width: w, height: h, fps: fpsVal, timestamp: new Date().toISOString() });"
+    }
+  ],
+  "recommended_base": {
+    "path": "prototype/landmark-raw/index.html",
+    "why": "Single-file, low-complexity demo that already imports CameraManager + LandmarkRawManager, consumes landmark:raw and draws on a 2D canvas. Adding a right-hand smoothed view that subscribes to 'landmark:smoothed' is straightforward.",
+    "required_dependencies": [
+      "src/EventBusManager.js",
+      "src/CameraManager.js",
+      "src/LandmarkRawManager.js",
+      "src/LandmarkSmoothManager.js",
+      "optional: https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js",
+      "optional: https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js"
+    ],
+    "suggested_new_path": "prototypes/landmark_dual_view.html"
+  }
+}

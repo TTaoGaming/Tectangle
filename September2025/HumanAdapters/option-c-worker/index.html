@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Option C — Worker Adapter</title>
+  <link rel="stylesheet" href="../shared.css" />
+</head>
+<body>
+  <div class="layout">
+    <div class="toolbar" id="toolbar"></div>
+    <div class="left">
+      <iframe id="demo" src="/human-main-referenceonly/human-main/demo/index.html?backend=webgl&worker=false&results=false" allow="camera; microphone; autoplay; clipboard-read; clipboard-write; fullscreen; display-capture"></iframe>
+    </div>
+    <div class="right" id="right"></div>
+  </div>
+  <script type="module">
+    import { HUMAN_ESM, MODELS, makeToolbar, getMediaOrVideo, ensureOverlay, fitCanvasToVideo, drawTips } from '../shared.js';
+
+    const toolbar = makeToolbar(document);
+    document.getElementById('toolbar').replaceWith(toolbar);
+
+    const {wrap, video, canvas} = ensureOverlay(document);
+    document.getElementById('right').appendChild(wrap);
+    const ctx = canvas.getContext('2d');
+
+    const worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+  worker.postMessage({ type: 'init', humanEsm: HUMAN_ESM, models: MODELS });
+
+    async function start(choice){
+      const status = document.getElementById('status');
+      status.textContent = 'loading input...';
+      let srcVideo;
+      if(choice === 'custom-file'){
+        const file = document.getElementById('filePick').files?.[0];
+        if(!file){ status.textContent = 'pick a file first'; return; }
+        const url = URL.createObjectURL(file);
+        srcVideo = await getMediaOrVideo(document, url);
+      } else {
+        srcVideo = await getMediaOrVideo(document, document.getElementById('inputSel').value);
+      }
+      video.srcObject = srcVideo.srcObject || null;
+      if(!video.srcObject){ video.src = srcVideo.src; }
+      await video.play();
+
+      function loop(){
+        if(video.readyState>2){
+          fitCanvasToVideo(canvas, video);
+          createImageBitmap(video).then(bitmap=>{
+            worker.postMessage({ type: 'frame', bitmap }, [bitmap]);
+          }).catch(()=>{});
+        }
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+      status.textContent = 'running';
+    }
+
+    worker.onmessage = (ev)=>{
+      if(ev.data?.type==='hands'){
+        const w = video.videoWidth||1, hgt = video.videoHeight||1;
+        const hands = (ev.data.hands || []).map(h=>{
+          const lm = (h.landmarks||h.keypoints||[]).map(p=>({ x: p.x<=1? p.x : p.x/w, y: p.y<=1? p.y : p.y/hgt }));
+          return { ...h, landmarks: lm };
+        });
+        window.__lastHands = hands;
+        drawTips(ctx, hands, canvas);
+      }
+    };
+
+    toolbar.querySelector('#startBtn').addEventListener('click', ()=> start());
+    toolbar.querySelector('#filePick').addEventListener('change', ()=> start('custom-file'));
+  </script>
+</body>
+</html>

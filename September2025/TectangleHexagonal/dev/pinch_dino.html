@@ -1,0 +1,68 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/unit/pinchCore.test.mjs
+  - [ ] tests/unit/lookAheadCore.test.mjs
+  - [ ] tests/e2e/pinch_to_vendor_bridge.test.mjs
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Tectangle • Pinch × T‑Rex Runner (Official Fork)</title>
+  <style>
+    :root { --bg:#0b0d10; --fg:#e7edf3; --muted:#9fb3c8; }
+    *{ box-sizing:border-box; } body{ margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif; }
+    header{ padding:12px 16px; border-bottom:1px solid #1a222c; background:#0f141a; position:sticky; top:0; z-index:5; }
+    .row{ display:flex; gap:12px; padding: 12px 16px; flex-wrap:wrap; }
+    .col{ flex: 1 1 560px; min-width:320px; }
+    iframe{ width:100%; height:72vh; border:1px solid #1a222c; border-radius:12px; background:#0c1117; }
+    small{ color:var(--muted); }
+  </style>
+  <meta name="referrer" content="no-referrer"/>
+  <meta http-equiv="Permissions-Policy" content="interest-cohort=()"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob:; img-src 'self' data: blob:;"/>
+  <meta name="robots" content="noindex,nofollow"/>
+  <meta name="color-scheme" content="dark light"/>
+  <meta name="description" content="Side-by-side pinch demo with official BSD-3 T‑Rex Runner fork."/>
+</head>
+<body>
+  <header>
+    <h2>Pinch × Dino Runner <small>(Z/X → Space inside game)</small></h2>
+  </header>
+  <div class="row">
+    <div class="col">
+      <h3>Pinch Demo</h3>
+      <iframe src="./index.html" title="Pinch Demo"></iframe>
+    </div>
+    <div class="col">
+      <h3>Official Game (t-rex-runner by wayou, BSD‑3)</h3>
+      <iframe id="game" src="../vendor/dino/index.html" title="T‑Rex Runner"></iframe>
+    </div>
+  </div>
+  <script>
+    // Bridge: focus game frame and translate pinch Z/X to Space keydown/keyup inside the iframe.
+    const game = document.getElementById('game');
+    window.addEventListener('load', ()=>{ try { game.contentWindow?.focus(); } catch {} });
+    window.addEventListener('message', (ev)=>{
+      const msg = ev?.data; if(!msg || msg.source!=='hex' || msg.type!=='pinch-key') return;
+      try{
+        const doc = game.contentDocument || game.contentWindow?.document; if(!doc) return;
+        const evtType = msg.action === 'down' ? 'keydown' : 'keyup';
+        // Translate any pinch key to Space for Dino Runner
+        const e = new KeyboardEvent(evtType, { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true });
+        doc.dispatchEvent(e);
+      }catch{}
+    });
+  </script>
+</body>
+</html>

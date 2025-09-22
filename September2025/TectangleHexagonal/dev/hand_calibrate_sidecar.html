@@ -1,0 +1,176 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/unit/handSessionManager.test.mjs
+  - [ ] tests/unit/gameEventBridge.test.mjs
+  - [ ] tests/e2e/hand_id_lab.test.js
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Tectangle • Hand Calibrate Sidecar (U1 by first pinch-hold)</title>
+  <style>
+    :root { --bg:#0b0d10; --fg:#e7edf3; --muted:#9fb3c8; --panel:#0c1117; --h1:#ff7ab6; --h2:#ffd479; }
+    *{ box-sizing:border-box; } body{ margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Arial, sans-serif; }
+    header{ padding:12px 16px; border-bottom:1px solid #1a222c; background:#0f141a; position:sticky; top:0; z-index:10; }
+    .row{ display:flex; flex-wrap:wrap; gap:12px; padding:12px 16px; }
+    .col{ flex:1 1 480px; min-width:320px; }
+    iframe, canvas{ width:100%; aspect-ratio:16/9; border:1px solid #1a222c; border-radius:12px; background:#000; display:block; }
+    .panel{ background:var(--panel); border:1px solid #1a222c; border-radius:10px; padding:12px; }
+    .kv{ display:grid; grid-template-columns: 1fr auto; gap:6px 10px; align-items:center; }
+    button{ cursor:pointer; background:#1c2733; color:var(--fg); border:1px solid #2a3949; padding:6px 12px; border-radius:6px; }
+    button:hover{ background:#223240; }
+  </style>
+  <!-- WEBWAY:ww-2025-002: first pinch-hold claims U1 -->
+  <!-- TTL 21 days; revert by deleting this file. -->
+  <!-- EMBER:FS-2025-024:WARM: First pinch-hold should lock U1 within 1s; verify 2/2 -->
+  </head>
+<body>
+  <header><h2>Hand Calibrate Sidecar <small style="color:var(--muted); font-weight:400;">First index pinch-hold ⇒ U1</small></h2></header>
+  <div class="row">
+    <!-- WEBWAY:ww-2025-002: Use canned prototype; stub out Hand ID Lab -->
+    <div class="col"><iframe id="proto" src="canned_hand_id_test_prototype.html" loading="eager"></iframe></div>
+    <div class="col"><canvas id="overlay" width="960" height="540"></canvas></div>
+  </div>
+  <div class="row">
+    <div class="col panel">
+      <div class="kv">
+        <div>Controls</div><div></div>
+        <div><button id="startClip">Start MP4</button></div><div></div>
+        <div><button id="resetMap">Reset calibration</button></div><div></div>
+        <div>Frames</div><div id="frames">0</div>
+        <div>U1 mapping</div><div id="u1map">-</div>
+      </div>
+      <p class="stat" style="color:var(--muted); margin-top:10px;">Query: <code>?src=videos/right_hand_pinch_anchor_drag_left_v1.mp4</code> or leave blank and click Start MP4 to auto-use that default.</p>
+    </div>
+  </div>
+  
+
+  <script type="module">
+  import { createHandTrackerT1 } from '../src/ports/handTrackerT1.js';
+    const iframe = document.getElementById('proto');
+    const canvas = document.getElementById('overlay');
+    const ctx = canvas.getContext('2d');
+    const ui = { frames:byId('frames'), u1map:byId('u1map') };
+    function byId(id){ return document.getElementById(id); }
+
+    // Simple pinch detector using thumb(4) ↔ index tip(8) distance with hysteresis
+    const cfg = { on:0.08, off:0.12, holdMs: 500 };
+    const state = {
+      frames:0,
+      map: null, // 'H1'|'H2' once claimed
+      pinch:{ H1:{down:false,since:null}, H2:{down:false,since:null} }
+    };
+  const tracker = createHandTrackerT1();
+
+    function dist3(a,b){ const dx=a[0]-b[0], dy=a[1]-b[1], dz=(a[2]-b[2])||0; return Math.hypot(dx,dy,dz); }
+    function pinchMetric(lm){ if(!lm||lm.length<21) return 1; const palm=dist3(lm[5],lm[17])+dist3(lm[0],lm[9])||1; return dist3(lm[4],lm[8])/palm; }
+
+    function update(anns){
+      state.frames++;
+      if(!anns) return;
+      for(const a of anns){
+        const id = a?.handId || a?.id; if(!id || !a.landmarks) continue;
+        const m = pinchMetric(a.landmarks);
+        const ref = state.pinch[id]; if(!ref) continue;
+        const want = ref.down ? (m <= cfg.off) : (m <= cfg.on);
+        if(want && !ref.down){ ref.down=true; ref.since=performance.now(); }
+        else if(!want && ref.down){ ref.down=false; ref.since=null; }
+        // First claimant wins
+        if(!state.map && ref.down && ref.since && performance.now() - ref.since >= cfg.holdMs){ state.map=id; }
+      }
+    }
+
+    function draw(anns){
+      resize(); ctx.clearRect(0,0,canvas.width,canvas.height);
+      const W=canvas.width, H=canvas.height;
+      if(!anns) return;
+      ctx.font='12px system-ui';
+      for(const a of anns){
+        const hid = a.handId || a.id || null;
+        const lm = a.landmarks||[]; ctx.fillStyle = a.hand==='Left'? '#93d977':'#82d4ff';
+        for(const p of lm){ const x=p[0]*W, y=p[1]*H; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); }
+        const x = (lm[0]?.[0]||0)*W, y=(lm[0]?.[1]||0)*H;
+        const isU1 = !!(hid && state.map===hid);
+        const label = hid ? (isU1? `${hid} / U1` : `${hid}`) : (a.hand||'');
+        // dynamic label box
+        const textW = ctx.measureText(label).width;
+        const padX=8, padY=3, boxW = Math.max(88, textW + padX*2), boxH=16;
+        ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(x-boxW/2,y-18,boxW,boxH);
+        ctx.fillStyle= hid==='H1'? '#ff7ab6':'#ffd479';
+        ctx.fillText(label, x-(textW/2), y-6);
+        // Extra U1 badge and wrist ring
+        if(isU1){
+          // U1 pill
+          const pill = 'U1'; const pillW = ctx.measureText(pill).width + 10; const pillH=14;
+          const px = x + boxW/2 + 6, py = y-18;
+          ctx.fillStyle='#0a5'; ctx.fillRect(px, py, pillW, pillH);
+          ctx.fillStyle='#fff'; ctx.fillText(pill, px+5, py+10-4);
+          // Wrist highlight ring
+          ctx.strokeStyle='#0a5'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI*2); ctx.stroke();
+        }
+      }
+      ui.frames.textContent = String(state.frames);
+      ui.u1map.textContent = state.map ? `${state.map}→U1` : '-';
+    }
+
+    function resize(){
+      try{
+        const v = iframe.contentWindow?.document?.getElementById('base')?.contentWindow?.document?.querySelector('video#cam');
+        if(v){ canvas.width=v.videoWidth||960; canvas.height=v.videoHeight||540; }
+      }catch{}
+    }
+
+    function loop(){
+      const wProto = iframe.contentWindow; if(!wProto) return requestAnimationFrame(loop);
+      try{
+        const base = wProto.document?.getElementById('base');
+        const wBase = base?.contentWindow;
+        const hands = (wBase?.__hexLastHands)||null;
+        let anns=null;
+        if(hands && Array.isArray(hands)){
+          const dets = hands.map(lm => ({ wrist:[lm?.[0]?.[0]||0, lm?.[0]?.[1]||0], indexMCP: lm?.[5]||null, pinkyMCP: lm?.[17]||null, thumbTip: lm?.[4]||null, indexTip: lm?.[8]||null, landmarks: lm }));
+          const t = performance.now();
+          anns = tracker.assign(dets, t);
+          if(Array.isArray(anns)) anns = anns.map((a,i)=> (a && !a.landmarks) ? { ...a, landmarks: hands[i] } : a);
+          update(anns);
+          draw(anns);
+        }
+      }catch{}
+      requestAnimationFrame(loop);
+    }
+
+    // Controls
+    byId('resetMap').addEventListener('click', ()=>{ state.map=null; for(const k of Object.keys(state.pinch)){ state.pinch[k].down=false; state.pinch[k].since=null; } });
+    byId('startClip').addEventListener('click', ()=> startClip());
+
+    async function startClip(){
+      const q = new URLSearchParams(location.search);
+      const src = q.get('src') || 'videos/right_hand_pinch_anchor_drag_left_v1.mp4';
+      try{
+        const wProto = iframe.contentWindow;
+        const base = wProto?.document?.getElementById('base');
+        if(base){ base.src = `index.html?src=${encodeURIComponent(src)}`; }
+      }catch{}
+    }
+
+    // Kick off
+    loop();
+    // Auto-start clip if provided in query
+    (function auto(){ const q=new URLSearchParams(location.search); if(q.has('src')) startClip(); })();
+
+    // Expose for tests
+    window.__hex = { getU1Mapping: ()=> state.map, reset: ()=>{ state.map=null; } };
+  </script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Hive Marks",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "ts": { "type": "string", "format": "date-time" },
+    "type": { "type": "string", "enum": ["hypothesis","risk","probe_result","rollback_ready","blockage","pattern_adopted"] },
+    "topic": { "type": "string" },
+    "signal": { "type": "string" },
+    "decay_after_minutes": { "type": "number", "minimum": 5 },
+    "meta": { "type": "object", "additionalProperties": true }
+  },
+  "required": ["id","ts","type","topic","signal","decay_after_minutes"],
+  "additionalProperties": false
+}

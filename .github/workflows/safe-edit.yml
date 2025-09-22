@@ -1,0 +1,14 @@
+# Stubbed to keep repository history while inactive.
+name: Legacy Stub - Safe Edits Gate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  stub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stub notice
+        run: |
+          echo "Deprecated PR guard; re-enable after redesign."
+          echo "Restore the original workflow when this flow is needed again."

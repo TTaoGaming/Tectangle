@@ -1,0 +1,14 @@
+# Stubbed to keep repository history while inactive.
+name: Legacy Stub - Meta Check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  stub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stub notice
+        run: |
+          echo "Meta validation for August Sprint is paused."
+          echo "Restore the original workflow when this flow is needed again."

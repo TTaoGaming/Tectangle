@@ -1,0 +1,110 @@
+[
+  {
+    "sourceFile": "Knowledge backup 20250912/4R_REFERENCE_20250417.md",
+    "title": "4R Reference",
+    "date": "2025-04-17",
+    "intent": "Govern logic changes via Requirements/Risks/Roadmap/Rules",
+    "tags": ["governance", "acceptance", "risk"],
+    "rollupDoc": "September2025/TectangleHexagonal/docs/knowledge_rollup_4R_REFERENCE_20250417_2025-09-12.md",
+    "logicAreas": ["watchdog", "telemetry", "contracts"]
+  },
+  {
+    "sourceFile": "Knowledge backup 20250912/4_RECTANGLE_GUIDE.md",
+    "title": "Four Rectangle Guide",
+    "date": null,
+    "intent": "Bound UI/system seams and overlays",
+    "tags": ["ui", "overlay", "ports"],
+    "rollupDoc": "September2025/TectangleHexagonal/docs/knowledge_rollup_4_RECTANGLE_GUIDE_2025-09-12.md",
+    "logicAreas": ["visual", "eventbus", "docs"]
+  },
+  {
+    "sourceFile": "Knowledge backup 20250912/Consolidated_Pinch_Report_2025-09-06_FINAL.md",
+    "title": "Consolidated Pinch Report",
+    "date": "2025-09-06",
+    "intent": "Adopt tuned pinch thresholds and metrics",
+    "tags": ["pinch", "fsm", "tuning"],
+    "rollupDoc": "September2025/TectangleHexagonal/docs/knowledge_rollup_Consolidated_Pinch_Report_2025-09-06_FINAL_2025-09-12.md",
+    "logicAreas": ["pinch", "telemetry"]
+  },
+  {
+    "sourceFile": "Knowledge backup 20250912/FOUNDATION_COLLIDING_SPHERE_SUMMARY.md",
+    "title": "Colliding Sphere Summary",
+    "date": null,
+    "intent": "Use sphere models for plausibility/collision hints",
+    "tags": ["kinematic", "clamp", "physics"],
+    "rollupDoc": "September2025/TectangleHexagonal/docs/knowledge_rollup_FOUNDATION_COLLIDING_SPHERE_SUMMARY_2025-09-12.md",
+    "logicAreas": ["clamp", "telemetry"]
+  },
+  {
+    "sourceFile": "Knowledge backup 20250912/HTML_LIT_REFERENCE_20250417.md",
+    "title": "HTML/Lit Reference",
+    "date": "2025-04-17",
+    "intent": "UI patterns for overlays/dev panels",
+    "tags": ["ui", "lit", "debug"],
+    "rollupDoc": "September2025/TectangleHexagonal/docs/knowledge_rollup_HTML_LIT_REFERENCE_20250417_2025-09-12.md",
+    "logicAreas": ["visual", "devtools"]
+  },
+  {
+    "sourceFile": "Knowledge backup 20250912/index-modular-monolithv25.7.26.1730.html",
+    "title": "Modular Monolith Index v25.7.26",
+    "date": "2025-07-26",
+    "intent": "Overlay module areas to validate Hex boundaries",
+    "tags": ["architecture", "modules", "drift"],
+    "rollupDoc": "September2025/TectangleHexagonal/docs/knowledge_rollup_index-modular-monolithv25.7.26.1730_2025-09-12.md",
+    "logicAreas": ["telemetry", "docs"]
+  },
+  {
+    "sourceFile": "Knowledge backup 20250912/mdp90a_REFERENCE_20250417.md",
+    "title": "mdp90a Reference",
+    "date": "2025-04-17",
+    "intent": "Policy constraints in code comments/templates",
+    "tags": ["policy", "privacy"],
+    "rollupDoc": "September2025/TectangleHexagonal/docs/knowledge_rollup_mdp90a_REFERENCE_20250417_2025-09-12.md",
+    "logicAreas": ["telemetry", "governance"]
+  },
+  {
+    "sourceFile": "Knowledge backup 20250912/MDP_AI_CODING_GUIDE.md",
+    "title": "MDP AI Coding Guide",
+    "date": null,
+    "intent": "Coding patterns for agents/tests",
+    "tags": ["tests", "harness", "agents"],
+    "rollupDoc": "September2025/TectangleHexagonal/docs/knowledge_rollup_MDP_AI_CODING_GUIDE_2025-09-12.md",
+    "logicAreas": ["tests", "harness"]
+  },
+  {
+    "sourceFile": "Knowledge backup 20250912/MDP_REFERENCE_20250417.md",
+    "title": "MDP Reference",
+    "date": "2025-04-17",
+    "intent": "Model/dev policy → adapters and minimization",
+    "tags": ["policy", "pii", "contracts"],
+    "rollupDoc": "September2025/TectangleHexagonal/docs/knowledge_rollup_MDP_REFERENCE_20250417_2025-09-12.md",
+    "logicAreas": ["contracts", "adapters"]
+  },
+  {
+    "sourceFile": "Knowledge backup 20250912/modular-blueprint.md",
+    "title": "Modular Blueprint",
+    "date": null,
+    "intent": "Map modules to managers/ports",
+    "tags": ["architecture", "hex", "ownership"],
+    "rollupDoc": "September2025/TectangleHexagonal/docs/knowledge_rollup_modular-blueprint_2025-09-12.md",
+    "logicAreas": ["telemetry", "docs"]
+  },
+  {
+    "sourceFile": "Knowledge backup 20250912/REACT_REFERENCE_20250417.md",
+    "title": "React Reference",
+    "date": "2025-04-17",
+    "intent": "React integration via EventBus hook",
+    "tags": ["react", "integration"],
+    "rollupDoc": "September2025/TectangleHexagonal/docs/knowledge_rollup_REACT_REFERENCE_20250417_2025-09-12.md",
+    "logicAreas": ["adapters", "examples"]
+  },
+  {
+    "sourceFile": "Knowledge backup 20250912/TECTANGLE_AUDIO_GESTURE_STUDIO_EARS.md",
+    "title": "Audio Gesture Studio EARS",
+    "date": null,
+    "intent": "Quantized audio sink for gestures",
+    "tags": ["audio", "quantization", "sink"],
+    "rollupDoc": "September2025/TectangleHexagonal/docs/knowledge_rollup_TECTANGLE_AUDIO_GESTURE_STUDIO_EARS_2025-09-12.md",
+    "logicAreas": ["sinks", "quantization"]
+  }
+]

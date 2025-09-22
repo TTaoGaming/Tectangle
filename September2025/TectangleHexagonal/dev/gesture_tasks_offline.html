@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Offline Gesture Recognizer (Hex)</title>
+  <style>
+    html,body{height:100%;margin:0}
+    body{background:#0b1020;color:#e5e7eb;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:960px;margin:0 auto;padding:16px}
+    .card{border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:rgba(255,255,255,0.05);padding:12px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .chip{display:inline-block;border:1px solid rgba(255,255,255,0.25);padding:2px 8px;border-radius:999px;margin-right:8px;font-size:12px}
+    button{background:#16a34a;color:white;border:0;border-radius:8px;padding:6px 10px;margin-right:8px;cursor:pointer}
+    button.stop{background:#ef4444}
+    .muted{opacity:.75;font-size:12px}
+  </style>
+</head>
+<body class="h-full">
+  <div class="wrap">
+    <h1 style="margin:4px 0 8px">Offline Gesture Recognizer (Hex)</h1>
+    <p class="muted">Runs MediaPipe Tasks Gesture Recognizer fully offline using local node_modules + local model bundle.</p>
+    <div class="row">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div style="font-weight:600">Camera</div><span id="status" class="muted">idle</span></div>
+        <video id="cam" playsinline muted autoplay style="width:100%;aspect-ratio:4/3;background:black;border-radius:8px"></video>
+        <div style="margin-top:8px">
+          <span class="chip" id="chipLabel">Label: –</span>
+          <span class="chip" id="chipScore">Score: –</span>
+        </div>
+        <div style="margin-top:8px">
+          <button id="btnStart">Start</button>
+          <button id="btnStop" class="stop">Stop</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div style="font-weight:600">Dino (optional)</div><button id="btnFocus" style="background:transparent;border:1px solid rgba(255,255,255,0.25);color:#e5e7eb;border-radius:6px;padding:4px 8px">Focus</button></div>
+        <div style="aspect-ratio:16/9;background:black;border-radius:8px;overflow:hidden">
+          <iframe id="game" title="T‑Rex Runner" src="../vendor/dino/index.html" style="width:100%;height:100%;border:0"></iframe>
+        </div>
+        <div style="margin-top:8px"><span class="chip" id="chipSelect">Selects: 0</span></div>
+      </div>
+    </div>
+
+    <p class="muted" style="margin-top:10px">WEBWAY:ww-2025-089: Offline demo uses local ESM/wasm from node_modules and a local gesture_recognizer.task.</p>
+  </div>
+
+  <script type="module">
+    // WEBWAY:ww-2025-089: FEATURE_GESTURE_TASKS_OFFLINE — local ESM/wasm + local model path
+    const FEATURE_GESTURE_TASKS_OFFLINE = true;
+    const video = document.getElementById('cam');
+    const statusEl = document.getElementById('status');
+    const chipLabel = document.getElementById('chipLabel');
+    const chipScore = document.getElementById('chipScore');
+    const chipSelect = document.getElementById('chipSelect');
+    const btnStart = document.getElementById('btnStart');
+    const btnStop = document.getElementById('btnStop');
+    const gameIframe = document.getElementById('game');
+    const btnFocus = document.getElementById('btnFocus');
+
+    const bumpSelect = (()=>{ let n=0; return ()=>{ n++; chipSelect.textContent = `Selects: ${n}`; }; })();
+    const sendSpaceDownUp = () => {
+      try{
+        const w = gameIframe?.contentWindow; if(!w) return;
+        w.postMessage({ type:'dino:key', action:'down', code:'Space', key:' ' }, '*');
+        setTimeout(()=>{ try{ w.postMessage({ type:'dino:key', action:'up', code:'Space', key:' ' }, '*'); }catch{} }, 60);
+      }catch{}
+    };
+    btnFocus.addEventListener('click', ()=>{ try{ const w=gameIframe.contentWindow; w?.focus?.(); const c=w?.document?.querySelector?.('canvas'); c?.focus?.(); c?.click?.(); }catch{} });
+
+    // Resolve local paths
+    const nmBase = '/node_modules/@mediapipe/tasks-vision';
+    const wasmBase = `${nmBase}/wasm`;
+    const modelPath = '/September2025/TectangleHexagonal/assets/models/gesture_recognizer.task';
+
+    // Test hook (available even if import fails)
+    window.__gtOfflineSim = { fireOnce(){ bumpSelect(); sendSpaceDownUp(); } };
+
+    // Import local ESM bundle
+    // Note: http-server serves node_modules by default from repo root.
+    let recognizer;
+    try {
+      const visionPkg = await import(`${nmBase}/vision_bundle.mjs`);
+      const { FilesetResolver, GestureRecognizer } = visionPkg;
+      const filesetResolver = await FilesetResolver.forVisionTasks(wasmBase);
+      recognizer = await GestureRecognizer.createFromOptions(filesetResolver, {
+        baseOptions: { modelAssetPath: modelPath },
+        runningMode: 'VIDEO'
+      });
+      window.__gtOfflineReady = true;
+    } catch (e) {
+      console.error('WEBWAY:ww-2025-089 offline import failed', e);
+      window.__gtOfflineError = String(e?.message || e);
+    }
+
+    let stream; let running=false; let lastFire=0; const MIN_GAP_MS=350;
+    async function start(){
+      try{
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} }, audio:false });
+        video.srcObject = stream; await video.play(); running=true; statusEl.textContent='camera on'; loop();
+      }catch(e){ console.error(e); statusEl.textContent='error'; }
+    }
+    function stop(){ try{ running=false; statusEl.textContent='stopped'; video.pause(); stream?.getTracks()?.forEach(t=>t.stop()); }catch{} }
+    btnStart.addEventListener('click', start);
+    btnStop.addEventListener('click', stop);
+
+    function onResults(res){
+      try{
+        const g = res?.gestures?.[0]?.[0];
+        const label = g?.categoryName || '—';
+        const score = typeof g?.score==='number' ? g.score : NaN;
+        chipLabel.textContent = `Label: ${label}`;
+        chipScore.textContent = `Score: ${isNaN(score)?'–':score.toFixed(2)}`;
+        const now = performance.now();
+        if(label==='Closed_Fist' && score>=0.70){
+          if(now - lastFire > MIN_GAP_MS){ bumpSelect(); sendSpaceDownUp(); lastFire = now; }
+        }
+      }catch{}
+    }
+
+    async function loop(){
+      while(running){
+        if(!recognizer){ await new Promise(r=>setTimeout(r, 50)); continue; }
+        const ts = performance.now();
+        const res = await recognizer.recognizeForVideo(video, ts);
+        onResults(res);
+        await new Promise(r=>setTimeout(r,16));
+      }
+    }
+  </script>
+</body>
+</html>

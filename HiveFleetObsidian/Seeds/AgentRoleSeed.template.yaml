@@ -1,0 +1,110 @@
+version: 1.0.0
+metadata:
+  id: "<role-id>"          # snake_case stable id (e.g., web_cartographer)
+  name: "<Role Name>"      # human label (e.g., Web Cartographer)
+  description: "<one line>"
+  version: "2025-09-10"
+
+identity:
+  element: "<Air|Earth|Fire|Water|Support>"
+  archetype: "<Sage|Ruler|Rogue|Magician|Support>"
+  approach: "<EXPLORE|EXPLOIT|PIVOT|REORIENT|RECORD|ROUTE>"
+  motto: "<short memorable line>"
+
+lineage:
+  mythic: ["<mythic1>", "<mythic2>"]
+  research: ["<pattern1>", "<pattern2>"]
+
+mission: "<one sentence mission>"
+
+center_of_gravity:
+  name: "<Technical kernel name>"
+  description: "<Inputs → transformation → outputs plain language>"
+  algorithms: ["<algo1>", "<algo2>"]
+  inputs: ["<input_field_names>"]
+  outputs: ["<output_field_names>"]
+
+triggers:
+  starts_when: ["<external conditions>"]
+  holds_if: ["<continue conditions>"]
+  ends_when: ["<completion/abort conditions>"]
+
+# optional
+scope:
+  in: ["<what this role does>"]
+  out: ["<what this role does NOT do>"]
+
+io:
+  inputs:
+    fields:
+      - name: "<field>"
+        type: "<string|number|boolean|object|array>"
+        required: true
+        description: "<what it is>"
+    example: {}
+  outputs:
+    fields:
+      - name: "<field>"
+        type: "<string|number|boolean|object|array>"
+        required: true
+        description: "<what it is>"
+    example: {}
+
+tokens:
+  consumes: ["<token types this role reads>"]      # e.g., Mark, Pilot, Waystone, SRL
+  produces: ["<token types this role emits>"]
+
+tools:
+  allowed: ["<tool capability names>"]            # capability-scoped, not vendor-specific
+  denied: []
+  limits:
+    timebox_minutes: 15
+    wip_limit: 1
+
+policies:
+  guardrails:
+    - "<hard safety rule>"
+  stop_rules:
+    - "<when to halt or hand back>"
+
+procedure:
+  steps:
+    - name: "<Verb Object>"
+      description: "<operational description>"
+      algorithms: ["<algo-token>"]
+      success_criteria: "<objective threshold / structural condition>"
+
+handoffs:
+  default_next: "<role-id>"
+  alternatives: ["<role-id>"]
+
+memory:
+  srl_append: true
+  rollups: ["daily", "weekly"]
+
+quality_gates:
+  metrics: ["<kpis>"]
+  pass: "<green condition>"
+  fail: "<red condition>"
+
+failure_modes:
+  - "<concise risk phrase>"
+
+invocation:
+  one_line: "<copy-paste activation>"
+  phrases:
+    - "<common user prompt>"
+
+implementations:
+  copilot_mode:
+    mode_file: ".github/chatmodes/<Name>.chatmode.md"
+    notes: "Use identity/mission/guardrails + outputs as the mode body."
+  crewai:
+    role: "<CrewAI role>"
+    goal: "<CrewAI goal>"
+  langgraph:
+    node: "<node name>"
+    state_keys: ["<state fields this node reads/writes>"]
+
+glossary_plain: {}
+notes_patched_weaknesses: []

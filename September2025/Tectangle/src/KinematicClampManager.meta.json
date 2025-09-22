@@ -1,0 +1,24 @@
+{
+  "acceptance": [],
+  "emits": [
+    {
+      "detailSchema": {},
+      "event": "KinematicClampManager"
+    },
+    {
+      "detailSchema": {},
+      "event": "landmark:smoothed"
+    }
+  ],
+  "generatedFrom": "src/KinematicClampManager.js",
+  "name": "KinematicClampManager",
+  "tests": [
+    "tests/archive/kinematic_clamp.test.mjs",
+    "tests/smoke/kinematic.plausibility.smoke.test.mjs",
+    "tests/unit/KinematicClampManager.plausibility.green.test.mjs",
+    "tests/unit/KinematicClampManager.plausibility.red.test.mjs",
+    "tests/unit/kinematicClamp.red.test.mjs"
+  ],
+  "timestamp": "2025-09-01T16:40:33.317Z",
+  "version": "0.1.0"
+}

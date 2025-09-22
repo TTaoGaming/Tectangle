@@ -1,0 +1,22 @@
+{
+  "span": "day",
+  "totalEvents": 25,
+  "distinctSnapshots": 1,
+  "newestTs": "2025-09-13T22:39:50.691Z",
+  "oldestTs": "2025-09-12T23:00:03.064Z",
+  "topSnapshots": [
+    {
+      "snapshot": "heartbeat",
+      "count": 25
+    }
+  ],
+  "sampleLessons": [
+    "Ensure champion voices present; turn shape; glossary; frozen pass",
+    "Ensure champion voices present; turn shape; glossary; frozen pass",
+    "Ensure champion voices present; turn shape; glossary; frozen pass",
+    "Ensure champion voices present; turn shape; glossary; frozen pass",
+    "Ensure champion voices present; turn shape; glossary; frozen pass",
+    "Ensure champion voices present; turn shape; glossary; frozen pass",
+    "Ensure champion voices present; turn shape; glossary; frozen pass"
+  ]
+}

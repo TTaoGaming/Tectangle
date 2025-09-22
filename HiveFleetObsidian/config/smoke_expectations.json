@@ -1,0 +1,12 @@
+{
+  "tests/landmarks/right_hand_normal.landmarks.jsonl": {
+    "downs": 0,
+    "ups": 0,
+    "env": {}
+  },
+  "tests/landmarks/right_hand_gated.landmarks.jsonl": {
+    "downs": 0,
+    "ups": 0,
+    "env": {}
+  }
+}

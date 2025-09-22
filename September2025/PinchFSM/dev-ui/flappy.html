@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pinch → Jump Demo (Flappy P0)</title>
+    <style>
+      html, body { height: 100%; margin: 0; }
+      body { display: grid; grid-template-rows: auto 1fr; font-family: system-ui, Segoe UI, Roboto, Arial; }
+      header { padding: 10px; background: #111; color: #eee; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+      header label { display:flex; gap:6px; align-items:center; }
+      header input[type="number"] { width: 72px; }
+      #hud { margin-left: auto; font-size: 12px; color: #aaa; }
+      main { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; padding: 8px; }
+      canvas { width: 100%; height: 100%; background: linear-gradient(#9be7ff,#e1f5fe); border: 1px solid #ddd; border-radius: 6px; }
+      #side { display:flex; flex-direction:column; gap:8px; }
+      #side canvas { background: #fff; }
+      .small { font-size:12px; color:#666; }
+      .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>Pinch → Jump Demo</strong>
+      <label>Raw <input type="file" id="rawFile" accept=".jsonl" /></label>
+      <label>Smoothed <input type="file" id="smoothFile" accept=".jsonl" /></label>
+      <label>Source
+        <select id="sourceSel">
+          <option value="smoothed">smoothed (preferred)</option>
+          <option value="raw">raw</option>
+        </select>
+      </label>
+      <label>T_enter <input id="tEnter" type="number" step="0.01" value="0.15" /></label>
+      <label>T_exit <input id="tExit" type="number" step="0.01" value="0.24" /></label>
+      <label><input id="palmGate" type="checkbox" checked /> Palm gate</label>
+      <button id="playBtn">Play</button>
+      <div id="hud">idle</div>
+    </header>
+    <main>
+      <canvas id="game" width="800" height="600"></canvas>
+      <div id="side">
+        <div class="row small">Controls: Pinch to jump. Spacebar also jumps.</div>
+        <canvas id="plot" width="400" height="200"></canvas>
+        <canvas id="hand" width="400" height="380"></canvas>
+        <div class="small" id="metrics">P: -, gated: -, isPinched: -, jumps: 0</div>
+      </div>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const rawEl = $('rawFile');
+      const smoothEl = $('smoothFile');
+      const sourceSel = $('sourceSel');
+      const tEnterEl = $('tEnter');
+      const tExitEl = $('tExit');
+      const gateEl = $('palmGate');
+      const playBtn = $('playBtn');
+      const hud = $('hud');
+      const game = $('game');
+      const gctx = game.getContext('2d');
+      const plot = $('plot');
+      const pctx = plot.getContext('2d');
+      const hand = $('hand');
+      const hctx = hand.getContext('2d');
+      const metricsEl = $('metrics');
+
+      function readJsonl(file) {
+        return new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onerror = () => reject(fr.error);
+          fr.onload = () => {
+            const frames = String(fr.result||'').split(/\r?\n/).filter(Boolean).map(l=>JSON.parse(l));
+            resolve(frames);
+          };
+          fr.readAsText(file);
+        });
+      }
+
+      function dist2D(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+      function pinchP(hand){
+        const lm = hand?.landmarks||[]; const a=lm[4], b=lm[8], i5=lm[5], i17=lm[17];
+        if(!a||!b||!i5||!i17) return null; const K = dist2D(i5,i17); if(K<=0) return null; return dist2D(a,b)/K;
+      }
+      function palmNormal(hand){ const lm=hand?.landmarks||[]; const A=lm[0],B=lm[5],C=lm[17]; if(!A||!B||!C) return null; const u={x:B.x-A.x,y:B.y-A.y,z:(B.z||0)-(A.z||0)}; const v={x:C.x-A.x,y:C.y-A.y,z:(C.z||0)-(A.z||0)}; return { x:u.y*v.z-u.z*v.y, y:u.z*v.x-u.x*v.z, z:u.x*v.y-u.y*v.x }; }
+
+      function drawHand(ctx, hand, color){ if(!hand) return; const lm=hand.landmarks||[]; const chains=[[0,1,2,3,4],[0,5,6,7,8],[0,9,10,11,12],[0,13,14,15,16],[0,17,18,19,20]]; ctx.lineWidth=2; ctx.strokeStyle=color; ctx.fillStyle=color; for(const c of chains){ ctx.beginPath(); let m=false; for(const idx of c){ const p=lm[idx]; if(!p) continue; const x=p.x*ctx.canvas.width, y=p.y*ctx.canvas.height; if(!m){ctx.moveTo(x,y); m=true;} else ctx.lineTo(x,y);} ctx.stroke(); } for(const p of lm){ if(!p) continue; const x=p.x*ctx.canvas.width, y=p.y*ctx.canvas.height; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); } }
+
+      function plotP(ctx, series, min=0, max=0.6){ ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height); ctx.strokeStyle='#ddd'; ctx.beginPath(); ctx.moveTo(0, ctx.canvas.height*(1- (0.15-min)/(max-min))); ctx.lineTo(ctx.canvas.width, ctx.canvas.height*(1- (0.15-min)/(max-min))); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, ctx.canvas.height*(1- (0.24-min)/(max-min))); ctx.lineTo(ctx.canvas.width, ctx.canvas.height*(1- (0.24-min)/(max-min))); ctx.stroke(); ctx.strokeStyle='#0a84ff'; ctx.beginPath(); const n=series.length; for(let i=0;i<n;i++){ const x=i/(n-1)*ctx.canvas.width; const yNorm=(series[i]-min)/(max-min); const y=ctx.canvas.height*(1-(isFinite(yNorm)?yNorm:0)); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);} ctx.stroke(); }
+
+      // Game state
+      const state = { y: 300, vy: 0, gravity: 1600, jump: 500, ground: 560, jumps: 0 };
+      let framesRaw=[], framesSmooth=[], playIdx=0, t0=0, startMs=0, running=false;
+      let pSeries=[]; const maxSeries=400;
+      let isPinched=false, lastPinched=false;
+
+      function gameStep(dt){
+        // physics
+        state.vy += state.gravity * dt; state.y += state.vy * dt; if(state.y>state.ground){ state.y=state.ground; state.vy=0; }
+        // draw
+        gctx.clearRect(0,0,game.width, game.height);
+        // ground
+        gctx.fillStyle='#6ab04c'; gctx.fillRect(0, state.ground, game.width, game.height-state.ground);
+        // bird
+        gctx.save(); gctx.translate(200, state.y); gctx.rotate(Math.atan2(state.vy, 400)); gctx.fillStyle='#ffcc00'; gctx.beginPath(); gctx.arc(0,0,20,0,Math.PI*2); gctx.fill(); gctx.restore();
+      }
+
+      function jump(){ state.vy = -state.jump; state.jumps++; }
+
+      function renderHandPanels(frame){ hctx.clearRect(0,0,hand.width,hand.height); const handObj = frame?.hands?.[0]; drawHand(hctx, handObj, '#f97316'); /* raw orange by default */ }
+
+      function loop(){ if(!running) return; const now = performance.now(); const elapsed = now - startMs; // ms since start
+        // advance frame according to timestamps
+        const src = (sourceSel.value==='smoothed' && framesSmooth.length)? framesSmooth : framesRaw;
+        if(!src.length){ hud.textContent='no source frames'; requestAnimationFrame(loop); return; }
+        const baseT = src[0]?.timestampMs || 0;
+        while(playIdx < src.length && (src[playIdx].timestampMs - baseT) <= elapsed){
+          const fr = src[playIdx];
+          // Pinch metric and gating
+          const handObj = fr?.hands?.[0];
+          const P = pinchP(handObj);
+          const n = palmNormal(handObj);
+          const gated = gateEl.checked ? (!!n && n.z >= 0) : true; // simple heuristic
+          const Ten = parseFloat(tEnterEl.value); const Tex = parseFloat(tExitEl.value);
+          const nextPinched = gated && (isPinched ? (P !== null && P < Tex) : (P !== null && P < Ten));
+          lastPinched = isPinched; isPinched = !!nextPinched;
+          if(!lastPinched && isPinched){ jump(); }
+          // series & panels
+          if(P !== null){ pSeries.push(P); if(pSeries.length>maxSeries) pSeries.shift(); }
+          plotP(pctx, pSeries);
+          renderHandPanels(fr);
+          metricsEl.textContent = `P: ${P?.toFixed(4) ?? '-'} | gated: ${gated} | isPinched: ${isPinched} | jumps: ${state.jumps}`;
+          playIdx++;
+        }
+        // game step with fixed dt from RAF (~16ms)
+        gameStep(1/60);
+        requestAnimationFrame(loop);
+      }
+
+      async function play(){
+        const raws = rawEl.files?.[0] ? await readJsonl(rawEl.files[0]) : [];
+        const smooths = smoothEl.files?.[0] ? await readJsonl(smoothEl.files[0]) : [];
+        framesRaw = raws; framesSmooth = smooths; playIdx=0; startMs = performance.now(); t0 = 0; running=true; state.y=300; state.vy=0; state.jumps=0; pSeries.length=0;
+        hud.textContent = `loaded raw=${raws.length}, smoothed=${smooths.length}`;
+        requestAnimationFrame(loop);
+      }
+
+      playBtn.addEventListener('click', () => { play().catch(e=>{ console.error(e); hud.textContent='error'; }); });
+      // Spacebar manual jump fallback
+      window.addEventListener('keydown', (e)=>{ if(e.code==='Space'){ jump(); } });
+    </script>
+  </body>
+  </html>

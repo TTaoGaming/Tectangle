@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Open→Fist Dino — simple gesture demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { height: 100%; }
+    body { background: #0b1020; color: #e5e7eb; }
+    .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; }
+  </style>
+</head>
+<body class="h-full">
+  <div class="max-w-5xl mx-auto p-4 space-y-3">
+    <h1 class="text-xl font-semibold">Open Palm → Closed Fist → Jump</h1>
+    <p class="opacity-80 text-sm">Point your webcam at your hand. Open palm shows as "Open". Make a closed fist to fire Space into the Dino game.</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="card p-3 space-y-2">
+        <div class="flex items-center justify-between"><div class="font-semibold">Camera</div><span id="status" class="text-xs opacity-75">idle</span></div>
+        <video id="cam" playsinline muted autoplay class="w-full rounded bg-black"></video>
+        <div class="flex items-center gap-2 text-sm">
+          <span class="px-2 py-1 rounded-full border" id="chipState">State: –</span>
+          <span class="px-2 py-1 rounded-full border" id="chipSelect">Selects: 0</span>
+        </div>
+        <div class="text-xs opacity-70">Classifier: area(thumb–pinky) ratio with hysteresis</div>
+      </div>
+      <div class="card p-3 space-y-2">
+        <div class="flex items-center justify-between"><div class="font-semibold">T‑Rex Runner</div><button id="btnFocus" class="px-2 py-1 text-xs rounded border">Focus</button></div>
+        <div id="gameWrap" class="aspect-video bg-black rounded overflow-hidden">
+          <iframe id="game" title="T‑Rex Runner" src="./vendor/dino/index.html" style="width:100%;height:100%;border:0"></iframe>
+        </div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="btnStart" class="px-3 py-1 rounded bg-emerald-600">Start webcam</button>
+      <button id="btnStop" class="px-3 py-1 rounded bg-rose-600">Stop</button>
+    </div>
+  </div>
+
+  <!-- WEBWAY:ww-2025-084: Open→Fist Dino demo governed by Webway note -->
+  <script type="module">
+    import { createSpatialInput } from '../../src/index.js';
+    import { createAppShell } from './src/app/appShell.js';
+
+    const video = document.getElementById('cam');
+    const statusEl = document.getElementById('status');
+    const chipState = document.getElementById('chipState');
+    const chipSelect = document.getElementById('chipSelect');
+    const btnStart = document.getElementById('btnStart');
+    const btnStop = document.getElementById('btnStop');
+    const gameIframe = document.getElementById('game');
+    const btnFocus = document.getElementById('btnFocus');
+
+    const sdk = createSpatialInput({ factories: { createAppShell } });
+
+    let selects = 0;
+    function bumpSelect(){ selects++; chipSelect.textContent = `Selects: ${selects}`; }
+
+    function sendSpaceDownUp(target){
+      try{
+        const w = target?.contentWindow; if(!w) return;
+        w.postMessage({ type:'dino:key', action:'down', code:'Space', key:' ' }, '*');
+        setTimeout(()=>{ try{ w.postMessage({ type:'dino:key', action:'up', code:'Space', key:' ' }, '*'); }catch{} }, 60);
+      }catch{}
+    }
+
+    btnFocus.addEventListener('click', ()=>{ try{ const w=gameIframe.contentWindow; w?.focus?.(); const c=w?.document?.querySelector?.('canvas'); c?.focus?.(); c?.click?.(); }catch{} });
+
+    btnStart.addEventListener('click', async()=>{
+      try{ await sdk.startCamera(video); statusEl.textContent='camera on'; }catch(e){ console.error(e); statusEl.textContent='error'; }
+    });
+    btnStop.addEventListener('click', ()=>{ try{ sdk.stop(video); statusEl.textContent='stopped'; }catch{} });
+
+  // WEBWAY:ww-2025-084: Simple open vs fist heuristic with hysteresis over landmarks
+    const HYST = { openThresh: 0.35, closeThresh: 0.25, state: 'open' };
+    function classifyOpenOrFist(landmarks){
+      // landmarks: 21 x [x,y,z] normalized in [0,1]
+      try{
+        const t = landmarks[4];  // thumb tip
+        const p = landmarks[20]; // pinky tip
+        const w = landmarks[0];  // wrist
+        const dx = Math.abs(t[0]-p[0]);
+        const dy = Math.abs(t[1]-p[1]);
+        const span = Math.hypot(dx,dy);
+        const dwx = Math.abs(((t[0]+p[0])*0.5) - w[0]);
+        const dwy = Math.abs(((t[1]+p[1])*0.5) - w[1]);
+        const centerDist = Math.hypot(dwx,dwy);
+        // Ratio: larger span vs center distance implies more open; lower implies fist
+        const ratio = span / Math.max(1e-3, centerDist);
+        if(HYST.state==='open'){
+          if(ratio < HYST.closeThresh) HYST.state='fist';
+        } else {
+          if(ratio > HYST.openThresh) HYST.state='open';
+        }
+        return { state: HYST.state, ratio };
+      }catch{ return { state:'open', ratio:1 }; }
+    }
+
+  // WEBWAY:ww-2025-084: Consume mediapipe detections; choose a single hand (left or right)
+    function onDetections(){
+      try{
+        const dets = sdk?.ports?.mediapipe?.getLastDetections?.();
+        if(!Array.isArray(dets) || dets.length===0){ chipState.textContent='State: –'; return; }
+        const d = dets[0]; // first hand
+        const lm = d?.landmarks; if(!lm || lm.length<21){ chipState.textContent='State: –'; return; }
+        const cls = classifyOpenOrFist(lm);
+        chipState.textContent = `State: ${cls.state} (r=${cls.ratio.toFixed(2)})`;
+        if(cls.state==='fist'){
+          bumpSelect();
+          sendSpaceDownUp(gameIframe);
+        }
+      }catch{}
+    }
+
+    // WEBWAY:ww-2025-084: Poll at ~30Hz; we could also hook a dedicated onFrame
+    setInterval(onDetections, 33);
+  </script>
+</body>
+</html>

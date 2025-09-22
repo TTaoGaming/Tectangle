@@ -1,0 +1,471 @@
+﻿<!doctype html>
+<!--
+Hand Console V5 (Overlay Lite)
+Status: EXPERIMENTAL (prototype)
+Feature Flag: FEATURE_HAND_CONSOLE_V5 (set inside file)
+Goal: replace legacy overlay with modular helper to avoid canvas crash loops;
+      maintain quick telemetry panels for manual seat/pinch validation.
+TTL: 2025-10-10 (review + graduate or retire)
+-->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Hand Console V5</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0f14;
+      --panel: #131a23;
+      --panel-border: #1f2933;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --ok: #10b981;
+      --warn: #fbbf24;
+      --bad: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+    }
+    #left { position: relative; }
+    video { width: 100%; height: 100%; object-fit: cover; background: #000; }
+    canvas { position: absolute; inset: 0; pointer-events: none; }
+    #bootMsg {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(3, 7, 18, 0.65);
+      font-size: 12px;
+      line-height: 1.35;
+      max-width: 240px;
+      backdrop-filter: blur(6px);
+    }
+    #right {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 14px;
+      overflow: auto;
+      background: rgba(11, 15, 20, 0.96);
+    }
+    h3 {
+      margin: 0 0 6px;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      opacity: 0.82;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
+    button { font: inherit; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--panel-border); background: #0d141c; color: inherit; cursor: pointer; }
+    select, input[type="checkbox"] { font: inherit; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+    #seatSummary { font-size: 12px; }
+    .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; background: #1f2933; }
+    .badge.P1 { background: #2563eb; }
+    .badge.P2 { background: #8b5cf6; }
+    .meter { position: relative; width: 100%; height: 12px; border-radius: 999px; border: 1px solid var(--panel-border); background: #0d141c; overflow: hidden; margin-top: 4px; }
+    .meter-fill { position: absolute; top: 0; bottom: 0; left: 0; width: 0%; background: linear-gradient(90deg, #10b981, #2563eb); transition: width 0.12s ease-out; }
+    .meter-thresh { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--warn); opacity: 0.85; }
+    .meter-thresh.exit { background: var(--bad); }
+    #log { font-size: 11px; line-height: 1.25; max-height: 150px; overflow: auto; padding: 6px; background: #0d141c; border-radius: 8px; }
+    #diagText { font-size: 11px; opacity: 0.75; }
+    a.inline { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div id="left">
+    <video id="cam" playsinline muted></video>
+    <canvas id="overlay"></canvas>
+    <div id="bootMsg">Loading overlay-lite console...<br><span style="opacity:0.72">Click Camera or Clip to begin.</span></div>
+  </div>
+  <div id="right">
+    <div class="panel">
+      <h3>Capture</h3>
+      <div class="row">
+        <button id="startCam">Camera</button>
+        <button id="runClip">Clip</button>
+        <select id="clipSel" style="font-size:12px;">
+          <option value="../videos/two_hands_baseline_idle_v1.mp4">Idle baseline</option>
+          <option value="../videos/two_hands_stationary_right_then_left_index_pinch_hold_1s_v1.mp4">P1 & P2 pinch seq</option>
+        </select>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="palmGateToggle" checked /> Palm gate</label>
+        <span id="captureStatus" class="mono" style="font-size:11px; opacity:0.7;">idle</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Seats</h3>
+      <div id="seatSummary" class="mono">P1=- | P2=-</div>
+      <div id="seatBadges" style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Pinch</h3>
+      <div class="row mono" style="font-size:12px;">
+        <div>State:&nbsp;<span id="pinchState">Idle</span></div>
+        <div>Norm:&nbsp;<span id="pinchNorm">-</span></div>
+        <div>Vel:&nbsp;<span id="pinchVel">-</span></div>
+        <div>Accel:&nbsp;<span id="pinchAcc">-</span></div>
+        <div>TOI:&nbsp;<span id="pinchToi">-</span></div>
+      </div>
+      <div class="meter">
+        <div class="meter-fill" id="pinchFill"></div>
+        <div class="meter-thresh" id="enterLine" title="Enter"></div>
+        <div class="meter-thresh exit" id="exitLine" title="Exit"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Orientation</h3>
+      <div class="row mono" style="font-size:12px;">
+        <div>Angles:&nbsp;<span id="orientAngles">-</span></div>
+        <div>Bucket:&nbsp;<span id="orientBucket">-</span></div>
+        <div>Vel:&nbsp;<span id="orientVel">-</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Index Flexion</h3>
+      <div id="flexAngles" class="mono" style="font-size:12px;">MCP/PIP/DIP: -</div>
+    </div>
+
+    <div class="panel">
+      <h3>Recent Events</h3>
+      <pre id="log" class="mono">(no events yet)</pre>
+    </div>
+
+    <div class="panel">
+      <h3>Diagnostics</h3>
+      <div id="diagText" class="mono">frames=0 errors=0</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createAppShell } from '../src/app/appShell.js';
+    import { createHandOverlay } from './hex_hand_overlay.js';
+
+    globalThis.__flags = Object.assign({}, globalThis.__flags || {}, { FEATURE_HAND_CONSOLE_V5: true });
+
+    const video = document.getElementById('cam');
+    const overlay = document.getElementById('overlay');
+    const shell = createAppShell({ seats: ['P1','P2'] });
+
+    const overlayHelper = createHandOverlay({
+      canvas: overlay,
+      video,
+      getHands: () => {
+        const hands = globalThis.__hexLastHands;
+        return Array.isArray(hands) ? hands : [];
+      }
+    });
+
+    const refs = {
+      boot: document.getElementById('bootMsg'),
+      status: document.getElementById('captureStatus'),
+      seatSummary: document.getElementById('seatSummary'),
+      seatBadges: document.getElementById('seatBadges'),
+      pinchState: document.getElementById('pinchState'),
+      pinchNorm: document.getElementById('pinchNorm'),
+      pinchVel: document.getElementById('pinchVel'),
+      pinchAcc: document.getElementById('pinchAcc'),
+      pinchToi: document.getElementById('pinchToi'),
+      pinchFill: document.getElementById('pinchFill'),
+      enterLine: document.getElementById('enterLine'),
+      exitLine: document.getElementById('exitLine'),
+      orientAngles: document.getElementById('orientAngles'),
+      orientBucket: document.getElementById('orientBucket'),
+      orientVel: document.getElementById('orientVel'),
+      flexAngles: document.getElementById('flexAngles'),
+      log: document.getElementById('log'),
+      diag: document.getElementById('diagText')
+    };
+
+    const clamp01 = (v) => Math.min(1, Math.max(0, v));
+    const fmt = (n, d = 1) => (n == null || !isFinite(n)) ? '-' : Number(n).toFixed(d);
+
+    const vm = {
+      frames: 0,
+      errors: 0,
+      lastPinch: null,
+      lastOrient: null,
+      lastOrientVel: null,
+      lastFlex: null,
+      log: [],
+      lastState: { seats: { P1: null, P2: null }, map: [] }
+    };
+
+    function pushLog(evt) {
+      const entry = `${evt.t} ${evt.type} ${evt.seat || ''} ${evt.handKey || evt.handId || evt.hand || ''}`.trim();
+      vm.log.push(entry);
+      if (vm.log.length > 140) vm.log.splice(0, vm.log.length - 140);
+    }
+
+    shell.onEvent((evt) => {
+      try {
+        if (evt.type && evt.type.startsWith('pinch:')) {
+          vm.lastPinch = evt;
+          pushLog(evt);
+        }
+        if (evt.type === 'wrist:orientation') {
+          vm.lastOrient = evt;
+        }
+        if (evt.type === 'wrist:orientationVel') {
+          vm.lastOrientVel = evt;
+        }
+        if (evt.type === 'finger:index:angles') {
+          vm.lastFlex = evt;
+        }
+      } catch (err) {
+        vm.errors += 1;
+        console.warn('[v5] event handling error', err);
+      }
+    });
+
+    function renderSeats(state) {
+      const seatMap = new Map(Array.isArray(state?.map) ? state.map : []);
+      const p1 = seatMap.get('P1') || '-';
+      const p2 = seatMap.get('P2') || '-';
+      refs.seatSummary.textContent = `P1=${p1} | P2=${p2}`;
+      refs.seatBadges.innerHTML = '';
+      seatMap.forEach((seat, key) => {
+        const badge = document.createElement('span');
+        badge.className = `badge ${seat}`;
+        badge.textContent = `${seat}: ${key}`;
+        refs.seatBadges.appendChild(badge);
+      });
+    }
+
+    function renderPinch() {
+      const pinch = vm.lastPinch;
+      if (!pinch) {
+        refs.pinchState.textContent = 'Idle';
+        refs.pinchNorm.textContent = '-';
+        refs.pinchVel.textContent = '-';
+        refs.pinchAcc.textContent = '-';
+        refs.pinchToi.textContent = '-';
+        refs.pinchFill.style.width = '0%';
+        return;
+      }
+      const norm = (pinch.normalizedGap ?? pinch.norm ?? 1);
+      const enterT = pinch.thresholds?.enter ?? 0.5;
+      const exitT = pinch.thresholds?.exit ?? 0.8;
+      const fill = (1 - clamp01(norm)) * 100;
+      refs.pinchState.textContent = pinch.type.startsWith('pinch:up') ? 'Idle' : (pinch.type.includes('confirm') ? 'Confirm' : (pinch.type.includes('down') ? 'Down' : 'Hold'));
+      refs.pinchNorm.textContent = fmt(norm, 3);
+      refs.pinchVel.textContent = fmt(pinch.pinchVelocity, 1);
+      refs.pinchAcc.textContent = fmt(pinch.pinchAcceleration, 1);
+      refs.pinchToi.textContent = fmt(pinch.msToTouchVel, 0);
+      refs.pinchFill.style.width = `${fill}%`;
+      refs.enterLine.style.left = `${clamp01(1 - enterT) * 100}%`;
+      refs.exitLine.style.left = `${clamp01(1 - exitT) * 100}%`;
+    }
+
+    function renderOrientation() {
+      const orient = vm.lastOrient;
+      const vel = vm.lastOrientVel;
+      if (orient) {
+        refs.orientAngles.textContent = `${fmt(orient.angleDeg, 1)}° / ${fmt(orient.smoothAngleDeg, 1)}°`;
+        refs.orientBucket.textContent = orient.bucket || '-';
+      } else {
+        refs.orientAngles.textContent = '-';
+        refs.orientBucket.textContent = '-';
+      }
+      refs.orientVel.textContent = vel ? fmt(vel.velDegPerSec, 0) : '-';
+    }
+
+    function renderFlex() {
+      const flex = vm.lastFlex;
+      if (!flex) {
+        refs.flexAngles.textContent = 'MCP/PIP/DIP: -';
+        return;
+      }
+      refs.flexAngles.textContent = `MCP/PIP/DIP: ${fmt(flex.mcpDeg, 0)} / ${fmt(flex.pipDeg, 0)} / ${fmt(flex.dipDeg, 0)}`;
+    }
+
+    function renderLog() {
+      refs.log.textContent = vm.log.length ? vm.log.slice(-80).join('\n') : '(no events yet)';
+    }
+
+    function renderDiag() {
+      refs.diag.textContent = `frames=${vm.frames} errors=${vm.errors}`;
+      if (refs.boot) {
+        if (vm.frames > 40 || (video.readyState >= 2 && video.currentTime > 0)) {
+          refs.boot.style.display = 'none';
+        } else {
+          refs.boot.style.display = 'block';
+        }
+      }
+    }
+
+    function render() {
+      try {
+        overlayHelper.draw();
+      } catch (err) {
+        vm.errors += 1;
+        console.warn('[v5] overlay draw error', err);
+      }
+      try {
+        const state = shell.getState();
+        if (state && state.seats) {
+          vm.lastState = state.seats;
+          renderSeats(state.seats);
+        }
+      } catch (err) {
+        vm.errors += 1;
+      }
+      renderPinch();
+      renderOrientation();
+      renderFlex();
+      renderLog();
+      renderDiag();
+    }
+
+    function loop() {
+      vm.frames += 1;
+      render();
+      requestAnimationFrame(loop);
+    }
+    loop();
+
+    async function startCamera() {
+      refs.status.textContent = 'camera...';
+      try {
+        await shell.startCamera(video);
+        refs.status.textContent = 'camera (live)';
+      } catch (err) {
+        refs.status.textContent = 'camera failed';
+        console.error('[v5] camera start failed', err);
+      }
+    }
+
+    async function startVideoUrl(url) {
+      refs.status.textContent = 'clip...';
+      try {
+        await shell.startVideoUrl(video, url);
+        refs.status.textContent = `clip: ${url}`;
+      } catch (err) {
+        refs.status.textContent = 'clip failed';
+        console.error('[v5] clip start failed', err);
+      }
+    }
+
+    async function runSelectedClip() {
+      const sel = document.getElementById('clipSel');
+      if (!sel) return;
+      let url = sel.value;
+      await startVideoUrl(url);
+      if (refs.status.textContent === 'clip failed' && !url.startsWith('/')) {
+        const abs = '/' + url.replace(/^\.\/?/, '');
+        await startVideoUrl(abs);
+      }
+    }
+
+    document.getElementById('startCam').addEventListener('click', () => { startCamera(); });
+    document.getElementById('runClip').addEventListener('click', () => { runSelectedClip(); });
+
+    document.getElementById('palmGateToggle').addEventListener('change', (e) => {
+      const enabled = !!e.target.checked;
+      try {
+        if (shell.hsm && typeof shell.hsm.updatePinchConfig === 'function') {
+          shell.hsm.updatePinchConfig({ palmGate: enabled });
+        } else {
+          globalThis.__flags = Object.assign({}, globalThis.__flags, { PALM_GATE_FORCE: enabled });
+        }
+      } catch (err) {
+        console.warn('[v5] palm gate toggle failed', err);
+      }
+    });
+
+    (function initFromQuery() {
+      const Q = new URLSearchParams(location.search);
+      const qpClip = Q.get('clip');
+      const auto = Q.get('autostart') === '1' || Q.get('auto') === '1';
+      const noCam = Q.get('nocam') === '1';
+      function normalizeClip(path) {
+        if (!path) return path;
+        let clipPath = path.trim();
+        if (!clipPath.startsWith('/')) {
+          if (clipPath.startsWith('September2025/')) {
+            clipPath = '/' + clipPath;
+          } else if (!clipPath.startsWith('..')) {
+            if (!clipPath.startsWith('videos/')) clipPath = 'videos/' + clipPath;
+            clipPath = '../' + clipPath;
+          }
+        }
+        return clipPath;
+      }
+      if (qpClip) {
+        const clip = normalizeClip(qpClip);
+        const sel = document.getElementById('clipSel');
+        let matched = false;
+        for (const opt of sel.options) {
+          if (opt.value === clip) { matched = true; sel.value = clip; break; }
+        }
+        if (!matched) {
+          const opt = document.createElement('option');
+          opt.value = clip;
+          opt.textContent = 'Query Clip';
+          sel.appendChild(opt);
+          sel.value = clip;
+        }
+        if (auto) {
+          setTimeout(() => { startVideoUrl(clip); }, 160);
+        }
+      } else if (auto) {
+        if (!noCam) {
+          setTimeout(() => { startCamera(); }, 160);
+        } else {
+          setTimeout(() => { runSelectedClip(); }, 160);
+        }
+      }
+    })();
+
+    function stop() {
+      try { shell.stop(video); } catch (err) { console.warn('[v5] stop failed', err); }
+    }
+
+    globalThis.__ihcV5 = {
+      shell,
+      startCamera,
+      startVideoUrl: (url) => startVideoUrl(url),
+      runClip: runSelectedClip,
+      stop,
+      getState: () => ({
+        frames: vm.frames,
+        errors: vm.errors,
+        seats: (() => {
+          try {
+            const state = shell.getState();
+            return state && state.seats ? state.seats : null;
+          } catch (err) {
+            return null;
+          }
+        })(),
+        lastPinch: vm.lastPinch,
+        lastOrient: vm.lastOrient
+      })
+    };
+
+    globalThis.addEventListener('beforeunload', stop);
+  </script>
+</body>
+</html>
+
+

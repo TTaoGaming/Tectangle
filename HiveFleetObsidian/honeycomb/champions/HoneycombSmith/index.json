@@ -1,0 +1,54 @@
+{
+  "generatedAt": "2025-09-22T19:00:02.965Z",
+  "canonical": {
+    "path": "September2025/Tectangle/docs/pinch_mvp_decision.md",
+    "title": "pinch mvp decision",
+    "snippet": "Pinch MVP Decision & Implementation Plan — Palm‑gated index↔thumb pinch (Pinch Piano MVP)",
+    "mtime": "2025-09-22T16:25:48.773Z",
+    "mtimeMs": 1758558348773.9365
+  },
+  "items": [
+    {
+      "path": "September2025/Tectangle/docs/pinch_mvp_decision.md",
+      "title": "pinch mvp decision",
+      "snippet": "Pinch MVP Decision & Implementation Plan — Palm‑gated index↔thumb pinch (Pinch Piano MVP)",
+      "mtime": "2025-09-22T16:25:48.773Z",
+      "mtimeMs": 1758558348773.9365
+    },
+    {
+      "path": "docs/knowledge/WORLD_INDEX.md",
+      "title": "WORLD INDEX",
+      "snippet": "# WORLD INDEX",
+      "mtime": "2025-09-11T21:34:02.607Z",
+      "mtimeMs": 1757626442607.9895
+    },
+    {
+      "path": "docs/knowledge/GOLD_INDEX.md",
+      "title": "GOLD INDEX",
+      "snippet": "# GOLD INDEX",
+      "mtime": "2025-09-11T21:34:01.796Z",
+      "mtimeMs": 1757626441796.4436
+    },
+    {
+      "path": "docs/knowledge/honeycomb/honeycomb_index.md",
+      "title": "Honeycomb Index (generated)",
+      "snippet": "# Honeycomb Index (generated)",
+      "mtime": "2025-09-08T00:50:53.183Z",
+      "mtimeMs": 1757292653183.5344
+    },
+    {
+      "path": "docs/knowledge/Consolidated_Pinch_Report_2025-09-06_FINAL.md",
+      "title": "Consolidated Pinch Report — 2025-09-06",
+      "snippet": "Ship a minimal palm-gated index↔thumb pinch (Exploit path) now; harden with golden-trace-driven CI and a one-week stabilization plan.",
+      "mtime": "2025-09-07T09:09:12.698Z",
+      "mtimeMs": 1757236152698.062
+    },
+    {
+      "path": "docs/two-pagers/CI_Basics_and_Scaffolding_2025-09-05.md",
+      "title": "Continuous Integration (CI) Basics & Scaffolding (Two‑Pager)",
+      "snippet": "# Continuous Integration (CI) Basics & Scaffolding (Two‑Pager)",
+      "mtime": "2025-09-05T20:30:55.354Z",
+      "mtimeMs": 1757104255354.943
+    }
+  ]
+}

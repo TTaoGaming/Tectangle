@@ -1,0 +1,8 @@
+{
+  "page": "http://localhost:8091/September2025/TectangleHexagonal/dev/camera_landmarks_wrist_label_v2.html",
+  "clip": "September2025/TectangleHexagonal/videos/golden/golden.two_hands_idle.v1.mp4",
+  "lines": 42,
+  "fpsAvg": 36.24761904761905,
+  "maxHands": 2,
+  "seatsMax": 2
+}

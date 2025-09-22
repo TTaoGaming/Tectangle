@@ -1,0 +1,1 @@
+﻿// Predictor sidecar responsible for PREPARE_DOWN / CONFIRM / CANCEL hints.\n// TODO: implement createPredictor({ responseLeadMs, confirmWindowMs }) returning { ingest(frame), flush() }.\nexport function createPredictor(/* options */) {\n  throw new Error('predictorSidecar.createPredictor not implemented');\n}\n

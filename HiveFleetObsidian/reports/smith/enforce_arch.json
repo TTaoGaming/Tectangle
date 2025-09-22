@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2025-09-22T19:00:03.037Z",
+  "apply": false,
+  "problems": 25,
+  "lines": [
+    "[MISS] SilkScribe: dir core",
+    "[MISS] SilkScribe: dir adapters",
+    "[MISS] HoneycombSmith: dir core",
+    "[MISS] HoneycombSmith: dir adapters",
+    "[MISS] WebCartographer: dir core",
+    "[MISS] WebCartographer: dir adapters",
+    "[MISS] FaultlineSeeker: dir core",
+    "[MISS] FaultlineSeeker: dir adapters",
+    "[MISS] PrismMagus: dir adapters",
+    "[MISS] LatticeSteward: dir core",
+    "[MISS] LatticeSteward: dir adapters",
+    "[MISS] WindowHunter: dir core",
+    "[MISS] WindowHunter: dir adapters",
+    "[MISS] Safebreaker: dir core",
+    "[MISS] Safebreaker: dir adapters",
+    "[MISS] FirstPrinciples: dir core",
+    "[MISS] FirstPrinciples: dir adapters",
+    "[MISS] SwarmJester: dir core",
+    "[MISS] SwarmJester: dir adapters",
+    "[MISS] ConcordWeaver: dir core",
+    "[MISS] ConcordWeaver: dir adapters",
+    "[MISS] SignalWarden: dir core",
+    "[MISS] SignalWarden: dir adapters",
+    "[MISS] ShadowAuditor: dir core",
+    "[MISS] ShadowAuditor: dir adapters"
+  ]
+}

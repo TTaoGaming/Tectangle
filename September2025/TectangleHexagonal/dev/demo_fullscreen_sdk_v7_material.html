@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Tectangle — Spatial SDK v7 (Material + UI workbench)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./design/m3.tokens.css" />
+    <style>
+      html, body { height: 100%; }
+      body { background: var(--m3-bg); color: var(--m3-on-surface); }
+      canvas { image-rendering: crisp-edges; }
+      .card { background: color-mix(in oklab, var(--m3-surface) 88%, black 12%); border: 1px solid var(--m3-outline); border-radius: var(--m3-radius-md); }
+      .chip { border-radius: 999px; padding: 2px 8px; border:1px solid var(--m3-outline); font-size: 11px; }
+      .btn { border-radius: var(--m3-radius-sm); padding: 6px 10px; font-size: 12px; background: var(--m3-primary); color: white; }
+      .toolbar { background: color-mix(in oklab, var(--m3-surface) 80%, black 20%); border: 1px solid var(--m3-outline); border-radius: var(--m3-radius-md); }
+    </style>
+  </head>
+  <body class="h-full">
+    <!-- WEBWAY:ww-2025-062: v7 clone for UI/presentation iteration -->
+    <div class="flex h-full">
+      <div class="relative flex-1 min-w-0">
+        <video id="cam" playsinline muted autoplay preload="metadata" class="absolute inset-0 w-full h-full object-cover bg-black"></video>
+        <canvas id="overlay" class="absolute inset-0 w-full h-full"></canvas>
+        <div class="absolute top-3 left-3 flex flex-wrap items-center gap-2 toolbar backdrop-blur px-2 py-2">
+          <button id="btnStart" class="btn">Start Camera</button>
+          <button id="btnStop" class="btn" style="background:#ef4444">Stop</button>
+          <button id="btnPlayPinch" class="btn" style="background:#3b82f6">Play Pinch</button>
+          <button id="btnPlayIdle" class="btn" style="background:#f59e0b">Play Idle</button>
+          <!-- WEBWAY:ww-2025-065: Beginner-friendly panel opener (drawer mode only) -->
+          <button id="btnPanelToolbar" class="btn" style="display:none; background:#10b981" aria-controls="bottomDrawer" data-test-id="btn-open-panel-toolbar">Open Panel</button>
+          <label class="text-[11px] opacity-80 ml-2">MP4: <input id="fileInput" type="file" accept="video/mp4" class="text-xs" /></label>
+          <label class="text-[11px] opacity-80 ml-2 inline-flex items-center gap-1">Fit:
+            <select id="fitMode" class="bg-slate-800 text-xs rounded px-1 py-0.5"><option value="cover" selected>cover</option><option value="contain">contain</option></select>
+          </label>
+          <label class="text-[11px] opacity-80 ml-2 inline-flex items-center gap-1"><input id="mirrorToggle" type="checkbox" class="accent-slate-300"> Mirror</label>
+          <span class="chip">Kalman</span>
+          <span class="chip" title="P1/P2 lock-in">Lock-In</span>
+          <!-- WEBWAY:ww-2025-082: XR emu select counter (flagged) -->
+          <span id="xrSelectCounter" class="chip" data-test-id="xr-select-count" style="display:none">XR Selects: 0</span>
+        </div>
+        <!-- Seat Config (optional) -->
+        <div class="absolute right-3 top-3 card p-2 text-[11px] space-y-1" id="seatcfg" style="display:none">
+          <div class="font-semibold">Seat Config</div>
+          <label class="inline-flex items-center gap-1">Preset
+            <select id="cfg_preset" class="bg-slate-800 rounded px-1 py-0.5">
+              <option value="balanced" selected>Balanced</option>
+              <option value="smooth">Smooth</option>
+              <option value="responsive">Responsive</option>
+            </select>
+          </label>
+          <label class="inline-flex items-center gap-1">Lookahead ms <input id="cfg_la" type="number" class="w-16 bg-slate-800 rounded px-1 py-0.5" value="100"/></label>
+          <label class="inline-flex items-center gap-1">Enter <input id="cfg_enter" type="number" step="0.01" class="w-16 bg-slate-800 rounded px-1 py-0.5" value="0.50"/></label>
+          <label class="inline-flex items-center gap-1">Exit <input id="cfg_exit" type="number" step="0.01" class="w-16 bg-slate-800 rounded px-1 py-0.5" value="0.80"/></label>
+          <button id="cfg_apply" class="btn">Apply</button>
+        </div>
+
+        <!-- Lock-In HUD (hidden by default; enable with ?hud=1) -->
+        <div class="absolute left-3 right-3 grid grid-cols-2 gap-2" id="lockHud" style="bottom: 168px; display:none;">
+          <div class="card p-2 text-[12px]">
+            <div class="flex items-center justify-between mb-1"><div class="font-semibold">P1</div><div class="chip" id="p1Badge">–</div></div>
+            <pre id="p1Log" class="text-xs bg-slate-900 p-2 rounded border border-slate-800 h-24 overflow-auto"></pre>
+          </div>
+          <div class="card p-2 text-[12px]">
+            <div class="flex items-center justify-between mb-1"><div class="font-semibold">P2</div><div class="chip" id="p2Badge">–</div></div>
+            <pre id="p2Log" class="text-xs bg-slate-900 p-2 rounded border border-slate-800 h-24 overflow-auto"></pre>
+          </div>
+        </div>
+        <!-- Predictive Lookahead tray -->
+        <div class="absolute left-3 right-3 bottom-3 space-y-2" id="kalman-mount">
+          <div id="kalman" class="card p-2 text-[11px]">
+            <div class="flex items-center justify-between mb-1">
+              <div class="font-semibold">Predictive Lookahead (1D Kalman)</div>
+              <div class="flex items-center gap-2 opacity-80">
+                <label class="inline-flex items-center gap-1">lookahead ms <input id="la" type="number" step="5" value="100" class="w-16 bg-slate-800 rounded px-1 py-0.5"/></label>
+                <label class="inline-flex items-center gap-1">Q <input id="q" type="number" step="0.0001" value="0.01" class="w-20 bg-slate-800 rounded px-1 py-0.5"/></label>
+                <label class="inline-flex items-center gap-1">R <input id="r" type="number" step="0.0001" value="0.001" class="w-20 bg-slate-800 rounded px-1 py-0.5"/></label>
+              </div>
+            </div>
+            <div id="strips" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+          </div>
+        </div>
+      </div>
+      <aside id="panel" class="w-[360px] max-w-full border-l border-slate-800 bg-slate-950/70 backdrop-blur-md overflow-auto">
+        <div class="p-3 flex items-center justify-between sticky top-0 bg-slate-950/90 border-b border-slate-800">
+          <h2 class="font-semibold">Side Panel (v7)</h2>
+          <span class="chip">Live</span>
+        </div>
+        <div class="p-3 space-y-3">
+          <div id="e2eReady" data-ready="0" style="display:none">0</div>
+          <div id="seatCards" class="space-y-2">
+            <div class="card p-2">
+              <div class="flex items-center justify-between mb-1">
+                <div class="font-semibold">P1</div>
+                <span class="chip" id="p1CardBadge">–</span>
+              </div>
+              <div class="grid grid-cols-2 gap-x-2 text-[11px] opacity-90">
+                <div class="opacity-70">Hand</div><div id="p1CardHand">–</div>
+                <div class="opacity-70">State</div><div id="p1CardFsm">–</div>
+                <div class="opacity-70">Norm</div><div id="p1CardNorm">–</div>
+              </div>
+            </div>
+            <div class="card p-2">
+              <div class="flex items-center justify-between mb-1">
+                <div class="font-semibold">P2</div>
+                <span class="chip" id="p2CardBadge">–</span>
+              </div>
+              <div class="grid grid-cols-2 gap-x-2 text-[11px] opacity-90">
+                <div class="opacity-70">Hand</div><div id="p2CardHand">–</div>
+                <div class="opacity-70">State</div><div id="p2CardFsm">–</div>
+                <div class="opacity-70">Norm</div><div id="p2CardNorm">–</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <script type="module">
+      import { createSpatialInput, createTTIRecorder } from '../../../src/index.js';
+      import { createAppShell } from '../src/app/appShell.js';
+      import { createToiKalmanCV } from '../src/ports/toiKalmanPort.js';
+  import { createHandOverlay } from './src/overlay/hand_overlay.js';
+  import { createSeatMagnetManager } from '../src/app/seatMagnetManager.js';
+      import { createDinoSidecar } from './sidecars/dino_sidecar.mjs';
+
+      const video=document.getElementById('cam'); const canvas=document.getElementById('overlay'); const ctx=canvas.getContext('2d');
+      const btnStart=document.getElementById('btnStart'); const btnStop=document.getElementById('btnStop');
+      const btnPlayPinch=document.getElementById('btnPlayPinch'); const btnPlayIdle=document.getElementById('btnPlayIdle'); const fileInput=document.getElementById('fileInput');
+  const btnPanelToolbar=document.getElementById('btnPanelToolbar');
+      const p1Badge=document.getElementById('p1Badge'); const p2Badge=document.getElementById('p2Badge');
+      const p1Log=document.getElementById('p1Log'); const p2Log=document.getElementById('p2Log');
+      const p1Card={ badge:document.getElementById('p1CardBadge'), hand:document.getElementById('p1CardHand'), fsm:document.getElementById('p1CardFsm'), norm:document.getElementById('p1CardNorm') };
+      const p2Card={ badge:document.getElementById('p2CardBadge'), hand:document.getElementById('p2CardHand'), fsm:document.getElementById('p2CardFsm'), norm:document.getElementById('p2CardNorm') };
+  // WEBWAY:ww-2025-064: Mirror updates into drawer cards when drawer mode is used
+  const p1CardD={ badge:document.getElementById('p1CardBadge_d'), hand:document.getElementById('p1CardHand_d'), fsm:document.getElementById('p1CardFsm_d'), norm:document.getElementById('p1CardNorm_d') };
+  const p2CardD={ badge:document.getElementById('p2CardBadge_d'), hand:document.getElementById('p2CardHand_d'), fsm:document.getElementById('p2CardFsm_d'), norm:document.getElementById('p2CardNorm_d') };
+
+      const sdk=createSpatialInput({ factories:{ createAppShell } });
+      window.__sdk=sdk;
+      const tti = createTTIRecorder({ getLookaheadMs: ()=> 0 });
+
+      // WEBWAY:ww-2025-067: Finger Rich Telemetry Atlas — feature flag (FINGER_ATLAS)
+      const __p = new URLSearchParams(location.search);
+      const FINGER_ATLAS = (__p.get('finger_atlas') === '1');
+      // Minimal JSONL recorder exposed for tests (TDD slice)
+      const fingerRecorder = (()=>{
+        const state = { lines: 0, buf: [] };
+        function push(obj){
+          try{
+            state.buf.push(JSON.stringify(obj));
+            state.lines++;
+            window.__fingerJSONLLines = state.lines;
+          }catch{}
+        }
+        return { push, get lines(){ return state.lines; }, get buf(){ return state.buf; } };
+      })();
+      if(FINGER_ATLAS){
+        window.__fingerRecorder = fingerRecorder;
+        // DOM probe for overlay presence (used by tests)
+        const marker = document.createElement('div');
+        marker.setAttribute('data-test-id','finger-overlay');
+        marker.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;';
+        document.body.appendChild(marker);
+      }
+
+      // WEBWAY:ww-2025-082: Pinch → Standards Bridge (XR emu)
+      const __pp = new URLSearchParams(location.search);
+      const FEATURE_PINCH_STANDARDS_BRIDGE = (__pp.get('pinch_bridge') === '1');
+      const FEATURE_XR_EMU = (__pp.get('xr_emu') === '1');
+      let __xrSelectCount = 0;
+      const xrCounterEl = document.getElementById('xrSelectCounter');
+      function setXrCounterVisible(on){ try{ xrCounterEl.style.display = on? 'inline-block':'none'; }catch{} }
+      function bumpXrCounter(){ try{ __xrSelectCount++; xrCounterEl.textContent = `XR Selects: ${__xrSelectCount}`; }catch{} }
+      function dispatchXrLike(target, type, detail){
+        try{ const ev = new CustomEvent(type, { bubbles: true, cancelable: true, detail }); target?.dispatchEvent?.(ev); }catch{}
+      }
+      if(FEATURE_PINCH_STANDARDS_BRIDGE && FEATURE_XR_EMU){
+        setXrCounterVisible(true);
+        // Attach a lightweight listener that translates pinch events into XR-like selects
+        try{
+          sdk.on((e)=>{
+            try{
+              if(!e || typeof e.type !== 'string') return;
+              if(e.type === 'pinch:down'){
+                bumpXrCounter();
+                dispatchXrLike(document, 'selectstart', { seat: e.seat || null, hand: e.hand || null });
+              }
+              if(e.type === 'pinch:up' || e.type === 'pinch:cancel'){
+                dispatchXrLike(document, 'selectend', { seat: e.seat || null, hand: e.hand || null });
+              }
+            }catch{}
+          });
+        }catch{}
+        // Expose tiny test helpers
+        window.__xrEmuCount = ()=> __xrSelectCount;
+        window.__xrEmuSimulateSelect = ({ seat='P1', hand='left' }={})=>{ try{ bumpXrCounter(); dispatchXrLike(document, 'selectstart', { seat, hand }); return true; }catch{ return false; } };
+      }
+
+      function fitCanvas(){ const rect=canvas.getBoundingClientRect(); canvas.width=Math.max(2,Math.floor(rect.width)); canvas.height=Math.max(2,Math.floor(rect.height)); }
+      const ro=new ResizeObserver(fitCanvas); ro.observe(canvas); fitCanvas();
+      const fitMode=document.getElementById('fitMode'); const mirrorToggle=document.getElementById('mirrorToggle');
+      fitMode.addEventListener('change',()=>{ video.style.objectFit=fitMode.value; });
+      mirrorToggle.addEventListener('change',()=>{ const on=!!mirrorToggle.checked; video.style.transform=on?'scaleX(-1)':'none'; });
+
+      const kalmanMap = new Map();
+      const laEl = document.getElementById('la'); const qEl = document.getElementById('q'); const rEl = document.getElementById('r');
+      function getKalman(key){ let k = kalmanMap.get(key); if(!k){ k = createToiKalmanCV({ q:+(qEl?.value||0.01), r:+(rEl?.value||0.001) }); kalmanMap.set(key,k); } return k; }
+      function resetAllKalman(){ for(const k of kalmanMap.values()) k.reset(); }
+      qEl?.addEventListener('change', ()=>{ for(const k of kalmanMap.values()) k.setParams({ q:+(qEl?.value||0.01) }); });
+      rEl?.addEventListener('change', ()=>{ for(const k of kalmanMap.values()) k.setParams({ r:+(rEl?.value||0.001) }); });
+
+      function seatFromHand(hand){ if(!hand) return undefined; const h=String(hand).toLowerCase(); if(h.startsWith('l')) return 'P1'; if(h.startsWith('r')) return 'P2'; }
+      function seatFromState(state, snap){ try{ const map=state?.seats?.map; if(!Array.isArray(map)) return undefined; const handKey=snap?.hand? `hand:${snap.hand}`:null; if(!handKey) return undefined; for(const entry of map){ const k=Array.isArray(entry)? entry[0]:null; const v=Array.isArray(entry)? entry[1]:null; if(k===handKey && typeof v==='string') return v; } }catch{} }
+
+      const overlay = createHandOverlay({ canvas, video, sdk, getFitMode: ()=> fitMode.value, getMirrored: ()=> !!mirrorToggle.checked });
+  // WEBWAY:ww-2025-068: Seat Magnet Autosnap wiring (flagged)
+  // Use local params here to avoid ordering issues with __params defined later
+  const __seatmagP = new URLSearchParams(location.search);
+  const SEATMAG = (__seatmagP.get('seatmag')==='1');
+  const SEATMAG_AUTO = (__seatmagP.get('seatmag_auto')==='1');
+      let seatMag = null;
+      if(SEATMAG && SEATMAG_AUTO){
+        seatMag = createSeatMagnetManager({
+          onEvent: (ev)=>{
+            try{
+              if(ev?.type==='seat:snap'){
+                // Apply lock if seat matches P1/P2
+                const seat = ev.seat;
+                const [hand, handId] = (()=>{ const parts = String(ev.handKey||'').split(':'); return [parts[0]==='hand'? parts[1]:null, null]; })();
+                if(seat==='P1' || seat==='P2'){
+                  if(!lock[seat]){
+                    lock[seat] = { t: performance.now(), hand, handId };
+                    lock.order.push(seat);
+                  }
+                }
+              }
+              if(ev?.type==='seat:release'){
+                const seat = ev.seat;
+                if(seat==='P1' || seat==='P2'){ lock[seat] = null; }
+              }
+            }catch{}
+          }
+        });
+        window.__seatMagnetManager = seatMag;
+      }
+      const stripsEl = document.getElementById('strips');
+      function ensureStrip(key,label){ let row=document.querySelector(`[data-strip="${key}"]`); if(!row){ row=document.createElement('div'); row.dataset.strip=key; row.className='space-y-1'; row.innerHTML=`<div class=\"flex items-center justify-between\"><div class=\"font-semibold text-[11px]\">${label}</div><div class=\"text-[10px] opacity-70\" data-state></div></div><div class=\"relative h-6 bg-slate-800/60 rounded overflow-hidden\" data-bar><div class=\"absolute top-0 bottom-0 bg-emerald-500/20\" data-enter></div><div class=\"absolute top-0 bottom-0 bg-rose-500/20\" data-exit></div><div class=\"absolute top-0 bottom-0\" data-dot style=\"width:2px;background:#fff\"></div><div class=\"absolute top-0 bottom-0\" data-ghost style=\"width:2px;background:#22d3ee\"></div><canvas data-spark class=\"absolute inset-0\"></canvas></div>`; stripsEl.appendChild(row);} return row; }
+      function renderStrip(row, snap, ghost){ const bar=row.querySelector('[data-bar]'); const spark=row.querySelector('[data-spark]'); const dot=row.querySelector('[data-dot]'); const ghostEl=row.querySelector('[data-ghost]'); const st=row.querySelector('[data-state]'); const W=bar.clientWidth||200, H=bar.clientHeight||24; const enterPct=(snap?.thresholds?.enter ?? 0.5); const exitPct=(snap?.thresholds?.exit ?? 0.8); const enterEl=row.querySelector('[data-enter]'); const exitEl=row.querySelector('[data-exit]'); enterEl.style.left='0%'; enterEl.style.width=(enterPct*100)+'%'; exitEl.style.left='0%'; exitEl.style.width=(exitPct*100)+'%'; const norm=(snap?.norm!=null)? snap.norm:null; if(norm!=null){ dot.style.left=(norm*100)+'%'; } if(ghost!=null){ ghostEl.style.left=(Math.max(0,Math.min(1,ghost))*100)+'%'; ghostEl.style.display='block'; } else { ghostEl.style.display='none'; } let fsm = snap?.fsm || (snap?.gate===false?'GATED':(norm!=null? (norm<enterPct?'Armed': (norm<exitPct?'Held':'Released')):'?')); st.textContent = `${fsm}${snap?.palmAngleDeg!=null? ' | palm '+snap.palmAngleDeg.toFixed(0)+'°':''}`; const hist=Array.isArray(snap?.history)? snap.history:[]; spark.width=W; spark.height=H; const sctx=spark.getContext('2d'); sctx.clearRect(0,0,W,H); if(hist.length){ sctx.strokeStyle='#94a3b8'; sctx.lineWidth=1; sctx.beginPath(); for(let i=0;i<hist.length;i++){ const x=(i/(hist.length-1))*W; const y=H - (hist[i].norm!=null? hist[i].norm:0)*H; if(i===0) sctx.moveTo(x,y); else sctx.lineTo(x,y); } sctx.stroke(); } }
+
+      // Dino window and bridge (same as v6)
+      const __params = new URLSearchParams(location.search);
+      const FLAG_V6_DINO_P1 = ((__params.get('flag_v6_dino_p1') ?? '1') !== '0');
+      let dinoFrame; let dino; let dinoAttached = false; let dinoWindow; let dinoWinChrome; let dinoWinBody; let btnDinoClose;
+      if(FLAG_V6_DINO_P1){
+        dinoWindow = document.createElement('div'); dinoWindow.id='dinoWindowV7';
+        dinoWindow.style.cssText='position:fixed; top:84px; left:84px; width:520px; height:320px; z-index:1000;';
+        dinoWinChrome = document.createElement('div'); dinoWinChrome.id='dinoWinChromeV7';
+        dinoWinChrome.className='flex items-center justify-between px-2 py-1 select-none';
+        dinoWinChrome.style.cssText='cursor:move; background: color-mix(in oklab, var(--m3-surface) 86%, black 14%); border:1px solid var(--m3-outline); border-bottom:none; border-top-left-radius:8px; border-top-right-radius:8px;';
+        dinoWinChrome.innerHTML = `<div class="text-[12px] font-semibold">T-Rex Runner <span class="chip ml-2">Seat: P1</span></div><div class="flex items-center gap-1"><button id="btnDinoCloseV7" class="chip" title="Close">Close</button></div>`;
+        dinoWinBody = document.createElement('div'); dinoWinBody.id='dinoWinBodyV7';
+        dinoWinBody.style.cssText='background: color-mix(in oklab, var(--m3-surface) 92%, black 8%); border:1px solid var(--m3-outline); border-top:none; border-bottom-left-radius:8px; border-bottom-right-radius:8px; width:100%; height:calc(100% - 30px); display:flex; align-items:stretch;';
+        dinoWindow.appendChild(dinoWinChrome); dinoWindow.appendChild(dinoWinBody); document.body.appendChild(dinoWindow);
+        dinoFrame = document.createElement('iframe'); dinoFrame.id = 'dino_v7'; dinoFrame.title='T-Rex Runner (P1)';
+        Object.assign(dinoFrame.style, { width:'100%', height:'100%', border:'0', background:'#0c1117', borderRadius:'0 0 8px 8px' });
+        dinoWinBody.appendChild(dinoFrame);
+        dino = createDinoSidecar({ target: window });
+        window.__dino_v7 = dino;
+        const btnClose = dinoWinChrome.querySelector('#btnDinoCloseV7');
+        btnClose?.addEventListener('click', ()=>{ try{ dinoWindow.style.display='none'; }catch{} });
+        (function enableDrag(){ let dragging=false, startX=0, startY=0, startLeft=0, startTop=0; function onMove(e){ if(!dragging) return; const dx=(e.clientX-startX), dy=(e.clientY-startY); dinoWindow.style.left=(startLeft+dx)+"px"; dinoWindow.style.top=(startTop+dy)+"px"; } function onUp(){ dragging=false; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); } dinoWinChrome?.addEventListener('mousedown', (e)=>{ dragging=true; startX=e.clientX; startY=e.clientY; const rect=dinoWindow.getBoundingClientRect(); startLeft=rect.left; startTop=rect.top; window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp); }); })();
+      }
+
+      function configureDinoBridge(w){ if(!w) return; dino.setParams({ target: w, code: 'Space', key: ' ', seat: 'P1' }); try{ w.__dinoEcho = 0; w.addEventListener('message', (ev)=>{ const msg = ev && ev.data; if(!msg || msg.type!=='dino:key') return; const type = msg.action === 'down' ? 'keydown' : 'keyup'; const init = { code:'Space', key:' ', bubbles:true, cancelable:true, keyCode:32, which:32 }; const Evt = w.KeyboardEvent || KeyboardEvent; const kev = new Evt(type, init); try { Object.defineProperty(kev, 'keyCode', { get: ()=>32 }); } catch {} try { Object.defineProperty(kev, 'which', { get: ()=>32 }); } catch {} try { w.document && w.document.dispatchEvent && w.document.dispatchEvent(kev); }catch{} try { w.dispatchEvent && w.dispatchEvent(kev); }catch{} try { const canvas = w.document && w.document.querySelector && w.document.querySelector('canvas'); if(canvas) canvas.dispatchEvent(kev); }catch{} if(type==='keydown'){ try{ w.__dinoEcho = (w.__dinoEcho||0) + 1; }catch{} try{ window.postMessage({ type:'dino:echo', count: w.__dinoEcho }, '*'); }catch{} } }); }catch{} try{ const doc=w.document; const canvas=doc?.querySelector('canvas'); canvas?.focus?.(); canvas?.click?.(); w.focus?.(); }catch{} try{ let tries=0; const max=24; const iv=setInterval(()=>{ try{ if((w.__dinoEcho||0)>0 || tries>=max){ clearInterval(iv); return; } const c=w.document?.querySelector('canvas'); c?.focus?.(); c?.click?.(); w.focus?.(); tries++; }catch{ clearInterval(iv); } }, 250); }catch{} }
+      (function startDino(){ if(!FLAG_V6_DINO_P1) return; try{ dinoFrame.src = '../vendor/dino/index.html'; dinoFrame.onload = ()=> configureDinoBridge(dinoFrame.contentWindow); }catch(e){ console.warn('Dino autostart failed', e);} })();
+
+      try{ window.addEventListener('message', (ev)=>{ try{ const d = ev && ev.data; if(d && d.type==='dino:echo'){ window.__diag = window.__diag || {}; window.__diag.dinoEcho = d.count; } }catch{} }); }catch{}
+
+      const lock = { P1: null, P2: null, order: [] };
+      function tryLock(e){ const seat = e.seat || seatFromHand(e.hand); if(e.type === 'pinch:down' && (seat==='P1' || seat==='P2')){ if(!lock[seat]){ lock[seat] = { t: e.t || performance.now(), hand: e.hand||null, handId: e.handId??null }; lock.order.push(seat); } if(FLAG_V6_DINO_P1 && seat==='P1' && !dinoAttached){ try{ dino.setParams({ seat:'P1' }); dino.attach({ sdk }); dinoAttached = true; }catch{} try{ const w = dinoFrame?.contentWindow; if(w){ w.postMessage({ type:'dino:key', action:'down', code:'Space', key:' ' }, '*'); setTimeout(()=>{ try{ w.postMessage({ type:'dino:key', action:'up', code:'Space', key:' ' }, '*'); }catch{} }, 60); } }catch{} } } }
+
+      function renderHud(){ p1Badge.textContent = lock.P1? '1/1' : '–'; p2Badge.textContent = lock.P2? '1/1' : '–'; const st = sdk.getState?.(); const rich=sdk.getRichSnapshot?.(); if(Array.isArray(rich)){ const latestBySeat = { P1:null, P2:null }; for(let i=rich.length-1;i>=0;i--){ const s = rich[i]; const seat = (s.seat || seatFromState(st, s) || seatFromHand(s.hand)); if((seat==='P1' || seat==='P2') && !latestBySeat[seat]) latestBySeat[seat]=s; if(latestBySeat.P1 && latestBySeat.P2) break; } const p1 = latestBySeat.P1; const p2 = latestBySeat.P2; const badgeP1 = lock.P1? '1/1' : '–'; const badgeP2 = lock.P2? '1/1' : '–'; const fsmText = (s)=> (s?.fsm || (s?.norm!=null? (s.norm < (s?.thresholds?.enter??0.5)?'Armed': (s.norm < (s?.thresholds?.exit??0.8)?'Held':'Released')) : '–'));
+        // Side panel cards
+        p1Card.badge.textContent = badgeP1; p1Card.hand.textContent = (lock.P1?.hand || p1?.hand || '–'); p1Card.fsm.textContent = fsmText(p1); p1Card.norm.textContent = (p1?.norm!=null? p1.norm.toFixed(3) : '–');
+        p2Card.badge.textContent = badgeP2; p2Card.hand.textContent = (lock.P2?.hand || p2?.hand || '–'); p2Card.fsm.textContent = fsmText(p2); p2Card.norm.textContent = (p2?.norm!=null? p2.norm.toFixed(3) : '–');
+        // Drawer cards (if present)
+        if(p1CardD.badge){ p1CardD.badge.textContent = badgeP1; }
+        if(p1CardD.hand){ p1CardD.hand.textContent = (lock.P1?.hand || p1?.hand || '–'); }
+        if(p1CardD.fsm){ p1CardD.fsm.textContent = fsmText(p1); }
+        if(p1CardD.norm){ p1CardD.norm.textContent = (p1?.norm!=null? p1.norm.toFixed(3) : '–'); }
+        if(p2CardD.badge){ p2CardD.badge.textContent = badgeP2; }
+        if(p2CardD.hand){ p2CardD.hand.textContent = (lock.P2?.hand || p2?.hand || '–'); }
+        if(p2CardD.fsm){ p2CardD.fsm.textContent = fsmText(p2); }
+        if(p2CardD.norm){ p2CardD.norm.textContent = (p2?.norm!=null? p2.norm.toFixed(3) : '–'); }
+      }
+      }
+      // Draw loop: overlay + seat-based strips
+      function prettyLabelFor(key, snap){
+        try{
+          if(key && key.startsWith('seat:')) return key.slice(5);
+          if(snap?.hand){ const h=String(snap.hand); return h.charAt(0).toUpperCase()+h.slice(1); }
+          if(key && key.startsWith('hand:')) return key.slice(5);
+          if(key && key.startsWith('handId:')) return 'Hand '+key.slice(7);
+        }catch{}
+        return 'Hand';
+      }
+      function keyForSnap(state, snap){
+        const seat=(snap?.seat || seatFromState(state,snap) || null);
+        if(seat==='P1' || seat==='P2') return `seat:${seat}`;
+        if(snap?.hand) return `hand:${String(snap.hand).toLowerCase()}`;
+        if(snap?.handId!=null) return `handId:${snap.handId}`;
+        return 'unknown';
+      }
+      function seatKeyForSnap(state, snap){
+        const seat=(snap?.seat || seatFromState(state,snap) || null);
+        if(typeof seat==='string' && /^P\d+$/i.test(seat)) return `seat:${seat.toUpperCase()}`;
+        if(seat==='P1' || seat==='P2') return `seat:${seat}`;
+        return null;
+      }
+  function draw(){
+        try{ const rect=canvas.getBoundingClientRect(); if(canvas.width!==Math.floor(rect.width) || canvas.height!==Math.floor(rect.height)) fitCanvas(); }catch{}
+        try{ ctx.clearRect(0,0,canvas.width,canvas.height); }catch{}
+        try{ overlay.draw(); }catch{}
+        const state = sdk.getState?.() || {}; const rich = sdk.getRichSnapshot?.() || [];
+        // Feed manager with current detections (normalized wrist landmarks) before rendering
+        if(seatMag){
+          try{
+            const dets = (sdk?.ports?.mediapipe?.getLastDetections?.() || []).map(d=>({
+              hand: d?.hand || null,
+              handId: d?.handId ?? null,
+              landmarks: d?.landmarks || null
+            }));
+            // Build current seat occupancy map (handKey->seat) from lock
+            const seats = {};
+            if(lock.P1){ const hk = lock.P1.hand? `hand:${String(lock.P1.hand).toLowerCase()}` : null; if(hk) seats[hk] = 'P1'; }
+            if(lock.P2){ const hk = lock.P2.hand? `hand:${String(lock.P2.hand).toLowerCase()}` : null; if(hk) seats[hk] = 'P2'; }
+            seatMag.onFrame({ dets, seats, autosnap: true });
+          }catch{}
+        }
+        const now = performance.now();
+        if(Array.isArray(rich)){
+          // Build latest per generic key (for recorder)
+          const latestByKey = new Map();
+          // Build latest per seat key only (for strips rendering)
+          const latestBySeat = new Map();
+          for(let i=rich.length-1;i>=0;i--){
+            const s = rich[i];
+            const k = keyForSnap(state, s);
+            if(!latestByKey.has(k)) latestByKey.set(k, s);
+            const sk = seatKeyForSnap(state, s);
+            if(sk && !latestBySeat.has(sk)) latestBySeat.set(sk, s);
+          }
+          // Render strips only for seated hands (P1/P2/Px)
+          for(const [key, snap] of latestBySeat.entries()){
+            if(!snap || snap.norm==null) continue;
+            const label = prettyLabelFor(key, snap);
+            const row = ensureStrip(key, label);
+            const kal = getKalman(key);
+            const r = kal.step({ t: now, norm: snap.norm, enterThresh: (snap?.thresholds?.enter ?? 0.5) });
+            const dtAhead = Math.max(0, (+laEl?.value||0)/1000);
+            const ghost = r.x + r.v * dtAhead;
+            renderStrip(row, snap, ghost);
+          }
+          // Record JSONL for Atlas across all keys (seated or not)
+          if(FINGER_ATLAS){
+            for(const [key, snap] of latestByKey.entries()){
+              if(!snap || snap.norm==null) continue;
+              try{
+                fingerRecorder.push({
+                  t: now,
+                  key,
+                  seat: (snap?.seat || null),
+                  hand: snap?.hand || null,
+                  norm: (snap.norm!=null? +snap.norm : null),
+                  fsm: snap.fsm || null,
+                  palmDeg: (snap.palmAngleDeg!=null? +snap.palmAngleDeg : null)
+                });
+              }catch{}
+            }
+          }
+        }
+      }
+      (function raf(){ draw(); renderHud(); requestAnimationFrame(raf); })();
+
+      try{ sdk.on(e=>{ if(e && typeof e.type==='string' && e.type.startsWith('pinch:')) tryLock(e); }); }catch{}
+      function updateReady(){ try{ const el = document.getElementById('e2eReady'); if(!el) return; const ok = !!(lock.P1 && (!FLAG_V6_DINO_P1 || (window.__diag && window.__diag.dinoEcho >= 1))); const ready = ok ? '1' : '0'; el.dataset.ready = ready; el.textContent = ready; }catch{} }
+      setInterval(updateReady, 200);
+
+      btnStart.addEventListener('click', async()=>{ try{ await sdk.startCamera(video);}catch(e){ console.error(e);} });
+      btnStop.addEventListener('click', ()=>{ sdk.stop(video); resetAllKalman(); });
+      async function playUrl(url){ try{ try{ video.crossOrigin='anonymous'; }catch{} await sdk.startVideoUrl(video,url); setTimeout(()=>{ try{ video.muted=true; video.play&&video.play().catch(()=>{}); }catch{} }, 50); }catch(e){ console.error('Failed to play url',url,e);} }
+      const PINCH_URL='/September2025/TectangleHexagonal/videos/golden/golden.two_hands_pinch_seq.v1.mp4'; const IDLE_URL='/September2025/TectangleHexagonal/videos/golden/golden.two_hands_idle.v1.mp4';
+      btnPlayPinch.addEventListener('click', ()=> playUrl(PINCH_URL)); btnPlayIdle.addEventListener('click', ()=> playUrl(IDLE_URL));
+      fileInput.addEventListener('change', async (e)=>{ const f=e.target.files && e.target.files[0]; if(!f) return; const blobUrl=URL.createObjectURL(f); await playUrl(blobUrl); });
+
+      (async function autoStartFromQuery(){ try{ const p = new URLSearchParams(location.search); let clip = p.get('clip'); const autostart = p.get('autostart')==='1'; if(p.get('hud')==='1'){ try{ const hud=document.getElementById('lockHud'); if(hud) hud.style.display='grid'; }catch{} } if(p.get('seatcfg')==='1'){ const box=document.getElementById('seatcfg'); if(box) box.style.display='block'; } if(autostart && clip){ try{ if(!/^\//.test(clip)) clip = '/' + clip; video.muted=true; video.autoplay=true; }catch{}; await playUrl(clip); }
+        // Default to drawer mode unless explicitly forced to side
+        const mode = (p.get('panel')==='side') ? 'side' : 'drawer';
+        if(mode==='drawer'){
+          try{ const aside=document.getElementById('panel'); if(aside) aside.style.display='none'; }catch{}
+          try{ const fab=document.getElementById('fabDrawer'); if(fab) fab.style.display='inline-flex'; }catch{}
+          // Move Kalman tray into drawer content
+          try{ const kal = document.getElementById('kalman'); const dc = document.getElementById('drawerContent'); if(kal && dc){ const hdr=document.createElement('div'); hdr.className='text-[12px] opacity-80'; hdr.textContent='Predictive Lookahead'; dc.appendChild(hdr); dc.appendChild(kal); } }catch{}
+          // WEBWAY:ww-2025-065/066: Show toolbar "Open Panel" button by default (hide with panel_btn=0)
+          try{ const hideBtn = p.get('panel_btn')==='0'; if(!hideBtn && btnPanelToolbar){ btnPanelToolbar.style.display='inline-block'; btnPanelToolbar.addEventListener('click', ()=>{ try{ const fab=document.getElementById('fabDrawer'); if(fab) fab.click(); }catch{} }); } }catch{}
+        }
+      }catch(e){ console.warn('autostart params failed', e); } })();
+
+      // Drawer wiring (open/close + drag)
+      (function drawerSetup(){
+        const p = new URLSearchParams(location.search);
+        // Default to wiring drawer unless explicitly forced to side
+        const mode = (p.get('panel')==='side') ? 'side' : 'drawer';
+        if(mode!=='drawer') return;
+        const scrim = document.getElementById('drawerScrim');
+        const drawer = document.getElementById('bottomDrawer');
+        const handle = document.getElementById('drawerHandle');
+        const btnClose = document.getElementById('btnDrawerClose');
+        const fab = document.getElementById('fabDrawer');
+        function open(){ try{
+          scrim.style.display='block';
+          drawer.style.display='block';
+          drawer.style.transition='transform 180ms ease-out';
+          drawer.style.transform='translateY(0%)';
+          scrim.style.pointerEvents='auto';
+          drawer.setAttribute('aria-hidden','false');
+          scrim.setAttribute('aria-hidden','false');
+          drawer.dataset.open='1';
+          scrim.dataset.open='1';
+        }catch{} }
+        function close(){ try{
+          drawer.style.transition='transform 140ms ease-in';
+          drawer.style.transform='translateY(100%)';
+          scrim.style.pointerEvents='none';
+          drawer.setAttribute('aria-hidden','true');
+          scrim.setAttribute('aria-hidden','true');
+          drawer.dataset.open='0';
+          scrim.dataset.open='0';
+          setTimeout(()=>{ try{ scrim.style.display='none'; drawer.style.display='none'; }catch{} }, 160);
+        }catch{} }
+        scrim?.addEventListener('click', close); btnClose?.addEventListener('click', close); fab?.addEventListener('click', open);
+        // naive drag: translate based on pointer move
+        let drag=false, startY=0, startT=0;
+        function onMove(e){ if(!drag) return; const dy=Math.max(0, e.clientY - startY); const pct=Math.min(1, dy/400); drawer.style.transform=`translateY(${pct*100}%)`; }
+        function onUp(e){ if(!drag) return; drag=false; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); const dy=Math.max(0, e.clientY - startY); if(dy>120) close(); else open(); }
+        handle?.addEventListener('mousedown', (e)=>{ drag=true; startY=e.clientY; startT=performance.now(); window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp); });
+      })();
+
+      window.__lockSummary = ()=> ({ P1: !!lock.P1, P2: !!lock.P2, order: lock.order.slice(0) });
+      // Test probes for autosnap scenario simulation
+      window.__simulateOcclusion = ({ seat='P1' }={})=>{ try{ if(seat==='P1'||seat==='P2'){ lock[seat]=null; seatMag?.releaseSeat?.(seat); } }catch{} };
+      window.__simulateReentry = ({ seat='P1', hand='left' }={})=>{
+        try{
+          // Simulate an unseated wrist entering capture radius by calling onFrame with a mocked detection near last anchor
+          if(!seatMag) return false;
+          const anc = seatMag.getAnchors?.().get(seat);
+          if(!anc) return false;
+          const u = anc.u + 0.01, v = anc.v + 0.005; // within radius 0.08
+          // Try to use previous lock hand for this seat to emulate same user
+          let useHand = hand;
+          try{ const prev = (seat==='P1'? lock.P1 : (seat==='P2'? lock.P2 : null)); if(prev && prev.hand) useHand = prev.hand; }catch{}
+          const dets = [{ hand: useHand, handId: null, landmarks: [[u,v,0]] }];
+          seatMag.onFrame({ dets, seats: {}, autosnap: true });
+          return true;
+        }catch{ return false; }
+      };
+      window.__seatMagState = ()=>{
+        try{
+          return {
+            anchors: Object.fromEntries(seatMag?.getAnchors?.() || []),
+            map: Object.fromEntries(seatMag?.getMap?.() || [])
+          };
+        }catch{ return {}; }
+      };
+    </script>
+  </body>
+  <!-- Bottom Drawer (MD3-style) for mobile UI workbench; enabled with ?panel=drawer -->
+  <div id="drawerScrim" style="display:none" class="fixed inset-0 bg-black/40 backdrop-blur-sm" aria-hidden="true" data-test-id="drawer-scrim"></div>
+  <div id="bottomDrawer" style="display:none; transform: translateY(100%);" class="fixed left-0 right-0 bottom-0 z-[1001]" data-test-id="bottom-drawer">
+    <div class="mx-auto max-w-screen-md">
+      <div class="card rounded-t-2xl border-t border-x border-slate-800 bg-slate-950">
+        <div id="drawerHandle" class="w-full flex justify-center py-2 cursor-grab select-none">
+          <div class="h-1.5 w-10 rounded-full bg-slate-500/60"></div>
+        </div>
+        <div id="drawerContent" class="p-3 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="font-semibold">Seat Telemetry</div>
+            <button id="btnDrawerClose" class="chip" title="Close">Close</button>
+          </div>
+          <div id="drawerCards" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div class="card p-2">
+              <div class="flex items-center justify-between mb-1">
+                <div class="font-semibold">P1</div>
+                <span class="chip" id="p1CardBadge_d">–</span>
+              </div>
+              <div class="grid grid-cols-2 gap-x-2 text-[11px] opacity-90">
+                <div class="opacity-70">Hand</div><div id="p1CardHand_d">–</div>
+                <div class="opacity-70">State</div><div id="p1CardFsm_d">–</div>
+                <div class="opacity-70">Norm</div><div id="p1CardNorm_d">–</div>
+              </div>
+            </div>
+            <div class="card p-2">
+              <div class="flex items-center justify-between mb-1">
+                <div class="font-semibold">P2</div>
+                <span class="chip" id="p2CardBadge_d">–</span>
+              </div>
+              <div class="grid grid-cols-2 gap-x-2 text-[11px] opacity-90">
+                <div class="opacity-70">Hand</div><div id="p2CardHand_d">–</div>
+                <div class="opacity-70">State</div><div id="p2CardFsm_d">–</div>
+                <div class="opacity-70">Norm</div><div id="p2CardNorm_d">–</div>
+              </div>
+            </div>
+          </div>
+          <!-- We can optionally move the Kalman tray here in drawer mode in a follow-up. -->
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- FAB to open drawer (only shown in drawer mode) -->
+  <button id="fabDrawer" style="display:none" class="fixed right-4 bottom-4 rounded-full px-4 py-3 text-sm font-semibold bg-[color:var(--m3-primary)] text-white shadow-lg" data-test-id="btn-open-panel-fab">Panel</button>
+  </html>

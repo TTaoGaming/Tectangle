@@ -1,0 +1,122 @@
+{
+  "generatedAt": "2025-09-18T19:32:04.165Z",
+  "dupCount": 0,
+  "missing": [
+    {
+      "id": "silk_scribe",
+      "name": "Silk Scribe",
+      "pascal": "SilkScribe",
+      "needs": [
+        "canon:Success criteria"
+      ]
+    },
+    {
+      "id": "honeycomb_smith",
+      "name": "Honeycomb Smith",
+      "pascal": "HoneycombSmith",
+      "needs": [
+        "canon:Success criteria"
+      ]
+    },
+    {
+      "id": "web_cartographer",
+      "name": "Web Cartographer",
+      "pascal": "WebCartographer",
+      "needs": [
+        "canon:Success criteria"
+      ]
+    },
+    {
+      "id": "thread_sovereign",
+      "name": "Thread Sovereign",
+      "pascal": "ThreadSovereign",
+      "needs": [
+        "canon:Success criteria"
+      ]
+    },
+    {
+      "id": "faultline_seeker",
+      "name": "Faultline Seeker",
+      "pascal": "FaultlineSeeker",
+      "needs": [
+        "canon:Success criteria"
+      ]
+    },
+    {
+      "id": "prism_magus",
+      "name": "Prism Magus",
+      "pascal": "PrismMagus",
+      "needs": [
+        "canon:Success criteria"
+      ]
+    },
+    {
+      "id": "lattice_steward",
+      "name": "Lattice Steward",
+      "pascal": "LatticeSteward",
+      "needs": [
+        "canon:Success criteria"
+      ]
+    },
+    {
+      "id": "window_hunter",
+      "name": "Window Hunter",
+      "pascal": "WindowHunter",
+      "needs": [
+        "canon:Success criteria"
+      ]
+    },
+    {
+      "id": "safebreaker",
+      "name": "Safebreaker",
+      "pascal": "Safebreaker",
+      "needs": [
+        "canon:Success criteria"
+      ]
+    },
+    {
+      "id": "first_principles",
+      "name": "First Principles",
+      "pascal": "FirstPrinciples",
+      "needs": [
+        "canon:Success criteria"
+      ]
+    },
+    {
+      "id": "swarm_jester",
+      "name": "Swarm Jester",
+      "pascal": "SwarmJester",
+      "needs": [
+        "canon:Success criteria"
+      ]
+    },
+    {
+      "id": "concord_weaver",
+      "name": "Concord Weaver",
+      "pascal": "ConcordWeaver",
+      "needs": [
+        "canon:Success criteria"
+      ]
+    },
+    {
+      "id": "signal_warden",
+      "name": "Signal Warden",
+      "pascal": "SignalWarden",
+      "needs": [
+        "canon:Success criteria"
+      ]
+    },
+    {
+      "id": "shadow_auditor",
+      "name": "Shadow Auditor",
+      "pascal": "ShadowAuditor",
+      "needs": [
+        "canon:Success criteria"
+      ]
+    }
+  ],
+  "totals": {
+    "champions": 14,
+    "missing": 14
+  }
+}

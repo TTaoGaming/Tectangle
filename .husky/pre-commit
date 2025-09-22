@@ -1,0 +1,41 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# WEBWAY:ww-2025-004: Tiered hooks — fast pre-commit (boundary + focused tests + soft contract)
+# Opt-out: set FEATURE_TIERED_HOOKS=0
+
+set -e
+
+if [ "$FEATURE_TIERED_HOOKS" = "0" ]; then
+  echo "[tiered-hooks] Disabled via FEATURE_TIERED_HOOKS=0; running legacy full commit checks." >&2
+  npm run -s hex:lint-arch
+  npm run -s hex:test:unit
+  if [ "$SKIP_CONTRACT" != "1" ]; then
+    STRICT_CONTRACT=${STRICT_CONTRACT:-0} npm run -s hex:contract || true
+  fi
+  exit 0
+fi
+
+echo "[tiered-hooks] Fast boundary lint (cached)" >&2
+npm run -s hex:lint-arch:cached
+
+echo "[tiered-hooks] Detect changed hex src files for focused tests" >&2
+CHANGED=$(git diff --cached --name-only | grep 'September2025/TectangleHexagonal/src/' || true)
+if [ -n "$CHANGED" ]; then
+  # shellcheck disable=SC2086
+  node September2025/TectangleHexagonal/tools/run_focused_tests.mjs $CHANGED || {
+    echo "[tiered-hooks] Focused tests fallback -> full unit suite" >&2
+    npm run -s hex:test:unit
+  }
+else
+  echo "[tiered-hooks] No changed hex src files; skipping focused tests (no fallback)." >&2
+fi
+
+if [ "$QUICK_CONTRACT" != "0" ]; then
+  echo "[tiered-hooks] Soft contract check (non-blocking)" >&2
+  if ! SKIP_CONTRACT=1 npm run -s hex:contract; then
+    echo "WARN(contract-fast): contract soft failure (ignored)." >&2
+  fi
+fi
+
+exit 0

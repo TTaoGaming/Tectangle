@@ -1,0 +1,36 @@
+name: Webway Format Stigmergy Guard (warn)
+
+on:
+  push:
+    paths:
+      - 'scaffolds/**'
+      - 'scripts/check_webway_format.cjs'
+      - '.github/workflows/webway-format-check.yml'
+  pull_request:
+    paths:
+      - 'scaffolds/**'
+      - 'scripts/check_webway_format.cjs'
+      - '.github/workflows/webway-format-check.yml'
+  workflow_dispatch:
+
+jobs:
+  webway-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Run Webway format check (warnings only)
+        run: node scripts/check_webway_format.cjs
+        continue-on-error: true
+
+      - name: Emit friendly reminder
+        if: always()
+        run: |
+          echo "Webway format guard completed."
+          echo "Review workflow summary + warnings for any files that need updates."

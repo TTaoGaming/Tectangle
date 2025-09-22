@@ -1,0 +1,68 @@
+{
+  "generatedAt": "2025-09-22T19:00:02.968Z",
+  "canonical": {
+    "path": "docs/aichat/AiChatTTaoLordOfStringsChampions20230907.md",
+    "title": "AGENT\\_ROSTER.md — TTao, Lord of Strings (Obsidian Nest)",
+    "snippet": "Absolutely. Below are copy-pasteable prompts—one per Champion—written in plain language and tailored for a dark, hive-fleet aesthetic. Each keeps a shared visual “universe,” but lets the Champion set their own vibe. Use as-is, or tweak colo",
+    "mtime": "2025-09-07T23:47:25.754Z",
+    "mtimeMs": 1757288845754.5444
+  },
+  "items": [
+    {
+      "path": "docs/aichat/AiChatTTaoLordOfStringsChampions20230907.md",
+      "title": "AGENT\\_ROSTER.md — TTao, Lord of Strings (Obsidian Nest)",
+      "snippet": "Absolutely. Below are copy-pasteable prompts—one per Champion—written in plain language and tailored for a dark, hive-fleet aesthetic. Each keeps a shared visual “universe,” but lets the Champion set their own vibe. Use as-is, or tweak colo",
+      "mtime": "2025-09-07T23:47:25.754Z",
+      "mtimeMs": 1757288845754.5444
+    },
+    {
+      "path": "docs/knowledge/Consolidated_Pinch_Report_2025-09-06_FINAL.md",
+      "title": "Consolidated Pinch Report — 2025-09-06",
+      "snippet": "Ship a minimal palm-gated index↔thumb pinch (Exploit path) now; harden with golden-trace-driven CI and a one-week stabilization plan.",
+      "mtime": "2025-09-07T09:09:12.698Z",
+      "mtimeMs": 1757236152698.062
+    },
+    {
+      "path": "docs/knowledge/dev_environment_2pager_20250907.md",
+      "title": "Developer environment two‑pager — Reproducible Docker + DevContainer",
+      "snippet": "Use a small Docker image + VS Code DevContainer to reproduce Node 22, headless browser smoke harnesses, and deterministic golden‑trace runs locally and in CI. This makes demos repeatable and reduces \"works on my machine\" debugging.",
+      "mtime": "2025-09-07T06:46:27.752Z",
+      "mtimeMs": 1757227587752.3987
+    },
+    {
+      "path": "docs/knowledge/project_progress_summary_20250906.md",
+      "title": "Project Progress Summary — 2025-09-06",
+      "snippet": "Snapshot of workspace state, recent work, and recommended immediate actions to stabilize demos and canonicalize knowledge.",
+      "mtime": "2025-09-06T23:21:52.497Z",
+      "mtimeMs": 1757200912497.8083
+    },
+    {
+      "path": "docs/knowledge/PinchFSM_human_capabilities_20250905.md",
+      "title": "PinchFSM human capabilities 20250905",
+      "snippet": "---",
+      "mtime": "2025-09-06T22:57:54.768Z",
+      "mtimeMs": 1757199474768.434
+    },
+    {
+      "path": "docs/knowledge/PinchFSMHumanVlad_human_capabilities_20250905.md",
+      "title": "PinchFSMHumanVlad human capabilities 20250905",
+      "snippet": "---",
+      "mtime": "2025-09-06T22:57:54.765Z",
+      "mtimeMs": 1757199474765.2993
+    },
+    {
+      "path": "docs/two-pagers/CI_Foundations_TwoPager_2025-09-05.md",
+      "title": "CI Foundations TwoPager 2025 09 05",
+      "snippet": "CI Foundations — Deterministic, Fast, Observable",
+      "mtime": "2025-09-05T20:30:53.496Z",
+      "mtimeMs": 1757104253496.2493
+    },
+    {
+      "path": "docs/aichat/AiChatForkableProjects.md",
+      "title": "Top 20 Open-Source Games for Gesture Control Monetization",
+      "snippet": "Got it ✅ Thanks for sharing your bigger vision—that makes this much more exciting. If the long-term goal is to use your gesture input layer for medical and life-saving applications, then the first step is to **prove it can make money and at",
+      "mtime": "2025-09-05T07:11:35.550Z",
+      "mtimeMs": 1757056295550.7073
+    }
+  ]
+}

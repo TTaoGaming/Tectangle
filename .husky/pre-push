@@ -1,0 +1,15 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# WEBWAY:ww-2025-004: Full verification gate (can skip via SKIP_FULL=1)
+if [ "$SKIP_FULL" = "1" ]; then
+  echo "[tiered-hooks] Skipping full verification (SKIP_FULL=1)." >&2
+  exit 0
+fi
+
+echo "[tiered-hooks] Full verification: boundary + full unit + strict contract" >&2
+npm run -s hex:lint-arch || exit 1
+npm run -s hex:test:unit || exit 1
+STRICT_CONTRACT=1 npm run -s hex:contract || exit 1
+echo "[tiered-hooks] Full verification OK" >&2
+exit 0

@@ -1,0 +1,18 @@
+{
+  "name": "modular-index",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Dev server and tests for modular-index landmark smoothing demo",
+  "scripts": {
+    "start": "node dev-server.js",
+    "test": "mocha test/test.js --exit",
+    "serve": "node dev-server.js"
+  },
+  "devDependencies": {
+    "express": "^4.18.2",
+    "livereload": "^0.9.3",
+    "connect-livereload": "^0.6.1",
+    "mocha": "^10.2.0",
+    "puppeteer": "^21.4.1"
+  }
+}

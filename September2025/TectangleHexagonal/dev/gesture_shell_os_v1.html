@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>GestureShell OS — XState Wiring v1</title>
+  <!-- WEBWAY:ww-2025-124: Reinforce WinBox CSS so real windows render correctly -->
+  <link rel="stylesheet" href="/node_modules/winbox/dist/css/winbox.min.css" onerror="console.warn('WinBox CSS missing')"/>
+  <style>
+    html,body{height:100%;margin:0}
+    body{background:#0b1020;color:#e5e7eb;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    /* Wallpaper (camera) sits behind everything */
+    #wallpaper{position:fixed;inset:0;z-index:0;overflow:hidden;background:black}
+    #wallpaper iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+    #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+    #stage{position:relative;width:100%;height:100%;z-index:2}
+    #controls{position:absolute;right:10px;top:10px;display:flex;gap:8px}
+    button{background:#16a34a;color:#fff;border:0;border-radius:8px;padding:6px 10px;cursor:pointer}
+    button.secondary{background:#374151;color:#e5e7eb;border:1px solid rgba(255,255,255,0.12)}
+    /* WEBWAY:ww-2025-123: Bottom App Dock (progressive disclosure) */
+    #dock{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:3;display:flex;gap:10px;background:rgba(2,6,23,0.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:8px 10px;border-radius:12px;border:1px solid rgba(255,255,255,0.08)}
+    .dock-icon{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;background:#111827;color:#e5e7eb;border:1px solid rgba(255,255,255,0.08);font-size:18px;user-select:none;cursor:pointer}
+    .dock-icon:active{transform:scale(0.98)}
+    .dock-icon[draggable="true"]{ -webkit-user-drag: element; }
+    .dock-icon[data-app="camera"]{background:#0b3b2e}
+    .dock-icon[data-app="sdk"]{background:#1f2937}
+    .dock-icon[data-app="api"]{background:#1f2937}
+    .dock-icon[data-app="events"]{background:#1f2937}
+    .dock-icon[data-app="xstate"]{background:#1f2937}
+    .dock-icon[data-app="mediapipe"]{background:#1f2937}
+    .dock-icon[data-app="perf"]{background:#1f2937}
+    .dock-icon[data-app="models"]{background:#1f2937}
+    .dock-icon[data-app="flags"]{background:#1f2937}
+    .dock-icon[data-app="settings"]{background:#1f2937}
+    .dock-icon[data-app="docs"]{background:#1f2937}
+    /* WEBWAY:ww-2025-128: Hex Dock layout (feature-flagged) */
+    #dock.hex-dock{display:flex;flex-direction:column;gap:6px;padding:10px 14px}
+    #dock.hex-dock .hex-row{display:flex;gap:8px;justify-content:center}
+    #dock.hex-dock .hex-row.offset{margin-left:28px}
+    .hex-icon{display:flex;align-items:center;justify-content:center;width:52px;height:48px;background:#111827;color:#e5e7eb;border:1px solid rgba(255,255,255,0.08);user-select:none;cursor:pointer;
+      clip-path:polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)}
+    .hex-icon:active{transform:scale(0.98)}
+    .hex-icon[data-app="camera"]{background:#0b3b2e}
+  </style>
+  <!-- WEBWAY:ww-2025-107: GestureShell OS scaffold with XState wiring and inspector -->
+</head>
+<body>
+  <!-- Full-screen wallpaper video (camera) -->
+  <div id="wallpaper" aria-hidden="false"></div>
+  <div id="wrap">
+    <div id="stage">
+      <div id="controls">
+        <button id="openInspector">Open XState Inspector</button>
+        <button id="simulate" class="secondary">Simulate Sequence</button>
+      </div>
+    </div>
+  </div>
+  <!-- WEBWAY:ww-2025-123: Progressive disclosure app dock (icons open singleton cards) -->
+  <div id="dock" aria-label="App Dock" role="toolbar"></div>
+
+  <script type="module">
+    // WEBWAY:ww-2025-111: GSOS WinBox panels e2e reliability (stubs + test markers + open hook)
+    // WEBWAY:ww-2025-112: Optional Cards naming for UX (flag-based, reversible)
+  import { initShell } from '../src/ui/shell/shell_os.js';
+    // WEBWAY:ww-2025-091: Card Template helpers for singleton WinBox windows
+  import { ensureWinBox, getOrCreateCardWindow, awaitMaterialReady, winboxStatus as wbStatus, materialReady as matReady } from '../src/ui/components/cardTemplate.js';
+  import { registerCards } from '../src/ui/cards/registry.js';
+  import { createGateMachine } from '../src/controllers/gateFsm.js';
+  import { registerActor } from '../src/ports/xstateRegistry.js';
+  import { flag } from '../src/ports/featureFlagsPort.js';
+    // Optional: if a <video id="cam"> is later added, panel can interact via __hexMedia
+    try{ if(!window.__hexMedia) window.__hexMedia = {}; }catch{}
+  // Prefer Card naming by default unless explicitly disabled upstream
+  try { if (typeof window.FEATURE_GSOS_CARDS_NAMING === 'undefined') window.FEATURE_GSOS_CARDS_NAMING = true; } catch {}
+  // Guard: Preload Material Web components so Cards render with Material on first open
+  // WEBWAY:ww-2025-129: Material Web standard — preload defaults early for WinBox panels
+  try { (async ()=>{ try { const m = await import('../src/ui/materialWeb.js'); await m.preloadMaterialDefaults(); window.__materialReady = true; } catch(e){ window.__materialReady = false; } })(); } catch {}
+  function useCardsNaming(){ return false; }
+  function label(kind, name){ return name; }
+
+
+    // Wallpaper loader: embeds camera page as full-screen background
+  async function openWallpaper(){
+      try {
+        const host = document.getElementById('wallpaper');
+        if (!host) return;
+    const p = new URLSearchParams(location.search);
+    // WEBWAY:ww-2025-122: Flip default ON for wallpaper camera; reversible via ?GSOS_WALLPAPER=0
+    // Default ON to allow hands-up immediate tracking; disable with ?GSOS_WALLPAPER=0 or false
+    const enabled = (()=>{ const v=p.get('GSOS_WALLPAPER'); if(v==='0'||v==='false') return false; return true; })();
+        if (!enabled) return;
+  const srcMode = (p.get('GSOS_CAMERA_SRC') || 'v2').toLowerCase();
+        let src = srcMode === 'v13' ? './integrated_hand_console_v13.html' : './camera_landmarks_wrist_label_v2.html';
+        // Propagate top-level query params (e.g., CLIP for MP4 playback) to the wallpaper iframe
+        if (location.search) {
+          const topQs = new URLSearchParams(location.search);
+          // By default, do NOT propagate nocam/clip into wallpaper (restores live webcam)
+          const allowClip = (()=>{ const v=topQs.get('FEATURE_GSOS_WALLPAPER_PROPAGATE_CLIP'); return v==='1'||v==='true'; })();
+          topQs.delete('nocam');
+          if (!allowClip) topQs.delete('clip');
+          const qs = topQs.toString();
+          if (qs) src += (src.includes('?') ? '&' : '?') + qs;
+          // WEBWAY:ww-2025-120: Append autostart=1 when clip= is present (flagged)
+          try {
+            const enabled = (()=>{ try { const p=new URLSearchParams(location.search); const v=p.get('FEATURE_GSOS_AUTOSTART_ON_CLIP'); if(v==='0'||v==='false') return false; return true; } catch { return true; }})();
+            if (enabled && (allowClip && topQs.get('clip')) && !/(^|&)(auto|autostart)=/i.test(qs)) {
+              src += (src.includes('?') ? '&' : '?') + 'autostart=1';
+            }
+          } catch {}
+        }
+        // If already mounted, skip
+        if (host.querySelector('iframe')) { window.__gsosWallpaperActive = true; return; }
+        const iframe = document.createElement('iframe');
+        iframe.src = src;
+        iframe.allow = 'camera *; microphone *; autoplay; clipboard-read; clipboard-write';
+        iframe.setAttribute('allowfullscreen','true');
+        host.appendChild(iframe);
+        window.__gsosWallpaperActive = true;
+      } catch {}
+    }
+
+    try {
+  const apps = [
+        // WEBWAY:ww-2025-118: Promote Camera to a proper Card with clickable iframe (consolidate & simplify)
+        {
+          id: 'camera', title: label('Hex','Camera'),
+          open: async () => {
+            // Decide which camera harness to load: v2 (default) or v13 integrated console
+            const p = new URLSearchParams(location.search);
+            const srcMode = (p.get('GSOS_CAMERA_SRC') || 'v2').toLowerCase();
+            const fullscreen = (()=>{ const v=p.get('GSOS_FULLSCREEN'); return v==='1'||v==='true'; })();
+            const titleTxt = label('Hex','Camera') + (srcMode==='v13' ? ' • v13' : ' • v2');
+            await getOrCreateCardWindow('camera', titleTxt, '80%', '72%', 'winbox-camera', { fullscreen }, async (wb) => {
+              if (!(wb && wb.body)) return;
+              const iframe = document.createElement('iframe');
+              let src = srcMode === 'v13' ? './integrated_hand_console_v13.html' : './camera_landmarks_wrist_label_v2.html';
+              if (location.search) {
+                const topQs = new URLSearchParams(location.search);
+                const allowClip = (()=>{ const v=topQs.get('FEATURE_GSOS_WALLPAPER_PROPAGATE_CLIP'); return v==='1'||v==='true'; })();
+                topQs.delete('nocam');
+                if (!allowClip) topQs.delete('clip');
+                const qs = topQs.toString();
+                if (qs) src += (src.includes('?') ? '&' : '?') + qs;
+                try {
+                  const enabled = (()=>{ try { const p=new URLSearchParams(location.search); const v=p.get('FEATURE_GSOS_AUTOSTART_ON_CLIP'); if(v==='0'||v==='false') return false; return true; } catch { return true; }})();
+                  if (enabled && (allowClip && topQs.get('clip')) && !/(^|&)(auto|autostart)=/i.test(qs)) { src += (src.includes('?') ? '&' : '?') + 'autostart=1'; }
+                } catch {}
+              }
+              iframe.src = src;
+              Object.assign(iframe.style, { width:'100%', height:'100%', border:'0' });
+              iframe.setAttribute('allowfullscreen', 'true');
+              iframe.allow = 'camera *; microphone *; autoplay; clipboard-read; clipboard-write';
+              const note = document.createElement('div');
+              Object.assign(note.style, { position:'absolute', left:'8px', bottom:'8px', background:'rgba(15,23,42,0.72)', padding:'6px 8px', borderRadius:'6px', fontSize:'12px', pointerEvents:'none' });
+              note.textContent = (window.__gsosWallpaperActive ? 'Wallpaper camera active in background. ' : '') + (srcMode==='v13' ? 'Seats and locks available. Use Open-Palm to claim P1/P2.' : 'v2 camera: wrist label + landmarks only (no seat locks). Use ?GSOS_CAMERA_SRC=v13 for locking.');
+              const wrap = document.createElement('div');
+              Object.assign(wrap.style, { position:'relative', width:'100%', height:'100%' });
+              wrap.appendChild(iframe); wrap.appendChild(note);
+              wb.body.appendChild(wrap);
+            });
+          }
+        },
+        // WEBWAY:ww-2025-123: SDK/API/Events/Perf/Models/Flags/Docs stubs (singleton)
+        // WEBWAY:ww-2025-129: Stigmergy — prefer Material panels; fall back to minimal stub if module missing
+        { id:'sdk', title: label('Hex','SDK'), open: async ()=>{
+            await getOrCreateCardWindow('sdk', label('Hex','SDK Playground'), 560, 420, 'winbox-sdk', {}, async (wb)=>{
+              try { const mod = await import('../src/ui/panels/sdkPanel.js'); if (typeof mod.openSdkPanel==='function'){ try { await mod.openSdkPanel({ container: wb.body }); return; } catch { await mod.openSdkPanel(); return; } } } catch {}
+              // WEBWAY:ww-2025-129: stigmergy inline stub (replace with sdkPanel when available)
+              wb.body.innerHTML = '<div style="padding:8px">SDK Playground (stub). Use this space to run code against live streams.</div>';
+            });
+          } },
+        { id:'api', title: label('Hex','API'), open: async ()=>{
+            await getOrCreateCardWindow('api', label('Hex','API Explorer'), 560, 420, 'winbox-api', {}, async (wb)=>{
+              try { const mod = await import('../src/ui/panels/apiPanel.js'); if (typeof mod.openApiPanel==='function'){ try { await mod.openApiPanel({ container: wb.body }); return; } catch { await mod.openApiPanel(); return; } } } catch {}
+              // WEBWAY:ww-2025-129: stigmergy inline stub (replace with apiPanel when available)
+              wb.body.innerHTML = '<div style="padding:8px">API Explorer (stub). Browse types and examples.</div>';
+            });
+          } },
+        { id:'events', title: label('Hex','Events'), open: async ()=>{
+            await getOrCreateCardWindow('events', label('Hex','Events Log'), 560, 360, 'winbox-events', {}, async (wb)=>{
+              try { const mod = await import('../src/ui/panels/eventsPanel.js'); if (typeof mod.openEventsPanel==='function'){ try { await mod.openEventsPanel({ container: wb.body }); return; } catch { await mod.openEventsPanel(); return; } } } catch {}
+              // WEBWAY:ww-2025-129: stigmergy inline stub (replace with eventsPanel when available)
+              wb.body.innerHTML = '<div style="padding:8px">Events stream (stub). Telemetry will appear here.</div>';
+            });
+          } },
+        {
+          id: 'xstate', title: label('Hex','XState'),
+          open: async () => {
+            await getOrCreateCardWindow('xstate', 'XState Inspector', 420, 360, 'winbox-xstate', {}, async (wb)=>{
+              try {
+                const mod = await import('../src/ui/xstateInspectorWinbox.js');
+                // Prefer a mount API if available; otherwise call and ignore (module will manage its own UI)
+                if (typeof mod.openXStateInspector === 'function') {
+                  try { await mod.openXStateInspector({ container: wb.body }); } catch { await mod.openXStateInspector(); }
+                }
+              } catch {}
+            });
+          }
+        },
+        {
+          id: 'mediapipe', title: label('Hex','MediaPipe'),
+          open: async () => {
+            await getOrCreateCardWindow('mediapipe', 'MediaPipe Pipeline', 520, 360, 'winbox-mediapipe', {}, async (wb)=>{
+              try {
+                const mod = await import('../src/ui/panels/mediapipePanel.js');
+                if (typeof mod.openMediapipePanel === 'function') {
+                  try { await mod.openMediapipePanel({ container: wb.body }); } catch { await mod.openMediapipePanel(); }
+                }
+              } catch {}
+            });
+          }
+        },
+        { id:'perf', title: label('Hex','Performance'), open: async ()=>{
+            await getOrCreateCardWindow('perf', label('Hex','Performance'), 520, 300, 'winbox-perf', {}, async (wb)=>{
+              try { const mod = await import('../src/ui/panels/perfPanel.js'); if (typeof mod.openPerfPanel==='function'){ try { await mod.openPerfPanel({ container: wb.body }); return; } catch { await mod.openPerfPanel(); return; } } } catch {}
+              // WEBWAY:ww-2025-129: stigmergy inline stub (replace with perfPanel when available)
+              wb.body.innerHTML = '<div style="padding:8px">Performance stats (stub).</div>';
+            });
+          } },
+        { id:'models', title: label('Hex','Models'), open: async ()=>{
+            await getOrCreateCardWindow('models', label('Hex','Models'), 520, 360, 'winbox-models', {}, async (wb)=>{
+              try { const mod = await import('../src/ui/panels/modelsPanel.js'); if (typeof mod.openModelsPanel==='function'){ try { await mod.openModelsPanel({ container: wb.body }); return; } catch { await mod.openModelsPanel(); return; } } } catch {}
+              // WEBWAY:ww-2025-129: stigmergy inline stub (replace with modelsPanel when available)
+              wb.body.innerHTML = '<div style="padding:8px">Models panel (stub). Show versions and paths.</div>';
+            });
+          } },
+        { id:'flags', title: label('Hex','Flags'), open: async ()=>{
+            await getOrCreateCardWindow('flags', label('Hex','Feature Flags'), 480, 320, 'winbox-flags', {}, async (wb)=>{
+              try { const mod = await import('../src/ui/panels/flagsPanel.js'); if (typeof mod.openFlagsPanel==='function'){ try { await mod.openFlagsPanel({ container: wb.body }); return; } catch { await mod.openFlagsPanel(); return; } } } catch {}
+              // WEBWAY:ww-2025-129: stigmergy inline stub (replace with flagsPanel when available)
+              wb.body.innerHTML = '<div style="padding:8px">Flags (stub). Toggle runtime flags here.</div>';
+            });
+          } },
+        {
+          id: 'seats', title: label('Hex','Seats'),
+          open: async () => {
+            await getOrCreateCardWindow('seats', 'Seats (Tracks x4)', 540, 420, 'winbox-seats', {}, async (wb)=>{
+              try {
+                const mod = await import('../src/ui/panels/seatsPanel.js');
+                if (typeof mod.openSeatsPanel === 'function') {
+                  try { await mod.openSeatsPanel({ container: wb.body }); } catch { await mod.openSeatsPanel(); }
+                }
+              } catch {}
+            });
+          }
+        },
+        {
+          id: 'settings', title: label('Hex','Settings'),
+          open: async () => {
+            await getOrCreateCardWindow('settings', 'Settings (Global)', 480, 360, 'winbox-settings', {}, async (wb)=>{
+              try {
+                const mod = await import('../src/ui/panels/settingsPanel.js');
+                if (typeof mod.openSettingsPanel === 'function') {
+                  try { await mod.openSettingsPanel({ container: wb.body }); } catch { await mod.openSettingsPanel(); }
+                }
+              } catch {}
+            });
+          }
+        },
+        { id:'docs', title: label('Hex','Docs'), open: async ()=>{
+            await getOrCreateCardWindow('docs', label('Hex','Docs'), 520, 360, 'winbox-docs', {}, async (wb)=>{
+              try { const mod = await import('../src/ui/panels/docsPanel.js'); if (typeof mod.openDocsPanel==='function'){ try { await mod.openDocsPanel({ container: wb.body }); return; } catch { await mod.openDocsPanel(); return; } } } catch {}
+              // WEBWAY:ww-2025-129: stigmergy inline stub (replace with docsPanel when available)
+              wb.body.innerHTML = '<div style="padding:8px">Help & Docs (stub).</div>';
+            });
+          } },
+      ];
+      // Optionally require real WinBox via flag; show banner if not available
+      try {
+        const p = new URLSearchParams(location.search);
+        const requireReal = (()=>{ const v=p.get('FEATURE_GSOS_REQUIRE_WINBOX'); return v==='1'||v==='true'; })();
+        const hasReal = await ensureWinBox();
+        if (requireReal && !hasReal) {
+          const b = document.createElement('div');
+          b.textContent = 'WinBox not available — using stub windows';
+          Object.assign(b.style,{position:'fixed',top:'8px',left:'50%',transform:'translateX(-50%)',padding:'6px 10px',background:'#7f1d1d',color:'#fff',borderRadius:'6px',zIndex: 9999});
+          document.body.appendChild(b);
+          setTimeout(()=>{ try { b.remove(); } catch{} }, 4000);
+        }
+      } catch {}
+
+  // Give Material a short head start before shell mounts (extended slightly for reliability)
+  // WEBWAY:ww-2025-129: raise wait to improve Material readiness in CI guard
+  try { await awaitMaterialReady(1200); } catch {}
+  // Register cards for tests/UX
+  try { registerCards(apps); } catch {}
+        // Only render the legacy bottom bar when explicitly enabled
+        try {
+          const p = new URLSearchParams(location.search);
+          const enableBar = (()=>{ const v=p.get('FEATURE_GSOS_SHELL_BAR'); return v==='1'||v==='true'; })();
+          if (enableBar) initShell({ mount: document.body, apps });
+        } catch { /* default: no legacy bar */ }
+    // Start wallpaper by default (disable with ?GSOS_WALLPAPER=0)
+    await openWallpaper();
+      // Test hook to open apps deterministically
+  // WEBWAY:ww-2025-111: Programmatic open hook for tests
+  try {
+        window.__gso = window.__gso || {};
+        window.__gso.openApp = async (id)=>{
+          try { window.__wbTest = window.__wbTest || {}; if (id) window.__wbTest[id] = true; } catch {}
+          const a = apps.find(x=>x.id===id);
+          return a?.open?.();
+        };
+        // Expose focus helper for tests/UX
+        window.__gso.focusApp = async (id)=>{ try { return window.__gso.openApp?.(id); } catch {} };
+        // WEBWAY:ww-2025-124: WinBox/Material status helpers
+        window.__gso.winboxStatus = ()=> wbStatus();
+        window.__gso.materialReady = ()=> matReady();
+      } catch {}
+
+      // WEBWAY:ww-2025-116/123: Progressive disclosure — no auto-open by default (overridable)
+      // FEATURE_GSOS_OPEN_ON_LOAD: default false; enable with ?FEATURE_GSOS_OPEN_ON_LOAD=1
+      try {
+        const p = new URLSearchParams(location.search);
+        const shouldOpen = (()=>{ try { const v=p.get('FEATURE_GSOS_OPEN_ON_LOAD'); if(v==='1'||v==='true') return true; return false; } catch { return false; } })();
+        if (shouldOpen) {
+          // WEBWAY:ww-2025-116: Allow custom list via ?GSOS_OPEN=xstate,mediapipe,seats
+          const raw = p.get('GSOS_OPEN');
+          const list = raw ? raw.split(',').map(s=>s.trim()).filter(Boolean) : ['xstate','mediapipe','seats'];
+          (async ()=>{ for (const id of list) { try { await window.__gso.openApp?.(id); } catch {} } })();
+        }
+      } catch {}
+    } catch {}
+
+  // Create an example GateFSM actor and register it
+  const gate = createGateMachine({ id: 'Seat:P1', minScore: 0.45, holdMs: 150, cooldownMs: 200 });
+  let clutch; // ensure defined so optional access doesn't throw in module scope
+    gate.start();
+    const unregister = registerActor('Seat:P1', gate);
+
+    // WEBWAY:ww-2025-109: PalmClutch demo (flagged)
+    try {
+      if (flag('FEATURE_GS_PALMCLUTCH', false)) {
+        const { createPalmClutch } = await import('../src/controllers/palmClutchFsm.js');
+        clutch = createPalmClutch({ id: 'PalmClutch:P1', confirmVel: 0.12 });
+        clutch.start();
+        registerActor('PalmClutch:P1', clutch);
+      }
+    } catch (e) { console.warn('PalmClutch unavailable', e); }
+
+    // Inspector open
+    document.getElementById('openInspector').addEventListener('click', async () => {
+      const { openXStateInspector } = await import('../src/ui/xstateInspectorWinbox.js');
+      openXStateInspector();
+    });
+
+    // Simulate a typical sequence: label!=Open_Palm -> hold -> Open_Palm
+    document.getElementById('simulate').addEventListener('click', async () => {
+      const t0 = performance.now();
+      gate.send({ type: 'LABEL', label: 'Pinch', score: 0.9, t: t0 });
+      await new Promise(r => setTimeout(r, 180)); // exceed holdMs
+      gate.send({ type: 'LABEL', label: 'Open_Palm', score: 0.9, t: performance.now() });
+
+      // Drive PalmClutch when enabled: open palm frames then a priming gesture with Z motion
+      if (clutch) {
+        const now = performance.now();
+        // Simulate a few seated frames with stable open palm and increasing zPx
+        for (let i=0;i<5;i++) {
+          clutch.send({ type:'FRAME', label:'Open_Palm', score:0.8, zPx: 100 + i*2, t: now + i*16 });
+        }
+        // Prime with a gesture label and rising zPx velocity
+        for (let i=0;i<6;i++) {
+          clutch.send({ type:'FRAME', label:'Open_Palm', score:0.8, gLabel:'Pinch', gScore:0.9, zPx: 120 + i*6, t: now + 80 + i*16 });
+        }
+        clutch.send({ type:'FIRE_CHECK' });
+      }
+    });
+
+  // WEBWAY:ww-2025-111: Expose test helpers without clobbering
+    window.__gso = Object.assign(window.__gso || {}, {
+      getSnapshot: () => gate.getSnapshot?.(),
+      send: (ev) => gate.send(ev)
+    });
+    try {
+      const { getCards } = await import('../src/ui/cards/registry.js');
+      window.__gso.getCards = () => getCards();
+    } catch {}
+    // WEBWAY:ww-2025-123: Build Dock icons (draggable reorder)
+    try {
+      const dock = document.getElementById('dock');
+      const meta = {
+        camera: { title:'Camera', glyph:'📷' },
+        sdk: { title:'SDK Playground', glyph:'🧪' },
+        api: { title:'API Explorer', glyph:'📚' },
+        events: { title:'Events Log', glyph:'📈' },
+        xstate: { title:'XState Inspector', glyph:'🧩' },
+        mediapipe: { title:'MediaPipe', glyph:'🧬' },
+        perf: { title:'Performance', glyph:'⚡' },
+        models: { title:'Models', glyph:'🧠' },
+        flags: { title:'Feature Flags', glyph:'🚩' },
+        settings: { title:'Settings', glyph:'⚙️' },
+        docs: { title:'Docs', glyph:'❓' }
+      };
+  // WEBWAY:ww-2025-129: Dock composition — hide camera icon by default since wallpaper provides live viz
+  const defaultOrder = ['camera','sdk','api','events','xstate','mediapipe','perf','models','flags','settings','docs'];
+  const qp = new URLSearchParams(location.search);
+  const showCameraIcon = (()=>{ const v=qp.get('FEATURE_GSOS_DOCK_SHOW_CAMERA'); return v==='1'||v==='true'; })();
+  const order = showCameraIcon ? defaultOrder.slice() : defaultOrder.filter(id => id !== 'camera');
+      function attachDnD(el){
+        try {
+          el.draggable = true;
+          el.addEventListener('dragstart', (e)=>{ try { e.dataTransfer.setData('text/app', el.dataset.app); e.dataTransfer.effectAllowed = 'move'; } catch {} });
+          el.addEventListener('dragover', (e)=>{ e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+          el.addEventListener('drop', (e)=>{
+            e.preventDefault();
+            try {
+              const fromId = e.dataTransfer.getData('text/app');
+              const toEl = e.currentTarget;
+              if (!fromId || !toEl) return;
+              const fromEl = dock.querySelector(`[data-app="${fromId}"]`);
+              if (fromEl && fromEl !== toEl) {
+                const nodes = Array.from(dock.querySelectorAll('[data-app]'));
+                const fromIdx = nodes.indexOf(fromEl);
+                const toIdx = nodes.indexOf(toEl);
+                if (fromIdx > -1 && toIdx > -1) {
+                  if (fromIdx < toIdx) toEl.after(fromEl); else toEl.before(fromEl);
+                }
+              }
+            } catch {}
+          });
+        } catch {}
+      }
+      function buildRectIcon(id){
+        const el = document.createElement('button');
+        el.className = 'dock-icon';
+        el.setAttribute('data-app', id);
+        const { title, glyph } = meta[id] || { title:id, glyph:'⬜' };
+        el.setAttribute('title', title);
+        el.setAttribute('aria-label', title);
+        el.textContent = glyph;
+        // WEBWAY:ww-2025-130: Harden click — wait for __gso.openApp to exist before invoking
+        el.addEventListener('click', async () => {
+          try {
+            const deadline = Date.now() + 3000;
+            while (!(window.__gso && typeof window.__gso.openApp === 'function') && Date.now() < deadline) {
+              await new Promise(r => setTimeout(r, 50));
+            }
+            await window.__gso?.openApp?.(id);
+          } catch (e) { /* swallow to avoid UI errors; tests will catch via guards */ }
+        });
+        attachDnD(el);
+        return el;
+      }
+      function buildHexIcon(id){
+        const el = document.createElement('button');
+        el.className = 'hex-icon';
+        el.setAttribute('data-app', id);
+        const { title, glyph } = meta[id] || { title:id, glyph:'⬜' };
+        el.setAttribute('title', title);
+        el.setAttribute('aria-label', title);
+        el.textContent = glyph;
+        // WEBWAY:ww-2025-130: Harden click — wait for __gso.openApp to exist before invoking
+        el.addEventListener('click', async () => {
+          try {
+            const deadline = Date.now() + 3000;
+            while (!(window.__gso && typeof window.__gso.openApp === 'function') && Date.now() < deadline) {
+              await new Promise(r => setTimeout(r, 50));
+            }
+            await window.__gso?.openApp?.(id);
+          } catch (e) { /* swallow to avoid UI errors; tests will catch via guards */ }
+        });
+        attachDnD(el);
+        return el;
+      }
+      // FEATURE_GSOS_HEX_DOCK: default ON; disable with ?FEATURE_GSOS_HEX_DOCK=0
+      const p = new URLSearchParams(location.search);
+      const hexOn = (()=>{ const v=p.get('FEATURE_GSOS_HEX_DOCK'); if(v==='0'||v==='false') return false; return true; })();
+      if (hexOn) {
+        // WEBWAY:ww-2025-128: Render hexagonal honeycomb (staggered rows)
+        dock.classList.add('hex-dock');
+        // Layout pattern: rows of 4/3/4 (repeat)
+        const pattern = [4,3,4];
+        let idx = 0;
+        while (idx < order.length) {
+          for (let r=0;r<pattern.length && idx<order.length;r++){
+            const count = pattern[r];
+            const row = document.createElement('div');
+            row.className = 'hex-row' + (r===1 ? ' offset' : '');
+            for (let i=0;i<count && idx<order.length;i++, idx++){
+              const id = order[idx];
+              row.appendChild(buildHexIcon(id));
+            }
+            dock.appendChild(row);
+          }
+        }
+      } else {
+        for (const id of order) dock.appendChild(buildRectIcon(id));
+      }
+    } catch {}
+    // Attach passthrough for panel stats if mediapipe source is present elsewhere
+    try{ if(!window.__hexMedia){ window.__hexMedia = {}; } }catch{}
+
+    // Cleanup on unload
+    window.addEventListener('beforeunload', () => { try { unregister(); } catch {} try { gate.stop?.(); } catch {} try { clutch?.stop?.(); } catch {} });
+  </script>
+ </body>
+ </html>

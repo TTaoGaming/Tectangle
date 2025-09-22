@@ -1,0 +1,5 @@
+{"family":"method","principle":"adapter over rewrite","when":"need fast integration","tradeoffs":"tech debt to tidy later","analogy":"bridge vs new road","source":"pattern"}
+{"family":"horizon","principle":"1h demo first","when":"evidence needed now","tradeoffs":"shortcuts accrue debt","analogy":"pilot before rollout","source":"pattern"}
+{"family":"constraint","principle":"rewrite constraints","when":"stuck due to scope","tradeoffs":"reduced quality scope","analogy":"trim sails for speed","source":"pattern"}
+{"family":"resource","principle":"earn/buy/hire path","when":"capital cheaper than time","tradeoffs":"cash cost","analogy":"buy tool, not build","source":"pattern"}
+{"family":"analogy","principle":"map from prior art","when":"similar structure exists","tradeoffs":"fit risk","analogy":"borrow a battle drill","source":"pattern"}

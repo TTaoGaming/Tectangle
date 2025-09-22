@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Tectangle — Pinch Piano (Hexagonal, Palm‑Gated, MP4 Telemetry)</title>
+  <style>
+    :root{
+      --bg:#0b0d10; --fg:#e7edf3; --muted:#9fb3c8; --accent:#82d4ff; --ok:#20c997; --warn:#ffb020; --bad:#ff6b6b;
+      --key-bg:#0e1420; --key-on:#2a87ff; --key-left:#93d977; --key-right:#82d4ff;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--fg)}
+    header{padding:16px 20px;border-bottom:1px solid #1a222c;background:#0f141a;position:sticky;top:0;z-index:5}
+    header h1{margin:0;font-size:18px;letter-spacing:.3px}
+    .row{display:flex;gap:16px;padding:16px 20px;flex-wrap:wrap}
+    .col{flex:1 1 460px;min-width:320px}
+    video,canvas{width:100%;max-width:100%;border:1px solid #1a222c;border-radius:12px;background:#0c1117;display:block}
+    .panel{border:1px solid #1a222c;border-radius:12px;padding:12px;background:#0c1117}
+    .panel h3{margin:0 0 8px;font-size:14px;color:var(--muted)}
+    .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px}
+    .control{display:flex;align-items:center;gap:10px;background:#0f141a;border:1px solid #1a222c;padding:8px 10px;border-radius:10px}
+    .control .lbl{width:150px;color:var(--muted);font-size:12px}
+    .control input[type="range"]{width:100%}
+    .control .val{min-width:42px;text-align:right;font-variant-numeric:tabular-nums;color:var(--fg);font-size:12px}
+    .btn{cursor:pointer;background:#11202b;color:var(--fg);border:1px solid #1a222c;padding:8px 12px;border-radius:10px;display:inline-flex;align-items:center;gap:8px}
+    .btn:hover{background:#122636}
+    .badge{padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #1a222c;background:#0f141a;color:var(--muted)}
+    .kv{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center}
+    .kv div:nth-child(2n){color:var(--muted);text-align:right}
+    footer{padding:16px 20px;border-top:1px solid #1a222c;color:var(--muted)}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;margin-right:4px}
+    .ok{background:#0d1e17;color:#7be1bf}
+    .warn{background:#1d1a0c;color:#ffd47a}
+    .bad{background:#2a1414;color:#ff9a9a}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .mini{font-size:12px;color:var(--muted)}
+    .kbd{display:flex;gap:10px}
+    .key{position:relative;width:80px;height:100px;background:var(--key-bg);border:1px solid #1a222c;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--muted);transition:transform .05s ease,box-shadow .05s ease}
+    .key .note{position:absolute;bottom:6px;font-size:12px;color:var(--muted)}
+    .key.right{outline:2px solid var(--key-right)}
+    .key.left{outline:2px solid var(--key-left)}
+    .key.down{background:#071325;color:#d9eeff;transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--key-on)}
+    .key.hold{box-shadow:inset 0 0 0 2px var(--ok)}
+    .log{max-height:180px;overflow:auto;background:#0a0e13;border:1px solid #1a222c;border-radius:8px;padding:6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+    .log .err{color:#ff9a9a}
+    .log .warn{color:#ffd47a}
+    .log .info{color:#9fb3c8}
+    .hint{border-bottom:1px dotted #5a7086;cursor:help}
+    code.inline{background:#0d1116;border:1px solid #1a222c;border-radius:6px;padding:2px 6px}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Tectangle — Pinch Piano (Palm‑Gated, Hexagonal, MP4 Telemetry) <span class="badge" id="status">ready</span></h1>
+</header>
+
+<div class="row">
+  <div class="col">
+    <video id="cam" playsinline muted autoplay></video>
+    <div class="mini" style="margin-top:8px">Tip: Use a local server (e.g., VS Code “Live Server”). <span class="hint" title="Browsers restrict WASM and camera when opened from file://">file:// may block WASM/camera</span>.</div>
+  </div>
+  <div class="col">
+    <canvas id="overlay" width="960" height="540"></canvas>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col panel">
+    <h3>Controls</h3>
+    <div class="controls">
+      <div class="control" title="Start/stop camera and pipeline">
+        <label class="lbl"><input type="checkbox" id="startStop"> Start camera</label><span class="val"> </span>
+      </div>
+      <div class="control" title="Load an MP4 and run offline; produces telemetry and goldens">
+        <label class="lbl">Offline MP4</label>
+        <input type="file" id="vidFile" accept="video/*">
+        <button class="btn" id="stopOffline">Stop</button>
+      </div>
+      <div class="control" title="Require palm normal facing camera within cone angle">
+        <label class="lbl"><input type="checkbox" id="palmGate" checked> Palm gate</label>
+        <input type="range" id="cone" min="10" max="60" step="1" value="30">
+        <output class="val" id="coneOut">30°</output>
+      </div>
+      <div class="control" title="Speculative pre‑fire using time‑to‑enter estimate">
+        <label class="lbl"><input type="checkbox" id="speculative" checked> Speculative down</label>
+        <input type="range" id="specTOI" min="40" max="180" step="10" value="120">
+        <output class="val" id="specTOIOut">120ms</output>
+      </div>
+      <div class="control" title="Normalized distance threshold to ENTER pinch">
+        <span class="lbl">Enter threshold</span>
+        <input type="range" id="enter" min="0.05" max="0.60" step="0.01" value="0.30">
+        <output class="val" id="enterOut">0.30</output>
+      </div>
+      <div class="control" title="Normalized distance threshold to EXIT pinch">
+        <span class="lbl">Exit threshold</span>
+        <input type="range" id="exit" min="0.10" max="0.90" step="0.01" value="0.42">
+        <output class="val" id="exitOut">0.42</output>
+      </div>
+      <div class="control" title="Debounce time under/over thresholds to confirm transitions">
+        <span class="lbl">Debounce (enter/exit)</span>
+        <input type="range" id="enterDb" min="0" max="120" step="10" value="40">
+        <output class="val" id="enterDbOut">40ms</output>
+        <input type="range" id="exitDb" min="0" max="120" step="10" value="40">
+        <output class="val" id="exitDbOut">40ms</output>
+      </div>
+      <div class="control" title="OneEuro filter parameters">
+        <span class="lbl">OneEuro (minCutoff / beta / dCut)</span>
+        <input type="range" id="minCutoff" min="0.1" max="3.0" step="0.1" value="1.0">
+        <output class="val" id="minCutoffOut">1.0</output>
+        <input type="range" id="beta" min="0.000" max="0.100" step="0.005" value="0.010">
+        <output class="val" id="betaOut">0.010</output>
+        <input type="range" id="dCutoff" min="0.1" max="3.0" step="0.1" value="1.0">
+        <output class="val" id="dCutoffOut">1.0</output>
+      </div>
+      <div class="control" title="Play short tone on pinch:down">
+        <label class="lbl"><input type="checkbox" id="beep" checked> Audio beep</label>
+        <span class="val"></span>
+      </div>
+      <div class="control" title="Send MIDI NoteOn/Off (first output)">
+        <label class="lbl"><input type="checkbox" id="midi"> WebMIDI</label>
+        <span class="val"></span>
+      </div>
+      <div class="control" title="Run open/close to estimate knuckle span; saved per hand">
+        <button class="btn" id="calibrate">Calibration</button>
+        <span class="mini">Saves span per hand</span>
+      </div>
+      <div class="control" title="Download JSONL with meta + frames for CI replay">
+        <button class="btn" id="download">Download golden JSONL</button>
+        <span class="mini">First line has meta</span>
+      </div>
+    </div>
+    <p class="mini">URL flags: <code class="inline">?autostart</code> <code class="inline">?disablePalm</code> <code class="inline">?fixedSpan=0.08</code></p>
+  </div>
+
+  <div class="col panel">
+    <h3>Runtime & Telemetry</h3>
+    <div class="kv" id="kv">
+      <div>FPS</div><div id="fps">–</div>
+      <div>Right state</div><div id="fsmR">–</div>
+      <div>Left state</div><div id="fsmL">–</div>
+      <div>NormDist</div><div id="norm">–</div>
+      <div>Palm angle</div><div id="pg">–</div>
+      <div>Spec pre‑fire (avg lead)</div><div id="lead">–</div>
+      <div>Confirm latency (mean)</div><div id="lat">–</div>
+      <div>Spec cancel %</div><div id="specCancel">–</div>
+      <div>Downs</div><div id="downs">0</div>
+      <div>Ups</div><div id="ups">0</div>
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col panel">
+    <h3>Virtual keyboard</h3>
+    <div class="kbd" id="kbd">
+      <div class="key right" data-key="Z" title="Right hand → key Z (MIDI C4)">Z <span class="note">C4</span></div>
+      <div class="key left"  data-key="X" title="Left hand → key X (MIDI D4)">X <span class="note">D4</span></div>
+    </div>
+    <p class="mini">Keys light on <span class="hint" title="pinch:down">down</span>, hold during <span class="hint" title="pinch:hold">hold</span>, release on <span class="hint" title="pinch:up">up</span>. For sound, use WebMIDI or Beep.</p>
+  </div>
+</div>
+
+<footer>
+  <span class="pill ok">Hex ports/adapters</span> <span class="pill warn">KeyEvents are in‑page only</span> <span class="pill bad">Allow camera</span>
+  <div class="mini">Core logic is framework‑free; all I/O via adapters. Errors surface in the log and badge.</div>
+</footer>
+
+<script type="module">
+/* ==========================================================================
+   Hexagonal Architecture: Ports (domain contracts) & Adapters (edges)
+   =========================================================================
+   PORTS (domain contracts):
+   - FeatureSourcePort: emits { t, hand, indexTip, thumbTip, wrist, indexMCP, pinkyMCP }
+   - PinchEventSinkPort: consumes domain events {type:'pinch:down|hold|up', t, speculative?}
+   - TelemetryPort: capture metrics, record golden JSONL, status updates, logs
+   - VisualPort: draw hands/overlay and virtual keyboard feedback
+   - AudioPort/MidiPort: optional feedback
+   ADAPTERS:
+   - MediaPipeCameraSource (FeatureSourcePort)
+   - MediaPipeOfflineSource (FeatureSourcePort) — MP4 via <input type="file">
+   - VisualOverlayAdapter (VisualPort), KeyboardSinkAdapter (PinchEventSinkPort), MidiOutAdapter, BeeperAdapter
+   - TelemetryAdapter (TelemetryPort), LoggerAdapter (status+console+panel)
+   Composition Root wires ports ↔ adapters. The domain core depends only on ports.
+============================================================================ */
+
+// =========================
+// Utility & DOM helpers
+// =========================
+const Q = new URLSearchParams(location.search);
+const byId = id => document.getElementById(id);
+const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+const median = arr => { const a=[...arr].sort((x,y)=>x-y); const m=a.length>>1; return a.length? (a.length%2?a[m]:(a[m-1]+a[m])/2):0; };
+const now = ()=> performance.now();
+const fmt = (n, p=2)=> (typeof n==='number' && isFinite(n) ? n.toFixed(p) : '–');
+
+// Robust logging: never silent
+const Log = (()=>{
+  const el = byId('log'), badge = byId('status');
+  let errs=0, warns=0;
+  function line(kind, msg){
+    const d=document.createElement('div'); d.className=kind; d.textContent=`${new Date().toLocaleTimeString()} — ${msg}`;
+    el.appendChild(d); el.scrollTop=el.scrollHeight;
+    if(kind==='err'){ errs++; badge.textContent='error'; badge.style.color='#ff9a9a'; }
+    else if(kind==='warn'){ warns++; if(errs===0){ badge.textContent='warn'; badge.style.color='#ffd47a'; } }
+  }
+  window.addEventListener('error', e=> line('err', `Uncaught: ${e.message || e.error?.message || e}`));
+  window.addEventListener('unhandledrejection', e=> line('err', `Unhandled rejection: ${e.reason?.message || e.reason || e}`));
+  return {
+    info: m=> line('info', m),
+    warn: m=> line('warn', m),
+    error: m=> line('err', m),
+    status: m=> { badge.textContent=m; badge.style.color=''; },
+  };
+})();
+
+// =========================
+// Rolling stats & filters
+// =========================
+class RollingMedian { constructor(n){ this.n=n; this.buf=[]; } push(x){ this.buf.push(x); if(this.buf.length>this.n) this.buf.shift(); return median(this.buf); } get med(){ return median(this.buf); } }
+class OneEuro {
+  constructor({minCutoff=1.0,beta=0.01,dCutoff=1.0}={}){ this.minCutoff=minCutoff; this.beta=beta; this.dCutoff=dCutoff; this.xPrev=null; this.dxPrev=0; this.tPrev=null; }
+  static alpha(cutoff, dt){ const r=2*Math.PI*cutoff*dt; return r/(r+1); }
+  filter(x, t){ if(this.tPrev==null){ this.tPrev=t; this.xPrev=x; return x; }
+    const dt=Math.max(1e-3,(t-this.tPrev)/1000);
+    const dx=(x-this.xPrev)/dt;
+    const aD=OneEuro.alpha(this.dCutoff,dt);
+    const dxHat=aD*dx+(1-aD)*this.dxPrev;
+    const cutoff=this.minCutoff+this.beta*Math.abs(dxHat);
+    const aX=OneEuro.alpha(cutoff,dt);
+    const xHat=aX*x+(1-aX)*this.xPrev;
+    this.tPrev=t; this.xPrev=xHat; this.dxPrev=dxHat; return xHat;
+  }
+}
+
+// =========================
+// Telemetry & goldens
+// =========================
+class TelemetryAdapter {
+  constructor(){ this.rec = { downs:0, ups:0, spec:0, specCancel:0, confirmLat:[], leadMs:[], frames:0 }; this.lines=[]; this.started=false; this.lastDownT=null; }
+  start(meta){ if(this.started) return; this.started=true; this.lines.push(JSON.stringify({meta})); }
+  frame(obj){ if(!this.started) return; this.lines.push(JSON.stringify(obj)); this.rec.frames++; }
+  notePrefireLead(ms){ if(Number.isFinite(ms)) this.rec.leadMs.push(ms); }
+  noteDown(t, speculative){ if(speculative) this.rec.spec++; this.rec.downs++; this.lastDownT=t; }
+  noteConfirmLatency(ms){ if(ms>=0 && ms<2000) this.rec.confirmLat.push(ms); }
+  noteSpecCancel(){ this.rec.specCancel++; }
+  noteUp(t){ this.rec.ups++; }
+  snapshot(){ const r=this.rec, mean = a => a.length? Math.round(a.reduce((x,y)=>x+y,0)/a.length) : 0;
+    return {
+      downs:r.downs, ups:r.ups, frames:r.frames,
+      specCancelRate: r.spec? r.specCancel/Math.max(1,r.spec) : 0,
+      meanConfirmLatency: mean(r.confirmLat),
+      meanPrefireLead: mean(r.leadMs),
+    };
+  }
+  download(){ try{
+    const blob=new Blob([this.lines.join('\n')+'\n'],{type:'application/jsonl'});
+    const url=URL.createObjectURL(blob);
+    const a=Object.assign(document.createElement('a'),{href:url,download:`pinch_golden_${new Date().toISOString().replace(/[:.]/g,'-')}.jsonl`});
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }catch(e){ Log.error('Download failed: '+e.message); }
+  }
+}
+
+// =========================
+// Visual overlay & keys
+// =========================
+const Overlay = (()=>{
+  const canvas = byId('overlay'); const g = canvas.getContext('2d');
+  function clear(){ g.clearRect(0,0,canvas.width,canvas.height); }
+  function drawHands(hands){ if(!hands||!hands.length) return; g.save(); g.lineWidth=2;
+    hands.forEach((lm, idx)=>{ const colorStroke = idx===0 ? '#2a87ff' : '#93d977'; const colorFill = idx===0 ? '#82d4ff' : '#b7f5a1'; g.strokeStyle=colorStroke; g.fillStyle=colorFill;
+      for(const p of lm){ g.beginPath(); g.arc(p[0]*canvas.width, p[1]*canvas.height, 3,0,Math.PI*2); g.fill(); }
+      const it=lm[8], tt=lm[4]; if(it && tt){ g.beginPath(); g.moveTo(it[0]*canvas.width, it[1]*canvas.height); g.lineTo(tt[0]*canvas.width, tt[1]*canvas.height); g.stroke(); }
+    }); g.restore();
+  }
+  function annotate(lines){ g.save(); g.fillStyle='rgba(0,0,0,.4)'; g.fillRect(8,8,320,84); g.fillStyle='#e7edf3'; g.font='12px system-ui'; lines.forEach((ln,i)=> g.fillText(ln, 16, 28+i*16)); g.restore(); }
+  return { clear, drawHands, annotate };
+})();
+function highlightKey(key, mode){ const el=document.querySelector(`.key[data-key="${key}"]`); if(!el) return; el.classList.toggle('down', mode==='down' || mode==='hold'); el.classList.toggle('hold', mode==='hold'); }
+
+// =========================
+// Feedback adapters
+// =========================
+class Beeper { constructor(){ this.ctx=null; this.osc=null; this.gain=null; } ensure(){ if(!this.ctx){ this.ctx=new (window.AudioContext||window.webkitAudioContext)(); } } down(){ this.ensure(); try{ if(this.osc) return; this.osc=this.ctx.createOscillator(); this.gain=this.ctx.createGain(); this.osc.frequency.value=440; this.gain.gain.value=0.1; this.osc.connect(this.gain).connect(this.ctx.destination); this.osc.start(); }catch(e){ Log.warn('Audio beep failed: '+e.message); } } up(){ try{ if(this.osc){ this.osc.stop(); this.osc.disconnect(); this.gain.disconnect(); } }catch(_){} finally{ this.osc=null; this.gain=null; } } }
+class MidiOut { constructor(){ this.out=null; } async init(){ try{ const access=await navigator.requestMIDIAccess(); this.out=[...access.outputs.values()][0]||null; }catch(e){ Log.warn('WebMIDI unavailable'); } } send(status,data1,data2){ try{ if(this.out) this.out.send([status,data1,data2]); }catch(e){ Log.warn('MIDI send failed: '+e.message); } } }
+function handToKeyNote(hand){ return hand==='Left' ? { key:'X', note:62 } : { key:'Z', note:60 }; }
+class KeyboardSinkAdapter {
+  constructor({beeper, midi}){ this.beeper=beeper; this.midi=midi; }
+  async handle(event, hand){
+    const map = handToKeyNote(hand); const useMidi = byId('midi').checked; const doBeep = byId('beep').checked;
+    if(event.type==='pinch:down'){ document.dispatchEvent(new KeyboardEvent('keydown',{ key:map.key, bubbles:true })); if(doBeep) this.beeper.down(); if(useMidi) this.midi.send(0x90, map.note, 100); highlightKey(map.key,'down'); }
+    if(event.type==='pinch:hold'){ highlightKey(map.key,'hold'); }
+    if(event.type==='pinch:up'){ document.dispatchEvent(new KeyboardEvent('keyup',{ key:map.key, bubbles:true })); if(doBeep) this.beeper.up(); if(useMidi) this.midi.send(0x80, map.note, 0); highlightKey(map.key,'up'); }
+  }
+}
+
+// =========================
+// Domain: Pinch core (pure)
+// =========================
+function createPinchCore(config){
+  const C = Object.assign({
+    palmGate: !Q.has('disablePalm') && byId('palmGate').checked,
+    palmConeDeg: +byId('cone').value || 30,
+    enterThresh: +byId('enter').value || 0.30,
+    exitThresh:  +byId('exit').value  || 0.42,
+    enterDebounceMs: +byId('enterDb').value || 40,
+    exitDebounceMs:  +byId('exitDb').value  || 40,
+    autoReleaseMs: 5000,
+    enableSpeculative: byId('speculative').checked && !Q.has('disableSpec'),
+    specTOIMs: +byId('specTOI').value || 120,
+    oneEuro: { minCutoff:+byId('minCutoff').value, beta:+byId('beta').value, dCutoff:+byId('dCutoff').value }
+  }, config||{});
+
+  // Filter state (per channel)
+  const filt = { ix:new OneEuro(C.oneEuro), iy:new OneEuro(C.oneEuro), iz:new OneEuro(C.oneEuro), tx:new OneEuro(C.oneEuro), ty:new OneEuro(C.oneEuro), tz:new OneEuro(C.oneEuro) };
+  const medV = new RollingMedian(30), medA = new RollingMedian(30);
+
+  // FSM state
+  let state='Idle', lastT=null, lastNorm=null, vRel=0, prevVRel=0, aRel=0;
+  let underStart=null, overStart=null;
+  let lastDown=0, holdTimer=0, speculative=false, lastCrossT=null;
+
+  // Ports
+  const sinks = new Set(); // PinchEventSinkPort handlers
+  function on(handler){ sinks.add(handler); return ()=>sinks.delete(handler); }
+  function emit(hand, e){ for(const h of sinks){ try{ h(e, hand); } catch(ex){ Log.error('Sink handler error: '+ex.message); } } }
+
+  function palmOk(wrist, indexMCP, pinkyMCP){
+    if(!C.palmGate) return true;
+    if(!(wrist && indexMCP && pinkyMCP)) return false;
+    const vx=indexMCP[0]-wrist[0], vy=indexMCP[1]-wrist[1], vz=(indexMCP[2]??0)-(wrist[2]??0);
+    const ux=pinkyMCP[0]-wrist[0], uy=pinkyMCP[1]-wrist[1], uz=(pinkyMCP[2]??0)-(wrist[2]??0);
+    const nx=vy*uz - vz*uy, ny=vz*ux - vx*uz, nz=vx*uy - vy*ux; // normal = v x u
+    const nzNorm=Math.hypot(nx,ny,nz)||1; const cos=(-nz)/nzNorm; // facing camera
+    const ang=Math.acos(clamp(cos,-1,1))*180/Math.PI; HUD.setPalmAngle?.(ang); return ang <= C.palmConeDeg;
+  }
+
+  function update(frame, hand, telemetry){
+    const t=frame.t;
+
+    // Smoothed channel positions
+    const ix=filt.ix.filter(frame.indexTip[0],t), iy=filt.iy.filter(frame.indexTip[1],t), iz=filt.iz.filter(frame.indexTip[2]||0,t);
+    const tx=filt.tx.filter(frame.thumbTip[0],t), ty=filt.ty.filter(frame.thumbTip[1],t), tz=filt.tz.filter(frame.thumbTip[2]||0,t);
+
+    // Knuckle span normalization
+    let kn = Q.get('fixedSpan')? +Q.get('fixedSpan') : loadSpan(hand);
+    if(!kn && frame.indexMCP && frame.pinkyMCP){ kn = Math.hypot(frame.indexMCP[0]-frame.pinkyMCP[0], frame.indexMCP[1]-frame.pinkyMCP[1]); }
+    if(!kn) kn=0.08;
+
+    const raw = Math.hypot(ix-tx, iy-ty); // 2D; use iz/tz if z is stable
+    const norm=raw/kn;
+
+    // Kinematics
+    if(lastNorm!=null && lastT!=null){
+      const dt=Math.max(1,(t-lastT));
+      vRel=(norm-lastNorm)/(dt/1000);
+      const dv=vRel - prevVRel; aRel=dv/(dt/1000); // correct accel
+      medV.push(Math.abs(vRel)); medA.push(Math.abs(aRel));
+      prevVRel=vRel;
+    }
+    const gatePalm = palmOk(frame.wrist, frame.indexMCP, frame.pinkyMCP);
+    const kinOk = Math.abs(vRel) < 3*(medV.med||1)+3 && Math.abs(aRel) < 5*(medA.med||1)+5;
+    const gate = gatePalm && kinOk;
+
+    // Time to ENTER threshold (ms)
+    const distToEnter = norm - C.enterThresh;
+    const TOI = vRel<0 ? (distToEnter/Math.abs(vRel))*1000 : Infinity;
+    const allowSpec = C.enableSpeculative && gate && distToEnter > 0 && TOI <= C.specTOIMs && TOI > -40;
+
+    // Debounce trackers
+    if(norm < C.enterThresh){ underStart ??= t; } else { underStart=null; }
+    if(norm > C.exitThresh) { overStart  ??= t; } else { overStart=null; }
+
+    // Track first threshold crossing for confirm latency
+    if(lastNorm!=null && lastCrossT==null && lastNorm >= C.enterThresh && norm < C.enterThresh) lastCrossT = t;
+
+    // FSM
+    switch(state){
+      case 'Idle':
+        if(gate && allowSpec){
+          speculative=true; emit(hand,{type:'pinch:down', t, speculative:true}); telemetry?.noteDown(t, true); telemetry?.notePrefireLead(TOI);
+          state='PrePinch'; lastDown=t; holdTimer=t;
+        } else if(gate && underStart && (t-underStart)>=C.enterDebounceMs){
+          speculative=false; emit(hand,{type:'pinch:down', t}); telemetry?.noteDown(t, false);
+          if(lastCrossT!=null) telemetry?.noteConfirmLatency(t - lastCrossT);
+          state='Pinched'; lastDown=t; holdTimer=t; lastCrossT=null;
+        }
+        break;
+      case 'PrePinch':
+        if(!gate){ if(speculative){ telemetry?.noteSpecCancel(); } speculative=false; state='Idle'; break; }
+        if(underStart && (t-underStart)>=C.enterDebounceMs){
+          if(!speculative){ emit(hand,{type:'pinch:down', t}); telemetry?.noteDown(t, false); }
+          else { speculative=false; if(lastCrossT!=null) telemetry?.noteConfirmLatency(t - lastCrossT); }
+          state='Pinched'; lastDown=t; holdTimer=t; lastCrossT=null;
+        } else if(t - lastDown > C.specTOIMs + 40){ if(speculative){ telemetry?.noteSpecCancel(); } speculative=false; state='Idle'; }
+        break;
+      case 'Pinched':
+        if (t - holdTimer > 200){ emit(hand,{ type:'pinch:hold', t, dur: t - lastDown }); holdTimer = t; }
+        if(overStart && (t-overStart)>=C.exitDebounceMs){ emit(hand,{type:'pinch:up', t}); telemetry?.noteUp(t); state='Idle'; }
+        if(t - lastDown > C.autoReleaseMs){ emit(hand,{type:'pinch:up', t}); telemetry?.noteUp(t); state='Idle'; }
+        break;
+    }
+
+    lastT=t; lastNorm=norm;
+    return { norm, gate, gatePalm, vRel, aRel, TOI };
+  }
+
+  return { update, on, config:C };
+}
+
+// =========================
+// Persistence helpers
+// =========================
+function saveSpan(hand, span){ try{ localStorage.setItem('tectangle.span.'+hand, String(span)); }catch{} }
+function loadSpan(hand){ try{ const v=localStorage.getItem('tectangle.span.'+hand); return v? +v : null; }catch{ return null; } }
+
+// =========================
+// HUD & FPS
+// =========================
+const HUD = (()=>{
+  const el = { fps: byId('fps'), fsmR: byId('fsmR'), fsmL: byId('fsmL'), norm: byId('norm'), pg: byId('pg'), lat: byId('lat'), downs: byId('downs'), ups: byId('ups'), specCancel: byId('specCancel'), lead: byId('lead'),
+               status: byId('status'), enterOut: byId('enterOut'), exitOut: byId('exitOut'), coneOut: byId('coneOut'), minCutoffOut: byId('minCutoffOut'), betaOut: byId('betaOut'), dCutoffOut: byId('dCutoffOut'), enterDbOut: byId('enterDbOut'), exitDbOut: byId('exitDbOut'), specTOIOut: byId('specTOIOut') };
+  const FPS = (()=>{ let lastT=null, fps=null; return { tick(t){ if(lastT!=null){ const dt=(t-lastT)/1000; fps = clamp(1/dt,0,240); } lastT=t; return fps; } };})();
+  return {
+    status(msg){ el.status.textContent = msg; },
+    setPalmAngle(ang){ el.pg.textContent = (ang|0)+'°'; },
+    updateRuntime({norm, gate, fps, tele}){
+      el.norm.textContent = typeof norm==='number' ? norm.toFixed(3) : '–';
+      el.fps.textContent  = fps? fps.toFixed(1):'–';
+      if(tele){ const s=tele.snapshot(); el.lat.textContent=s.meanConfirmLatency||'–'; el.downs.textContent=s.downs; el.ups.textContent=s.ups; el.specCancel.textContent=(s.specCancelRate*100).toFixed(1)+'%'; el.lead.textContent = s.meanPrefireLead||'–'; }
+    },
+    setState(hand, state){ if(hand==='Right') el.fsmR.textContent = state; else el.fsmL.textContent = state; },
+    syncOutputs(){ el.enterOut.textContent = (+byId('enter').value).toFixed(2); el.exitOut.textContent = (+byId('exit').value).toFixed(2); el.coneOut.textContent = (+byId('cone').value).toFixed(0)+'°'; el.minCutoffOut.textContent = (+byId('minCutoff').value).toFixed(1); el.betaOut.textContent = (+byId('beta').value).toFixed(3); el.dCutoffOut.textContent = (+byId('dCutoff').value).toFixed(1); el.enterDbOut.textContent=(+byId('enterDb').value)+'ms'; el.exitDbOut.textContent=(+byId('exitDb').value)+'ms'; el.specTOIOut.textContent=(+byId('specTOI').value)+'ms'; }
+  };
+})();
+
+// =========================
+// MediaPipe sources (adapters)
+// =========================
+function createMediaPipeCameraSource(video, onHands){
+  let landmarker=null; let rafId=null; let running=false;
+  async function init(){
+    const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.19/vision_bundle.mjs');
+    const { FilesetResolver, HandLandmarker } = vision;
+    const fileset = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.19/wasm');
+    landmarker = await HandLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task' },
+      runningMode: 'VIDEO', numHands: 2
+    });
+  }
+  const toArr = lm => [lm.x, lm.y, lm.z ?? 0];
+  function loop(){ if(!running) return; const t=now(); try { const res = landmarker.detectForVideo(video, t); const L = res?.landmarks || []; const hands = L.length ? L.map(hand => hand.map(toArr)) : null; onHands({ t, hands, handednesses: res?.handednesses||[] }); } catch(e){ Log.error('detectForVideo failed: '+e.message); running=false; } rafId=requestAnimationFrame(loop); }
+  return {
+    async start(){
+      if(running) return;
+      try{
+        const stream=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' }, audio:false });
+        video.srcObject=stream; await video.play();
+      }catch(e){ Log.error('Camera permission required or blocked: '+e.message); throw e; }
+      try{ await init(); running=true; loop(); Log.status('running'); }catch(e){ Log.error('MediaPipe init failed: '+e.message); throw e; }
+    },
+    stop(){
+      running=false; if(rafId) cancelAnimationFrame(rafId);
+      try{ if(video.srcObject){ video.srcObject.getTracks().forEach(t=>t.stop()); video.srcObject=null; } }catch(_){}
+      Log.status('stopped');
+    }
+  };
+}
+
+function createMediaPipeOfflineSource(video, onHands){
+  let landmarker=null; let running=false;
+  async function init(){
+    const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.19/vision_bundle.mjs');
+    const { FilesetResolver, HandLandmarker } = vision;
+    const fileset = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.19/wasm');
+    landmarker = await HandLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task' },
+      runningMode: 'VIDEO', numHands: 2
+    });
+  }
+  const toArr = lm => [lm.x, lm.y, lm.z ?? 0];
+  function onVideoFrame(now, meta){
+    if(!running) return;
+    try{
+      const res = landmarker.detectForVideo(video, meta.mediaTime*1000);
+      const L = res?.landmarks || []; const hands = L.length ? L.map(hand => hand.map(toArr)) : null;
+      onHands({ t: meta.mediaTime*1000, hands, handednesses: res?.handednesses||[] });
+    }catch(e){ Log.error('Offline detect failed: '+e.message); running=false; }
+    video.requestVideoFrameCallback(onVideoFrame);
+  }
+  return {
+    async startFile(file){
+      try{
+        await init();
+        video.srcObject=null;
+        video.src = URL.createObjectURL(file);
+        await video.play();
+        running=true;
+        video.requestVideoFrameCallback(onVideoFrame);
+        Log.status('offline');
+      }catch(e){ Log.error('Offline start failed: '+e.message); throw e; }
+    },
+    stop(){ running=false; try{ video.pause(); video.removeAttribute('src'); video.load(); }catch(_){} Log.status('stopped'); }
+  };
+}
+
+// =========================
+// Calibration
+// =========================
+function runCalibration(getHands){ return new Promise(async (resolve)=>{
+  alert('Calibration: Hold one hand, open/close slowly for ~3 seconds.');
+  const samples=[]; const start=now();
+  while(now()-start < 3200){
+    const hands=getHands?.(); const lm = hands && hands[0];
+    if(lm && lm.length>=21){ const kn=Math.hypot(lm[5][0]-lm[17][0], lm[5][1]-lm[17][1]); samples.push(kn); }
+    await new Promise(r=>requestAnimationFrame(r));
+  }
+  const span=median(samples)||0.08; alert('Knuckle span = '+span.toFixed(4)); resolve(span);
+});}
+
+// =========================
+// Composition Root
+// =========================
+const video = byId('cam'); const startStop = byId('startStop'); const btnCalib = byId('calibrate'); const btnDownload = byId('download'); const fileInput = byId('vidFile'); const stopOfflineBtn = byId('stopOffline');
+const beeper = new Beeper(); const midi = new MidiOut(); const tele = new TelemetryAdapter();
+let cameraSrc=null, offlineSrc=null;
+let cores=new Map(); // hand -> { core, unsub }
+let lastHands = null, lastHanded = null;
+
+function handTag(res, idx){
+  let tag='Right';
+  const hs = res?.handednesses?.[idx]?.[0];
+  if(hs && hs.categoryName) tag = hs.categoryName;
+  return (tag==='Left'?'Left':'Right');
+}
+
+function handleHands(res){
+  lastHands = res.hands; lastHanded = res.handednesses;
+  Overlay.clear();
+  Overlay.drawHands(lastHands);
+  if(!lastHands) return;
+  for(let i=0;i<lastHands.length;i++){
+    const lm = lastHands[i]; if(!lm || lm.length<21) continue;
+    const hand = handTag(res, i);
+    if(!cores.has(hand)){
+      const core = createPinchCore();
+      const unsub = core.on((e, h)=>{
+        HUD.setState(h, e.type.replace('pinch:',''));
+        keyboardSink.handle(e, h);
+        if(e.type==='pinch:down') tele.noteDown(e.t, !!e.speculative);
+        if(e.type==='pinch:up') tele.noteUp(e.t);
+      });
+      cores.set(hand,{ core, unsub });
+    }
+    const entry=cores.get(hand);
+    const frame = { t:res.t, indexTip:lm[8], thumbTip:lm[4], wrist:lm[0], indexMCP:lm[5], pinkyMCP:lm[17] };
+    const out = entry.core.update(frame, hand, tele);
+    const fps = FPS.tick(res.t);
+    Overlay.annotate([
+      `enter: ${(+byId('enter').value).toFixed(2)}  exit: ${(+byId('exit').value).toFixed(2)}  cone: ${(+byId('cone').value).toFixed(0)}°`,
+      `norm: ${out.norm.toFixed(3)}  v:${out.vRel.toFixed(2)}  a:${out.aRel.toFixed(1)}  TOI:${isFinite(out.TOI)?out.TOI.toFixed(0)+'ms':'∞'}`
+    ]);
+    tele.frame({ t:res.t, hand, norm:+out.norm.toFixed(4), state: 'n/a', gate: out.gate });
+    HUD.updateRuntime({ norm: out.norm, gate: out.gate, fps, tele });
+  }
+}
+const FPS = (()=>{ let lastT=null, fps=null; return { tick(t){ if(lastT!=null){ const dt=(t-lastT)/1000; fps = clamp(1/dt,0,240); } lastT=t; return fps; } };})();
+
+const keyboardSink = new KeyboardSinkAdapter({ beeper, midi });
+
+function rebuildCores(){
+  for(const [hand,obj] of cores){ if(obj.unsub) try{ obj.unsub(); }catch(_){} }
+  cores.clear();
+  Log.info('Core rebuilt with current controls');
+}
+
+async function startCamera(){
+  if(cameraSrc){ cameraSrc.stop(); cameraSrc=null; }
+  if(offlineSrc){ offlineSrc.stop(); offlineSrc=null; }
+  cameraSrc = createMediaPipeCameraSource(video, handleHands);
+  try{ await cameraSrc.start(); await midi.init(); beeper.ensure(); tele.start({ sha:'demo-local', device:navigator.userAgent, mode:'camera' }); }
+  catch(e){ Log.error('Start camera failed'); throw e; }
+}
+function stopAll(){
+  try{ if(cameraSrc){ cameraSrc.stop(); cameraSrc=null; } }catch(_){}
+  try{ if(offlineSrc){ offlineSrc.stop(); offlineSrc=null; } }catch(_){}
+  beeper.up();
+  Log.status('stopped');
+}
+
+function bindRange(id){ byId(id).addEventListener('input', ()=>{ HUD.syncOutputs(); rebuildCores(); }); }
+['enter','exit','cone','minCutoff','beta','dCutoff','enterDb','exitDb','specTOI','palmGate','speculative'].forEach(bindRange);
+HUD.syncOutputs();
+
+startStop.addEventListener('change', ()=>{ startStop.checked ? startCamera() : stopAll(); });
+btnDownload.addEventListener('click', ()=> tele.download());
+btnCalib.addEventListener('click', async ()=>{
+  if(!lastHands){ alert('Start camera or offline video first.'); return; }
+  const span = await runCalibration(()=> lastHands);
+  const url = new URL(location.href); url.searchParams.set('fixedSpan', String(span)); history.replaceState(null,'',url);
+  saveSpan('Right', span); saveSpan('Left', span);
+});
+
+fileInput.addEventListener('change', async e=>{
+  const f = e.target.files?.[0]; if(!f) return;
+  try{
+    if(cameraSrc){ cameraSrc.stop(); cameraSrc=null; }
+    if(offlineSrc){ offlineSrc.stop(); offlineSrc=null; }
+    offlineSrc = createMediaPipeOfflineSource(video, handleHands);
+    await offlineSrc.startFile(f); await midi.init(); beeper.ensure(); tele.start({ sha:'demo-local', device:navigator.userAgent, mode:'offline', file:f.name });
+  }catch(err){ Log.error('Offline file run failed: '+(err?.message||err)); }
+});
+stopOfflineBtn.addEventListener('click', ()=>{ if(offlineSrc){ offlineSrc.stop(); offlineSrc=null; } });
+
+// Auto-start if ?autostart
+if(Q.has('autostart')){ byId('startStop').checked=true; startCamera().catch(()=>{}); }
+
+// Developer convenience
+Object.defineProperties(window,{ __tectangle:{ get(){ return { cores, tele, startCamera, stopAll }; } } });
+
+</script>
+</body>
+</html>

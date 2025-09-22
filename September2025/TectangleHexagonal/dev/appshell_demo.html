@@ -1,0 +1,73 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/smoke/run_video_appshell_check_seats.mjs
+  - [ ] tests/unit/controllerRouterCore.test.mjs
+  - [ ] tests/e2e/controller_router_lockin.test.js
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>AppShell Multi-Hand Demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin:0; display:grid; grid-template-columns: 2fr 1fr; height:100vh; background:#111; color:#eee; }
+    #left { position:relative; }
+    video { width:100%; height:100%; object-fit:cover; background:#000; }
+    #right { padding:12px; overflow:auto; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size:12px; }
+    .seat { margin:4px 0; }
+    .badge { display:inline-block; padding:2px 6px; border-radius:4px; background:#333; margin-right:4px; }
+    .p1 { background:#3b82f6; }
+    .p2 { background:#10b981; }
+    .p3 { background:#f59e0b; }
+    .p4 { background:#ef4444; }
+  </style>
+</head>
+<body>
+  <div id="left">
+    <video id="cam" playsinline muted></video>
+  </div>
+  <div id="right">
+    <h3>AppShell State</h3>
+    <button id="playVideo">Run Sample MP4</button>
+    <div class="mono" id="seats"></div>
+    <div class="mono" id="hands"></div>
+    <div class="mono" id="events"></div>
+  </div>
+  <script type="module">
+    import { createAppShell } from '../src/app/appShell.js';
+    const video = document.getElementById('cam');
+    const seatsEl = document.getElementById('seats');
+    const handsEl = document.getElementById('hands');
+    const eventsEl = document.getElementById('events');
+    const shell = createAppShell({});
+    let evBuf = [];
+    shell.onEvent(e=>{ evBuf.push(e); if(evBuf.length>25) evBuf.shift(); render(); });
+    function render(){
+      const st = shell.getState();
+      const seatMap = (st.seats?.map||[]).map(([k,s])=> `${s}:${k}`).join(', ');
+      seatsEl.textContent = 'Seats: ' + seatMap;
+      handsEl.textContent = 'Hands: ' + st.hands.hands.map(h=>`${h.key}(age=${h.ageMs}ms)`).join(', ');
+      eventsEl.textContent = evBuf.map(e=> `${e.type} ${e.handKey||''} seat=${e.seat||''} t=${e.t}`).join('\n');
+    }
+    window.__appshell = shell;
+    window.__appshellGetState = () => shell.getState();
+    window.__appshellPlayUrl = async (url)=>{ await shell.startVideoUrl(video, url); };
+    document.getElementById('playVideo').onclick = async ()=>{
+      const url = '../videos/two_hands_baseline_idle_v1.mp4';
+      await shell.startVideoUrl(video, url);
+    };
+    // Auto-render every 300ms
+    setInterval(render, 300);
+  </script>
+</body>
+</html>

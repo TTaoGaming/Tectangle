@@ -1,0 +1,60 @@
+name: pinch-ci
+
+on:
+  pull_request:
+    paths:
+      - 'September2025/TectangleHexagonal/**'
+      - 'tests/**'
+      - '.github/workflows/**'
+  push:
+    branches: [ main ]
+
+jobs:
+  replay-and-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          package-manager-cache: false
+
+      - name: Install tools
+        run: |
+          npm i -D http-server puppeteer
+
+      - name: Start server
+        run: |
+          npx http-server . -p 8080 &
+          sleep 2
+
+      - name: Deterministic core replay (normal)
+        run: |
+          EXPECT_DOWNS=0 EXPECT_UPS=0 node tests/replay/replay_core_from_trace.mjs tests/landmarks/right_hand_normal.landmarks.jsonl
+
+      - name: Deterministic core replay (gated)
+        run: |
+          EXPECT_DOWNS=0 EXPECT_UPS=0 node tests/replay/replay_core_from_trace.mjs tests/landmarks/right_hand_gated.landmarks.jsonl
+
+      - name: Page replay (normal)
+        env:
+          DEMO_URL: http://localhost:8080/September2025/TectangleHexagonal/dev/index.html
+        run: |
+          node tests/replay/replay_page_from_trace.cjs tests/landmarks/right_hand_normal.landmarks.jsonl
+
+      - name: Page replay (gated)
+        env:
+          DEMO_URL: http://localhost:8080/September2025/TectangleHexagonal/dev/index.html
+        run: |
+          node tests/replay/replay_page_from_trace.cjs tests/landmarks/right_hand_gated.landmarks.jsonl
+
+      - name: Upload out artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pinch-out
+          path: |
+            tests/out/**

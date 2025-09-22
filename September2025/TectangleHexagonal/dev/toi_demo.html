@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/e2e/toi_demo.integration.test.js
+  - [ ] tests/e2e/toi_video.integration.test.js
+  - [ ] tests/e2e/toi_video_frame.integration.test.js
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Tectangle TOI Demo</title>
+    <style>
+      body{font-family:system-ui;margin:0;padding:12px;background:#111;color:#eee}
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+      canvas{background:#000;border:1px solid #333}
+      label{display:inline-block;min-width:80px}
+      .chip{display:inline-block;padding:2px 6px;border-radius:6px;background:#222;margin-left:6px}
+    </style>
+  </head>
+  <body>
+    <h2>TOI Visualizer (Predicted vs Actual)</h2>
+    <div class="row">
+      <video id="cam" autoplay playsinline muted width="320" height="240"></video>
+      <canvas id="overlay" width="320" height="240"></canvas>
+      <canvas id="hyst" width="480" height="240"></canvas>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <label>Enter</label><input id="enter" type="number" step="0.01" value="0.50" />
+      <label>Exit</label><input id="exit" type="number" step="0.01" value="0.80" />
+      <label>Cone°</label><input id="cone" type="number" step="1" value="30" />
+  <label>Spec</label><input id="speculative" type="checkbox" checked />
+  <label>Offset ms</label><input id="userOffset" type="number" step="1" value="0" />
+  <label>PalmGate</label><input id="palmGate" type="checkbox" checked />
+  <button id="apply">Apply</button>
+  <button id="sound">Sound ▶︎</button>
+  <button id="metronome">Metronome ▶︎</button>
+  <label>MP4</label><input id="videoFile" type="file" accept="video/*" />
+  <label>Lookahead ms</label><input id="lookaheadMs" type="number" step="5" value="60" />
+  <span class="chip" id="metrics"></span>
+    </div>
+    <script type="module">
+  import { createPinchCore } from '../src/core/pinchCore.js';
+  import { createMediaPipeSource } from '../src/ports/mediapipe.js';
+  import { createMediaPipeImageDetector } from '../src/ports/mediapipe.js';
+  import { AnalysisRecorder } from '../src/ports/analysisRecorder.js';
+  import { createOverlay } from '../src/ui/overlay.js';
+  import { createLatencyPort } from '../src/ports/latencyPort.js';
+  import { createPlausibility } from '../src/core/plausibility.js';
+  import { Kalman1D } from '../src/core/kalman1d.js';
+  import { computeHandJointAngles, computeBoneRatioId, isCalibrationPose } from '../src/core/handGeometry.js';
+  import { createHandRouter } from '../src/adapters/hand_event_router.mjs';
+
+      const video = document.getElementById('cam');
+  const overlayCanvas = document.getElementById('overlay');
+  const handsOverlay = createOverlay(overlayCanvas);
+  const ctx = document.getElementById('hyst').getContext('2d');
+      const analysis = new AnalysisRecorder(); analysis.start({ sha:'toi-demo', source:'camera' });
+      const metrics = document.getElementById('metrics');
+      // WebAudio: metronome and pinch click
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  const audio = new AudioCtx();
+      function ping(t, { freq=880, dur=0.04, gain=0.18 }={}){
+        const o = audio.createOscillator(); const g = audio.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(freq, t);
+        g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g).connect(audio.destination); o.start(t); o.stop(t + dur);
+      }
+      function startMetronome(bpm=60){
+        const period = 60 / bpm; // seconds
+        let next = audio.currentTime + 0.1; let running = true;
+        function loop(){ if(!running) return; const now = audio.currentTime; while(next < now + 0.2){ ping(next, { freq:1200, dur:0.03, gain:0.14 }); next += period; } requestAnimationFrame(loop); }
+        loop();
+        return () => { running = false; };
+      }
+      let stopMetro = null;
+
+  const byId = id=>document.getElementById(id);
+  const latency = createLatencyPort();
+  // Expose for integration tests
+  window.__latency = latency;
+  const params = Object.fromEntries(new URLSearchParams(location.search));
+  // Apply query params to inputs before core creation
+  if(params.enter){ byId('enter').value = String(params.enter); }
+  if(params.exit){ byId('exit').value = String(params.exit); }
+  if(params.cone){ byId('cone').value = String(params.cone); }
+  if(params.spec!=null){ byId('speculative').checked = params.spec!=='0' && params.spec!=='false'; }
+  if(params.palm!=null){ byId('palmGate').checked = params.palm!=='0' && params.palm!=='false'; }
+  if(params.lookahead){ byId('lookaheadMs').value = String(params.lookahead); }
+  // In mock mode, disable palm gate to avoid requiring palm pose by default
+  if(params.mock && params.palm==null){ const p = byId('palmGate'); if(p) p.checked = false; }
+  function drawHysteresis(norm, enter, exit, gate){
+        // Reuse the app's hysteresis "tube" visualization
+        // (dot in a track with enter/exit markers)
+        import('../src/ui/overlay.js');
+        createOverlay; // no-op to please bundlers
+        // drawHyst(ctx, norm, enter, exit, gate)
+        handsOverlay.drawHyst(ctx, norm, enter, exit, gate);
+      }
+
+      // Start with tuned defaults (can adjust and click Apply)
+      if(!byId('enter').value) byId('enter').value = '0.40';
+      if(!byId('exit').value) byId('exit').value = '0.70';
+      if(!byId('cone').value) byId('cone').value = '25';
+  const core = createPinchCore({ enterThresh:+byId('enter').value, exitThresh:+byId('exit').value, palmConeDeg:+byId('cone').value, palmGate: byId('palmGate').checked, enableSpeculative: byId('speculative').checked, fixedKnuckleSpan: params.mock? 0.1 : null });
+  // Minimal per-hand router (adapter) — safe no-op defaulting all events to P1 until handId is present
+  const handRouter = createHandRouter({ seats: ['P1','P2'], defaultSeat: 'P1' });
+  window.__handRouter = handRouter; // expose for tests/devtools
+  const plaus = createPlausibility({ palmGate: byId('palmGate').checked, palmConeDeg: +byId('cone').value, fixedKnuckleSpan: params.mock? 0.1 : null });
+  const kf = new Kalman1D({ q:1e-3, r:8e-3 });
+  window.__confirmCount = 0;
+  core.on(e=>{
+    // Route to seat bus (does not change existing behavior)
+    try{ handRouter.routePinchEvent(e); }catch{}
+    if(e.type==='pinch:down' && e.toiPredAbsV!=null){ window.__lastPred = e.toiPredAbsV; window.__lastPredAbs = e.toiPredAbsV; window.__everPredicted = true; metrics.textContent = `ETA: ${Math.max(0, Math.round(e.toiPredAbsV - e.t))} ms`; }
+        if(e.type==='pinch:down'){ analysis.event({ t:e.t, type:'down', spec: !!e.speculative, toiPredAbsV:e.toiPredAbsV??null, toiPredAbsA:e.toiPredAbsA??null }); }
+        // Treat a non-speculative down with actual-enter as a confirm-equivalent (implicit confirm)
+        if(e.type==='pinch:down' && e.speculative===false && e.toiActualEnterAbs!=null){
+          window.__confirmCount = (window.__confirmCount||0) + 1;
+          window.__lastActual = e.toiActualEnterAbs;
+          analysis.event({ t:e.t, type:'confirm', toiActualEnterAbs:e.toiActualEnterAbs, toiPredAbsV: window.__lastPredAbs??null });
+          try{ if(audio.state === 'suspended' && audio.resume) audio.resume(); ping(audio.currentTime + 0.01, { freq: 660, dur:0.04, gain:0.2 }); }catch{}
+          setTimeout(()=>{ window.__lastActual = null; }, 800);
+          window.__lastPred=null;
+        }
+        if(e.type==='pinch:confirm' && e.toiActualEnterAbs!=null){
+          window.__confirmCount = (window.__confirmCount||0) + 1;
+          const pred = window.__lastPred; const err = (pred!=null) ? Math.round(e.toiActualEnterAbs - pred) : null;
+      metrics.textContent = err!=null ? `Actual: ${Math.round(e.toiActualEnterAbs - e.t)} ms • Err: ${err} ms` : `Actual: ${Math.round(e.toiActualEnterAbs - e.t)} ms`;
+          // record actual for marker and emit a distinct sound
+          window.__lastActual = e.toiActualEnterAbs;
+          analysis.event({ t:e.t, type:'confirm', toiActualEnterAbs:e.toiActualEnterAbs, toiPredAbsV: window.__lastPredAbs??null });
+          try{ if(audio.state === 'suspended' && audio.resume) audio.resume(); ping(audio.currentTime + 0.01, { freq: 660, dur:0.04, gain:0.2 }); }catch{}
+      setTimeout(()=>{ window.__lastActual = null; }, 800);
+          window.__lastPred=null;
+        }
+        if(e.type==='pinch:up'){ analysis.event({ t:e.t, type:'up' }); }
+        if(e.type==='pinch:cancel'){ analysis.event({ t:e.t, type:'cancel' }); }
+        if(e.type==='pinch:hold'){ analysis.event({ t:e.t, type:'hold', dur:e.dur }); }
+      });
+
+      document.getElementById('apply').onclick = ()=> { core.setConfig({ enterThresh:+byId('enter').value, exitThresh:+byId('exit').value, palmConeDeg:+byId('cone').value, palmGate: byId('palmGate').checked, enableSpeculative: byId('speculative').checked }); latency.setUserOffsetMs(+byId('userOffset').value||0); };
+      document.getElementById('sound').onclick = async ()=>{
+        try{ if(audio.state === 'suspended') await audio.resume(); ping(audio.currentTime + 0.02, { freq: 880, dur:0.05, gain:0.18 }); }catch{}
+        const btn = document.getElementById('sound'); btn.textContent = 'Sound On';
+      };
+      document.getElementById('metronome').onclick = async ()=>{
+        try{ if(audio.state === 'suspended') await audio.resume(); }catch{}
+        const btn = document.getElementById('metronome');
+        if(!stopMetro){ stopMetro = startMetronome(60); btn.textContent = 'Metronome ■'; }
+        else { stopMetro(); stopMetro = null; btn.textContent = 'Metronome ▶︎'; }
+      };
+
+      function onFrameCommon(f, out){
+        // Minimal plausibility check alongside full core
+        const P = plaus.update(f);
+        window.__plausible = P.plausible === true;
+    const { norm, gate, toiPredAbsV } = out;
+    const { x } = kf.step(norm, f.t);
+    const ghostNorm = kf.lookahead(+byId('lookaheadMs').value||0);
+        handsOverlay.clear?.();
+        // If a mediapipe source exists, hands drawing will use its buffer; in mock we skip
+        drawHysteresis(norm, +byId('enter').value, +byId('exit').value, gate);
+    try{ const w=ctx.canvas.width, h=ctx.canvas.height; const gx=Math.max(0,Math.min(1,ghostNorm))*w; ctx.save(); ctx.fillStyle='#7cf3ff'; ctx.beginPath(); ctx.arc(gx, h/2, 3, 0, Math.PI*2); ctx.fill(); ctx.restore(); }catch{}
+        const now = performance.now();
+        const lag = latency.addSample(f.t, now);
+        const schedNow = latency.getEffectiveScheduleNow(now);
+        const band = { nowMs: now, nowAbs: now, predAbs: toiPredAbsV ?? null, schedAbs: schedNow, actualAbs: window.__lastActual ?? null, lagMs: latency.getLagMs(), userOffsetMs: latency.getUserOffsetMs() };
+        handsOverlay.drawTimeMarkers(ctx, band);
+        window.__band = band;
+  analysis.frame({ t:f.t, hand:f.hand, state:'', gate, norm, lag, plausible: P.plausible, ghost: ghostNorm });
+      }
+
+      async function start(){
+        if(params.mock){
+          // Mock driver: synthetic frames sweep norm across threshold for integration tests
+          let t0 = performance.now();
+          function emit(norm){ const t = performance.now(); const kn=0.1; const sm = norm*kn; const cx=0.5, cy=0.5; const f = { t, hand:'Right', indexTip:[cx,cy,0], thumbTip:[cx-sm, cy, 0] };
+            const out = core.update(f); window.__lastPredAbs = out.toiPredAbsV || null; if(out.toiPredAbsV!=null) window.__everPredicted = true; onFrameCommon(f, out); }
+          window.__mockMove = emit;
+          window.__mockPinchSequence = async ()=>{
+            const start = 1.0, end = 0.35, steps=20; for(let i=0;i<=steps;i++){ const n = start + (end-start)*(i/steps); emit(n); await new Promise(r=>setTimeout(r, 12)); }
+          };
+          // idle baseline
+          setInterval(()=> emit(1.0), 100);
+        } else if (params.video && params.process==='frame'){
+          // Deterministic frame-by-frame processing with IMAGE detector
+          video.src = params.video; video.loop = false; video.muted = true; video.playbackRate = 1.0;
+          const wallMs = Number(params.wallMs||30000);
+          let finished = false;
+          function finish(reason){ if(finished) return; finished=true; try{ det?.close && det.close(); }catch{} window.__processingDone = true; window.__processingReason = reason||'ok'; window.__analysisLines = analysis.get(); window.__summary = { confirm: window.__confirmCount||0, reason: window.__processingReason }; }
+          const wallTimer = setTimeout(()=> finish('timeout'), wallMs);
+          // Wait for metadata with timeout or proceed if already ready
+          await new Promise(res=>{
+            if(video.readyState>=1 && isFinite(video.duration||NaN)) return res();
+            const t = setTimeout(()=>{ cleanup(); res(); }, 5000);
+            function cleanup(){ video.onloadedmetadata=null; clearTimeout(t); }
+            video.onloadedmetadata = ()=>{ cleanup(); res(); };
+          });
+          const stepMs = Number(params.stepMs||40);
+          const cv = document.createElement('canvas'); cv.width = video.videoWidth||320; cv.height = video.videoHeight||240; const c2d = cv.getContext('2d');
+          const det = await createMediaPipeImageDetector();
+          const durMs = (video.duration||0)*1000; const startT = 0; const endT = isFinite(durMs) && durMs>0 ? durMs : 8000;
+          for(let t=startT; t<=endT; t+=stepMs){ if(finished) break;
+            // Seek with timeout guard
+            const seekOk = await new Promise(res=>{ let done=false; const to=setTimeout(()=>{ if(done) return; done=true; video.onseeked=null; res(false); }, 2000); video.onseeked = ()=>{ if(done) return; done=true; clearTimeout(to); video.onseeked=null; res(true); }; video.currentTime = t/1000; });
+            if(!seekOk){ finish('seek-timeout'); break; }
+            c2d.drawImage(video, 0, 0, cv.width, cv.height);
+            det.detect(cv, t, (f)=>{ const out = core.update(f); onFrameCommon(f, out); });
+          }
+          clearTimeout(wallTimer);
+          finish('ok');
+        } else if (params.video){
+          // Video file via query param (streaming) with load/play timeouts
+          video.src = params.video;
+          video.loop = true; video.muted = true; video.playbackRate = +(params.rate||1);
+          // Wait for metadata with timeout to avoid hangs
+          await new Promise(res=>{
+            if(video.readyState>=1 && isFinite(video.duration||NaN)) return res();
+            const t = setTimeout(()=>{ cleanup(); res(); }, 5000);
+            function cleanup(){ video.onloadedmetadata=null; clearTimeout(t); }
+            video.onloadedmetadata = ()=>{ cleanup(); res(); };
+          });
+          // Attempt to play, but don't hang if it stalls; configurable via &playMs
+          const playMs = Number(params.playMs||3000);
+          try{
+            await Promise.race([
+              video.play(),
+              new Promise((r)=> setTimeout(r, playMs))
+            ]);
+          }catch{ /* ignore play rejection (e.g., autoplay policies) */ }
+          const mp = createMediaPipeSource(video, f=>{ const out = core.update(f); window.__lastPredAbs = out.toiPredAbsV || null; const hands = mp.getLastLandmarks?.(); handsOverlay.drawHands?.(hands); onFrameCommon(f, out); if(hands && hands[0] && isCalibrationPose(hands[0])){ window.__handId = computeBoneRatioId(hands[0]); } });
+          mp.start();
+        } else {
+          // Default: camera
+          const stream=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' }, audio:false }); video.srcObject=stream; await video.play();
+          const mp = createMediaPipeSource(video, f=>{ const out = core.update(f); window.__lastPredAbs = out.toiPredAbsV || null; const hands = mp.getLastLandmarks?.(); handsOverlay.drawHands?.(hands); onFrameCommon(f, out); if(hands && hands[0] && isCalibrationPose(hands[0])){ window.__handId = computeBoneRatioId(hands[0]); } });
+          mp.start();
+        }
+      }
+      start();
+      window.__getAnalysis = ()=> analysis.get();
+  window.__sawPrediction = ()=> !!window.__everPredicted;
+
+      // Local file input handler
+      document.getElementById('videoFile')?.addEventListener('change', async (ev)=>{
+        const file = ev.target.files && ev.target.files[0]; if(!file) return;
+        const url = URL.createObjectURL(file);
+        params.video = url; // reuse start branch
+        // restart with video source
+        video.srcObject = null; video.src = url; video.loop = true; video.muted = true;
+        // Guard metadata load and play to avoid getting stuck on bad files
+        await new Promise(res=>{
+          if(video.readyState>=1 && isFinite(video.duration||NaN)) return res();
+          const t = setTimeout(()=>{ cleanup(); res(); }, 5000);
+          function cleanup(){ video.onloadedmetadata=null; clearTimeout(t); }
+          video.onloadedmetadata = ()=>{ cleanup(); res(); };
+        });
+        try{
+          await Promise.race([
+            video.play(),
+            new Promise((r)=> setTimeout(r, 3000))
+          ]);
+        }catch{}
+  const mp = createMediaPipeSource(video, f=>{ const out = core.update(f); window.__lastPredAbs = out.toiPredAbsV || null; const hands = mp.getLastLandmarks?.(); onFrameCommon(f, out); if(hands && hands[0] && isCalibrationPose(hands[0])){ window.__handId = computeBoneRatioId(hands[0]); } });
+        mp.start();
+      });
+    </script>
+  </body>
+  </html>

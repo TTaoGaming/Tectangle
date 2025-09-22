@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Google Hand Landmarker (Offline) — iFrame Host</title>
+  <style>
+    html,body{height:100%;margin:0}
+    body{background:#0b0f19}
+    .wrap{position:fixed;inset:0}
+    iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- This hosts the official-style demo as a standalone offline page -->
+    <iframe
+      id="mp-demo"
+      src="./google_hand_demo_offline.html?fs=1"
+      allow="camera; microphone; autoplay; clipboard-read; clipboard-write; fullscreen; display-capture"
+      allowfullscreen
+      referrerpolicy="no-referrer"
+    ></iframe>
+  </div>
+</body>
+</html>

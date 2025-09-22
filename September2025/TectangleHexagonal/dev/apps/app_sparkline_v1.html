@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>App • Sparkline V1</title>
+<link rel="stylesheet" href="../design/m3.tokens.css" />
+<style>
+  html,body{height:100%;margin:0}
+  body{background: var(--m3-surface); color: var(--m3-on-surface); font:12px/1.2 system-ui}
+  .wrap{padding:8px}
+  canvas{width:100%;height:64px;background: color-mix(in oklab, var(--m3-surface) 80%, black 20%);border-radius: var(--m3-radius-sm);border:1px solid var(--m3-outline)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div style="margin-bottom:6px;opacity:.75">Sparkline (placeholder)</div>
+    <canvas id="spark" width="320" height="64"></canvas>
+  </div>
+  <script type="module">
+  import { createBus } from '../../src/overlay/overlay_bus.mjs';
+  const g = document.getElementById('spark').getContext('2d');
+  const bus = createBus('overlay-bus');
+  const W=g.canvas.width, H=g.canvas.height; const maxPoints=W; const seriesP1=[]; const seriesP2=[];
+  function pushSeries(arr, v){ arr.push(v); if(arr.length>maxPoints) arr.shift(); }
+  bus.subscribe('overlay:fsm', data=>{
+    // Expect { P1:{score, primed, armed}, P2:{...} }
+    const p1 = data?.P1?.score ?? 0; const p2 = data?.P2?.score ?? 0;
+    pushSeries(seriesP1, p1); pushSeries(seriesP2, p2);
+  }, { replay:true });
+
+  function draw(){
+    g.clearRect(0,0,W,H);
+    // baseline
+    g.strokeStyle='var(--m3-outline)'; g.beginPath(); g.moveTo(0,H-1); g.lineTo(W,H-1); g.stroke();
+    // P1
+    g.strokeStyle='rgba(99, 102, 241, 1)'; g.beginPath();
+    for(let i=0;i<seriesP1.length;i++){ const y=(H-2)*(1-seriesP1[i]*0.95)+1; if(i===0) g.moveTo(i,y); else g.lineTo(i,y); }
+    g.stroke();
+    // P2
+    g.strokeStyle='rgba(34, 197, 94, 1)'; g.beginPath();
+    for(let i=0;i<seriesP2.length;i++){ const y=(H-2)*(1-seriesP2[i]*0.95)+1; if(i===0) g.moveTo(i,y); else g.lineTo(i,y); }
+    g.stroke();
+    requestAnimationFrame(draw);
+  }
+  draw();
+  </script>
+</body>
+</html>

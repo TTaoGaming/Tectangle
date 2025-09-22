@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Live Pinch → Keyboard Bridge (Human + FSM)</title>
+  <style>
+      :root { --bg:#0b0c0f; --fg:#e5e7eb; --muted:#9ca3af; --panel:#14161a; }
+      html, body { height: 100%; margin: 0; background: var(--bg); color: var(--fg); font-family: system-ui, Segoe UI, Roboto, Arial; }
+      header { display:flex; gap:12px; align-items:center; padding:10px; background: var(--panel); border-bottom: 1px solid #222; flex-wrap: wrap; }
+      header label { display:flex; gap:6px; align-items:center; }
+      header input[type="number"]{ width:80px; }
+      header input[type="text"]{ width:320px; }
+      #hud { margin-left: auto; color: var(--muted); font-size: 12px; }
+      main { display:grid; grid-template-columns: 1fr 1fr; gap:8px; padding:8px; height: calc(100% - 52px); box-sizing: border-box; }
+      #left, #right { display:flex; flex-direction:column; gap:8px; min-height:0; }
+    #view { position: relative; flex:1; min-height:0; background:#000; border-radius: 8px; overflow: hidden; display:none; }
+      #video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform: scaleX(-1); }
+    #overlayLeft { position:absolute; inset:0; width:100%; height:100%; }
+  #right iframe { flex:1; width:100%; border:1px solid #222; border-radius: 8px; background:#111; }
+  #demoView { position:relative; flex:1; min-height:0; }
+  #demoOverlay { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; transform: scaleX(-1); transform-origin:center; }
+      .small { font-size:12px; color: var(--muted); }
+      button, select, input { background:#1f232b; color:var(--fg); border:1px solid #2b2f36; border-radius:6px; padding:6px 10px; }
+      button { cursor:pointer; }
+      .pill { padding:2px 8px; border-radius: 10px; background:#1f232b; }
+  /* Debug badges */
+  #debug { display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:6px 8px; background:#101216; border:1px solid #20242c; border-radius:8px; }
+  .badge { font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid #333; background:#181c22; color:#cbd5e1; }
+  .ok { background:#0f3d1c; border-color:#1f8b3a; color:#c7f9cc; }
+  .warn { background:#3d2a0f; border-color:#8b6a1f; color:#fde68a; }
+  .err { background:#3d0f0f; border-color:#8b1f1f; color:#fecaca; }
+  .muted { opacity:0.7; }
+  /* Virtual key */
+  .vk { display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center; flex:1; border:1px solid #222; border-radius:8px; background:#111; padding:16px; min-height:0; }
+  .vk-key { display:flex; align-items:center; justify-content:center; width:80%; max-width:360px; aspect-ratio:5 / 3; border:2px solid #2b2f36; border-radius:12px; background:#1f232b; color:#e5e7eb; font-size:clamp(24px, 8vw, 64px); font-weight:700; letter-spacing:1px; box-shadow:inset 0 0 0 0 rgba(34,197,94,0); transition: transform .05s ease, background .2s, border-color .2s, box-shadow .2s; }
+  .vk-key.down { background:#0a3; border-color:#2bd07f; box-shadow:0 0 30px rgba(34,197,94,.25), inset 0 8px 20px rgba(0,0,0,.4); transform: translateY(2px); color:#042; }
+  .vk-meta { display:flex; gap:12px; font-size:12px; color:var(--muted); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>Live Pinch → Keyboard</strong>
+      <button id="startBtn">Start Camera</button>
+      <label>Backend
+        <select id="backendSel">
+          <option value="wasm" selected>wasm</option>
+          <option value="webgl">webgl</option>
+          <option value="webgpu">webgpu</option>
+        </select>
+      </label>
+      <label>Res <input id="resW" type="number" value="640"/>×<input id="resH" type="number" value="480"/></label>
+      <label>T_enter <input id="tEnter" type="number" step="0.01" value="0.15"/></label>
+      <label>T_exit <input id="tExit" type="number" step="0.01" value="0.24"/></label>
+      <label>Debounce <input id="debounce" type="number" step="10" value="50"/></label>
+      <label>AnchorHold <input id="anchorHold" type="number" step="50" value="300"/></label>
+      <label><input id="palmGate" type="checkbox" checked/> Palm gate</label>
+      <label>Key <input id="keyName" type="text" value=" "/><span class="small">Space by default</span></label>
+      <div id="hud" class="pill">idle</div>
+    </header>
+    <main>
+      <section id="left">
+        <div id="view">
+          <video id="video" playsinline muted></video>
+          <canvas id="overlayLeft"></canvas>
+        </div>
+        <div id="debug">
+          <span class="badge" id="bCamera">Camera: idle</span>
+          <span class="badge" id="bHuman">Human: idle</span>
+          <span class="badge" id="bDetect">Hands: 0</span>
+          <span class="badge" id="bFSM">State: Open</span>
+          <span class="badge" id="bGate">Gate: -</span>
+          <span class="badge" id="bKey">Key: up</span>
+          <span class="badge" id="bIframe">Viz: idle</span>
+          <span class="badge" id="bFPS">FPS: -</span>
+        </div>
+        <div class="small" id="metrics">state: Open • P: - • gated: - • FPS: -</div>
+        <div class="small" style="display:flex; gap:12px; align-items:center;">
+          <label><input type="checkbox" id="showRaw" checked/> Show raw tips (orange)</label>
+          <span>Smoothed tips colored by FSM</span>
+        </div>
+      </section>
+      <section id="right">
+        <div class="small">Human demo URL</div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input id="humanDemoUrl" type="text" value="https://vladmandic.github.io/human/" />
+          <button id="loadHumanDemo">Load</button>
+          <span class="small">We overlay fingertip dots above the demo</span>
+        </div>
+        <div id="demoView">
+          <iframe id="humanDemo" title="Human Demo"></iframe>
+          <canvas id="demoOverlay"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <script type="module">
+      // Imports: Human and local adapters
+      import Human from 'https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/dist/human.esm.js';
+      import { HumanAdapter } from '../src/adapters/humanAdapter.mjs';
+      import { KeyboardAdapter } from '../src/adapters/keyboardAdapter.mjs';
+      import { MetricsAdapter } from '../src/adapters/metricsAdapter.mjs';
+      
+      // Minimal One Euro filter for 2D coords (kept local for tip smoothing)
+      class OneEuroFilter { constructor({freq=60, minCutoff=1.5, beta=0.03, dCutoff=1}={}){ this.freq=freq; this.minCutoff=minCutoff; this.beta=beta; this.dCutoff=dCutoff; this.xPrev=null; this.dxPrev=0; this.tPrev=null; } alpha(cutoff, dt){ const r=2*Math.PI*cutoff*dt; return r/(r+1); } filter(x, tMs){ if(this.tPrev==null){ this.tPrev=tMs; this.xPrev=x; return x; } const dt=Math.max(1e-6,(tMs-this.tPrev)/1000); const dx=(x-this.xPrev)/dt; const aD=this.alpha(this.dCutoff, dt); const dxHat=aD*dx + (1-aD)*this.dxPrev; const cutoff=this.minCutoff + this.beta*Math.abs(dxHat); const aX=this.alpha(cutoff, dt); const xHat=aX*x + (1-aX)*this.xPrev; this.tPrev=tMs; this.xPrev=xHat; this.dxPrev=dxHat; return xHat; } }
+
+      // Elements
+      const startBtn = document.getElementById('startBtn');
+      const backendSel = document.getElementById('backendSel');
+      const resW = document.getElementById('resW');
+      const resH = document.getElementById('resH');
+      const tEnterEl = document.getElementById('tEnter');
+      const tExitEl = document.getElementById('tExit');
+      const debounceEl = document.getElementById('debounce');
+      const anchorHoldEl = document.getElementById('anchorHold');
+      const palmGateEl = document.getElementById('palmGate');
+      const keyNameEl = document.getElementById('keyName');
+      const hud = document.getElementById('hud');
+  const video = document.getElementById('video');
+  const demoOverlay = document.getElementById('demoOverlay');
+  const dctx = demoOverlay.getContext('2d');
+  const metrics = document.getElementById('metrics');
+  const showRawEl = document.getElementById('showRaw');
+  // Badges
+  const bCamera = document.getElementById('bCamera');
+  const bHuman = document.getElementById('bHuman');
+  const bDetect = document.getElementById('bDetect');
+  const bFSM = document.getElementById('bFSM');
+  const bGate = document.getElementById('bGate');
+  const bKey = document.getElementById('bKey');
+  const bIframe = document.getElementById('bIframe');
+  const bFPS = document.getElementById('bFPS');
+      // Human demo elements
+      const humanDemoUrl = document.getElementById('humanDemoUrl');
+      const loadHumanDemo = document.getElementById('loadHumanDemo');
+      const humanDemo = document.getElementById('humanDemo');
+
+  // Adapters
+  let humanAdapter; let kbAdapter; const metricsAdapter = new MetricsAdapter();
+
+      // FSM states and helpers
+      const State = { Open:'Open', Possible:'Possible', Pinch:'Pinch', Anchored:'Anchored' };
+  const Colors = { Open:'#9ca3af', Possible:'#f59e0b', Pinch:'#0a84ff', Anchored:'#22c55e' };
+  let state = State.Open; let keyDown=false; let possibleStart=0;
+
+      function dist2D(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+      function palmNormal(lm){ const A=lm[0],B=lm[5],C=lm[17]; if(!A||!B||!C) return null; const u={x:B.x-A.x,y:B.y-A.y,z:(B.z||0)-(A.z||0)}; const v={x:C.x-A.x,y:C.y-A.y,z:(C.z||0)-(A.z||0)}; return { x:u.y*v.z-u.z*v.y, y:u.z*v.x-u.x*v.z, z:u.x*v.y-u.y*v.x }; }
+      function pinchP(lm){ const t=lm[4], i=lm[8], i5=lm[5], p17=lm[17]; if(!t||!i||!i5||!p17) return null; const K = dist2D(i5,p17); if(K<=0) return null; return dist2D(t,i)/K; }
+
+      // Smoothers for thumb(4) & index(8) tips
+      const smooth = { 4:{x:new OneEuroFilter(), y:new OneEuroFilter()}, 8:{x:new OneEuroFilter(), y:new OneEuroFilter()} };
+
+      // Keyboard bridge
+  function sendKey(type){ const key = keyNameEl.value || ' '; if(!kbAdapter) return; if(type==='keydown') kbAdapter.keydown(key); else kbAdapter.keyup(key); }
+
+  function setBadge(el, text, level){ el.textContent = text; el.classList.remove('ok','warn','err'); if(level) el.classList.add(level); }
+  // Load human demo
+  loadHumanDemo.addEventListener('click', ()=>{
+    const url = humanDemoUrl.value?.trim();
+    if (!url) return;
+    humanDemo.src = url;
+    setBadge(bIframe, 'Demo: loading', 'warn');
+  });
+  humanDemo.addEventListener('load', ()=>{
+    setBadge(bIframe, 'Demo: loaded', 'ok');
+    // size overlay to match iframe client rect
+    const sizeOverlay = () => {
+      const rect = humanDemo.getBoundingClientRect();
+      const w = Math.floor(rect.width); const h = Math.floor(rect.height);
+      if (w>0 && h>0) { demoOverlay.width = w; demoOverlay.height = h; }
+    };
+    sizeOverlay();
+    // also on window resize
+    window.addEventListener('resize', sizeOverlay);
+    // update adapter size for normalization
+    if (humanAdapter) humanAdapter.setSize({ width: demoOverlay.width, height: demoOverlay.height });
+  });
+  // initial load
+  humanDemo.src = humanDemoUrl.value;
+  setBadge(bIframe, 'Demo: loading', 'warn');
+
+      // Update label when key changes
+      function keyLabelFromValue(v){ if(!v || v===' ') return 'Space'; if(v.length===1) return v.toUpperCase(); return v; }
+      vkKey.textContent = keyLabelFromValue(keyNameEl.value);
+      keyNameEl.addEventListener('input', ()=>{ vkKey.textContent = keyLabelFromValue(keyNameEl.value); });
+
+      // Camera start
+    startBtn.addEventListener('click', async () => {
+      const w = parseInt(resW.value)||640, h=parseInt(resH.value)||480;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width:{ideal:w}, height:{ideal:h}, facingMode:'user' }, audio:false });
+        video.srcObject = stream; await video.play();
+        const setSizes = () => {
+          // demo overlay sized from iframe; if not ready, fallback to camera size
+          if (demoOverlay.width === 0 || demoOverlay.height === 0) {
+            demoOverlay.width = video.videoWidth || w; demoOverlay.height = video.videoHeight || h;
+          }
+        };
+        if (video.readyState >= 2) setSizes(); else video.addEventListener('loadedmetadata', setSizes, { once: true });
+        setBadge(bCamera, 'Camera: on', 'ok');
+
+        humanAdapter = new HumanAdapter(Human, { backend: backendSel.value, modelBasePath: `https://cdn.jsdelivr.net/npm/@vladmandic/human@3.3.6/models`, width: demoOverlay.width, height: demoOverlay.height });
+        await humanAdapter.init(); setBadge(bHuman, 'Human: loaded', 'ok');
+        kbAdapter = new KeyboardAdapter();
+        hud.textContent = `overlay ${demoOverlay.width}×${demoOverlay.height} | backend=${backendSel.value}`;
+        loop();
+      } catch (e) {
+        console.error(e); hud.textContent='camera error'; setBadge(bCamera, 'Camera: error', 'err');
+      }
+    });
+
+      let pinchStart=0;
+      async function loop(){
+        if(!humanAdapter) return;
+        const t0 = performance.now();
+  const { sample, hands } = await humanAdapter.detect(video);
+  dctx.clearRect(0,0,demoOverlay.width, demoOverlay.height);
+        let P=null, gated=false, col=Colors[state];
+        setBadge(bDetect, `Hands: ${hands}`, hands>0? 'ok' : 'warn');
+        if (sample) {
+          const lm = sample.landmarks;
+          const tMs = t0; // use wall clock for filter timing
+          // Smooth tips
+          const tip4 = { x: smooth[4].x.filter(lm[4].x, tMs), y: smooth[4].y.filter(lm[4].y, tMs) };
+          const tip8 = { x: smooth[8].x.filter(lm[8].x, tMs), y: smooth[8].y.filter(lm[8].y, tMs) };
+          P = pinchP(lm);
+          const n = palmNormal(lm);
+          gated = palmGateEl.checked ? (!!n && n.z >= 0) : true;
+
+          // FSM update
+          const Ten = parseFloat(tEnterEl.value), Tex = parseFloat(tExitEl.value), Db = parseInt(debounceEl.value), Ah = parseInt(anchorHoldEl.value);
+          const now = t0;
+          switch(state){
+            case State.Open:
+              if(gated && P !== null && P < Ten){ state = State.Possible; possibleStart = now; }
+              break;
+            case State.Possible:
+              if(!gated || P === null || P > Tex){ state = State.Open; }
+              else if (now - possibleStart >= Db){ state = State.Pinch; pinchStart = now; if(!keyDown){ sendKey('keydown'); keyDown=true; } }
+              break;
+            case State.Pinch:
+              if(!gated || P === null || P > Tex){ state = State.Open; if(keyDown){ sendKey('keyup'); keyDown=false; } }
+              else if (now - pinchStart >= Ah){ state = State.Anchored; }
+              break;
+            case State.Anchored:
+              if(!gated || P === null || P > Tex){ state = State.Open; if(keyDown){ sendKey('keyup'); keyDown=false; } }
+              break;
+          }
+          col = Colors[state];
+
+          // Draw only two smoothed tips, color by state
+          const r = Math.max(8, Math.round(demoOverlay.width/90));
+          const drawDot = (p, fill, stroke)=>{ const x=p.x*demoOverlay.width, y=p.y*demoOverlay.height; dctx.beginPath(); dctx.arc(x,y,r,0,Math.PI*2); dctx.fillStyle=fill; dctx.fill(); if(stroke){ dctx.strokeStyle=stroke; dctx.lineWidth=2; dctx.stroke(); }};
+          if (showRawEl.checked) { drawDot(lm[4], 'rgba(249,115,22,0.6)', 'rgba(255,255,255,0.15)'); drawDot(lm[8], 'rgba(249,115,22,0.6)', 'rgba(255,255,255,0.15)'); }
+          drawDot(tip4, col, 'rgba(255,255,255,0.25)'); drawDot(tip8, col, 'rgba(255,255,255,0.25)');
+          // Optional: draw detected box if present (in pixels)
+          if (sample.boxPx){ dctx.strokeStyle = 'rgba(255,255,255,0.2)'; dctx.lineWidth=2; dctx.strokeRect(sample.boxPx.x, sample.boxPx.y, sample.boxPx.width, sample.boxPx.height); }
+        } else {
+          // hint overlay when no detection
+          dctx.fillStyle = 'rgba(0,0,0,0.35)'; dctx.fillRect(0,0,demoOverlay.width,demoOverlay.height);
+          dctx.fillStyle = '#eab308'; dctx.font = '16px system-ui'; dctx.fillText('No hands detected — ensure good lighting and palm facing camera', 12, 28);
+        }
+
+        // FPS & HUD
+        const { fps } = metricsAdapter.tick();
+        metrics.textContent = `state: ${state} • P: ${P?.toFixed(3) ?? '-'} • gated: ${gated} • FPS: ${fps.toFixed(0)}`;
+        setBadge(bFSM, `State: ${state}`, state==='Open' ? 'muted' : (state==='Possible' ? 'warn' : 'ok'));
+        setBadge(bGate, `Gate: ${gated? 'on':'off'}`, gated? 'ok':'warn');
+        setBadge(bKey, `Key: ${keyDown? 'down':'up'}`, keyDown? 'ok':'muted');
+        setBadge(bFPS, `FPS: ${fps.toFixed(0)}`, fps>=20? 'ok' : (fps>=10? 'warn':'err'));
+
+  // no virtual key; drawing overlay only
+
+        requestAnimationFrame(loop);
+      }
+    </script>
+  </body>
+  </html>

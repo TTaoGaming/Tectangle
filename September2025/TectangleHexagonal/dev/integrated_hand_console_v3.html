@@ -1,0 +1,300 @@
+<!doctype html>
+<!--
+Hand Console V3 (Scaffold)
+Status: ACTIVE (experimental)
+Feature Flag: FEATURE_HAND_CONSOLE_V3
+TTL: 2025-10-07 (remove or graduate)
+Revert: delete this file + unset feature flag; fall back to v2 or min.
+Goals:
+ - Central view-model capturing per-hand signals (pinch, orient, flex, vel) decoupled from rendering.
+ - Parallel P1/P2 panels with hysteresis tubes & wrist vector quick stats.
+ - Modular overlay adapter (re-using min heuristic) + diagnostics global for tests.
+ - Query params: ?clip=... & ?autostart=1 & ?overlay=off (disable overlay for perf test)
+-->
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Integrated Hand Console V3</title>
+<link rel="stylesheet" href="./hexui.css" />
+<style>
+  body { margin:0; background:var(--hex-bg,#0c1117); color:var(--hex-text,#e5e7eb); font:12px system-ui,sans-serif; display:grid; grid-template-columns: 2fr 1fr; height:100vh; }
+  #left { position:relative; }
+  video { width:100%; height:100%; object-fit:cover; background:#000; }
+  canvas { position:absolute; inset:0; pointer-events:none; }
+  #right { display:flex; flex-direction:column; gap:12px; padding:12px; overflow:auto; }
+  h3 { margin:0 0 6px; font-size:13px; text-transform:uppercase; letter-spacing:.5px; opacity:.85; }
+  .panel { background:var(--hex-panel-bg,#131a23); border:1px solid var(--hex-panel-border,#1e2833); border-radius:10px; padding:10px 12px; }
+  .grid { display:grid; grid-template-columns:auto 1fr; gap:2px 8px; font-size:12px; }
+  .badge { padding:2px 6px; border-radius:4px; background:#374151; font-size:11px; }
+  .badge.P1 { background:#2563eb; }
+  .badge.P2 { background:#8b5cf6; }
+  #log { font:11px/1.25 var(--hex-mono,ui-monospace,Menlo,Consolas,monospace); max-height:150px; overflow:auto; background:#0d141c; padding:6px; border-radius:6px; }
+  .tubeWrap { display:flex; align-items:flex-end; gap:8px; }
+  .tube { position:relative; width:50px; height:150px; background:#0d141c; border:1px solid #1f2933; border-radius:8px; display:flex; align-items:flex-end; }
+  .tube-fill { width:100%; border-radius:6px; background:linear-gradient(180deg,#10b981,#2563eb); transform-origin:bottom; height:0%; transition:height .08s linear; }
+  .tube-thresh { position:absolute; left:2px; right:2px; height:2px; background:#fbbf24; opacity:.9; }
+  .tube-thresh.exit { background:#f87171; }
+  .mono { font-family:var(--hex-mono,ui-monospace,Menlo,Consolas,monospace); }
+  .warn { color:#fbbf24; }
+  .err { color:#f87171; }
+  .small { font-size:11px; opacity:.75; }
+  .row { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+</style>
+</head>
+<body>
+  <div id="left">
+    <video id="cam" playsinline muted></video>
+    <canvas id="overlay"></canvas>
+    <div id="bootMsg" style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.55);padding:6px 8px;border-radius:6px;font:12px system-ui,sans-serif;color:#e5e7eb;max-width:220px;line-height:1.3;z-index:10;">Loading…<br><span style="opacity:.7">Waiting for camera or clip</span></div>
+  </div>
+  <div id="right">
+    <div class="panel" id="capturePanel">
+      <h3>Capture</h3>
+      <div class="row">
+        <button id="startCam">Camera</button>
+        <button id="runClip">Clip</button>
+        <select id="clipSel" style="font-size:12px;">
+          <option value="../videos/two_hands_baseline_idle_v1.mp4">Idle</option>
+          <option value="../videos/two_hands_stationary_right_then_left_index_pinch_hold_1s_v1.mp4">Pinch Seq</option>
+        </select>
+        <label class="small"><input type="checkbox" id="flagOverlay" checked/> Overlay</label>
+      </div>
+      <div class="row small mono" id="statusMsg">idle</div>
+    </div>
+
+    <div class="panel" id="seatPanel">
+      <h3>Seats</h3>
+      <div class="mono" id="seatSummary">P1=- | P2=-</div>
+    </div>
+
+    <div class="panel" id="p1Panel">
+      <h3>P1 <span class="badge P1" id="p1Badge">-</span></h3>
+      <div class="tubeWrap">
+        <div class="tube" id="p1Tube">
+          <div class="tube-fill" id="p1Fill"></div>
+          <div class="tube-thresh" id="p1Enter"></div>
+          <div class="tube-thresh exit" id="p1Exit"></div>
+        </div>
+        <div class="grid" id="p1Data"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="p2Panel">
+      <h3>P2 <span class="badge P2" id="p2Badge">-</span></h3>
+      <div class="tubeWrap">
+        <div class="tube" id="p2Tube">
+          <div class="tube-fill" id="p2Fill"></div>
+          <div class="tube-thresh" id="p2Enter"></div>
+          <div class="tube-thresh exit" id="p2Exit"></div>
+        </div>
+        <div class="grid" id="p2Data"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Recent Pinch</h3>
+      <pre id="log"></pre>
+    </div>
+
+    <div class="panel small" id="diagPanel">
+      <h3>Diag</h3>
+      <div id="diagText" class="mono small">frames=0</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createAppShell } from '../src/app/appShell.js';
+    // Activate feature flags
+    globalThis.__flags = Object.assign({}, globalThis.__flags||{}, { FEATURE_HAND_CONSOLE_V3:true, FEATURE_WRIST_ORIENT_V1:true });
+
+    const video = document.getElementById('cam');
+    const overlay = document.getElementById('overlay');
+    const octx = overlay.getContext('2d');
+
+    // View-Model State
+    const vm = {
+      frame: null,
+      seats: { P1:null, P2:null },
+      hands: {}, // handKey -> { pinch, orient, flex, vel }
+      pinchLog: [],
+      frames: 0,
+      errors: [],
+      overlayEnabled: true
+    };
+
+    const shell = createAppShell({});
+    shell.hsm && shell.hsm.on(()=>{});
+
+    // Diagnostics global for tests
+    globalThis.__hexVizDiag = { frames:0, lastHandCount:0, lastDrawMs:0, errors: vm.errors };
+
+    function pushPinchLog(e){
+      vm.pinchLog.push({ t:e.t, type:e.type, seat:e.seat||'', key:e.handKey });
+      if(vm.pinchLog.length>140) vm.pinchLog.splice(0, vm.pinchLog.length-140);
+    }
+
+    shell.onEvent(e => {
+      const hk = e.handKey;
+      if(hk){ vm.hands[hk] = vm.hands[hk] || {}; }
+      if(e.type.startsWith('pinch:')){ vm.hands[hk].pinch = e; pushPinchLog(e); }
+      if(e.type === 'wrist:orientation'){ vm.hands[hk].orient = e; }
+      if(e.type === 'wrist:orientationVel'){ vm.hands[hk].vel = e; }
+      if(e.type === 'finger:index:angles'){ vm.hands[hk].flex = e; }
+      if(e.seat === 'P1' && vm.seats.P1 !== hk) vm.seats.P1 = hk;
+      if(e.seat === 'P2' && vm.seats.P2 !== hk) vm.seats.P2 = hk;
+    });
+
+    function mapHands(frame){
+      let handsRaw=null; try {
+        if(globalThis.__hexLastHands && Array.isArray(globalThis.__hexLastHands)) handsRaw = globalThis.__hexLastHands;
+        else if(frame.landmarks && Array.isArray(frame.landmarks) && frame.landmarks.length && Array.isArray(frame.landmarks[0])) handsRaw=[frame.landmarks];
+      } catch {}
+      return Array.isArray(handsRaw)? handsRaw.filter(h=>Array.isArray(h)&&h.length>=21): [];
+    }
+
+    function handIsLikelyNormalized(hand){
+      let inRange=0; for(const lm of hand){ const x=lm[0], y=lm[1]; if(Math.abs(x)<=1.5 && Math.abs(y)<=1.5) inRange++; }
+      return (inRange/hand.length) >= 0.8;
+    }
+
+    function projectPoint(lm, norm, vw, vh, drawW, drawH, dx, dy){
+      const x=lm[0], y=lm[1];
+      if(norm) return [dx + x*drawW, dy + y*drawH];
+      return [dx + (x/vw)*drawW, dy + (y/vh)*drawH];
+    }
+
+    function drawOverlay(){
+      if(!vm.overlayEnabled) { octx.clearRect(0,0,overlay.width,overlay.height); return; }
+      const st = shell.getState();
+      const frame = st.lastFrame; vm.frame = frame;
+      const dpr = window.devicePixelRatio||1; const cw = overlay.clientWidth; const ch = overlay.clientHeight;
+      if(overlay.width!==cw*dpr || overlay.height!==ch*dpr){ overlay.width=cw*dpr; overlay.height=ch*dpr; octx.setTransform(1,0,0,1,0,0); octx.scale(dpr,dpr); }
+      octx.clearRect(0,0,cw,ch);
+      if(!frame) return; // bootMsg handles user guidance
+      const vw = video.videoWidth||cw, vh = video.videoHeight||ch;
+      const coverScale = Math.max(cw/vw, ch/vh); const drawW=vw*coverScale, drawH=vh*coverScale; const dx=(cw-drawW)/2, dy=(ch-drawH)/2;
+      const hands = mapHands(frame); vm.lastHandCount = hands.length; globalThis.__hexVizDiag.lastHandCount = hands.length;
+      const norms = hands.map(handIsLikelyNormalized);
+      hands.forEach((hand,i)=>{
+        const seatColor = (i===0 && vm.seats.P1)? '#2563eb' : (i===1 && vm.seats.P2)? '#8b5cf6' : (i===0?'#10b981':'#f59e0b');
+        const norm = norms[i];
+        hand.forEach((lm,idx)=>{
+          const [sx,sy] = projectPoint(lm,norm,vw,vh,drawW,drawH,dx,dy);
+          octx.beginPath(); const r=(idx===4||idx===8)?4:2.1; octx.fillStyle=(idx===4||idx===8)?'#ffffff':seatColor; octx.arc(sx,sy,r,0,Math.PI*2); octx.fill();
+        });
+      });
+    }
+
+    function fmt(n,d=1){ return (n==null||!isFinite(n))?'-':(+n).toFixed(d); }
+
+    function fillSeat(elPrefix, handKey){
+      const dataEl = document.getElementById(elPrefix+'Data');
+      dataEl.innerHTML='';
+      if(!handKey){ dataEl.innerHTML='<span style="opacity:.6">Unassigned</span>'; return; }
+      const h = vm.hands[handKey]; if(!h){ dataEl.innerHTML='<span class="warn">No data</span>'; return; }
+      const pinch = h.pinch, orient = h.orient, flex = h.flex, vel=h.vel;
+      const rows=[];
+      if(pinch){ rows.push(['Pinch', pinch.type.replace('pinch:','')]); rows.push(['Gap', fmt(pinch.normalizedGap??pinch.norm,3)]); if(pinch.thresholds){ rows.push(['Enter/Exit', fmt(pinch.thresholds.enter,2)+'/'+fmt(pinch.thresholds.exit,2)]); } }
+      if(orient){ rows.push(['OrientRaw', fmt(orient.angleDeg,1)+'°']); rows.push(['Smooth', fmt(orient.smoothAngleDeg,1)+'°']); rows.push(['Bucket', orient.bucket]); }
+      if(vel){ rows.push(['Vel', fmt(vel.velDegPerSec,0)+'°/s']); }
+      if(flex){ rows.push(['Index MCP/PIP/DIP', `${fmt(flex.mcpDeg,0)}/${fmt(flex.pipDeg,0)}/${fmt(flex.dipDeg,0)}`]); }
+      if(!rows.length) rows.push(['(no signals)','']);
+      rows.forEach(r=>{ const k=document.createElement('div'); k.textContent=r[0]; const v=document.createElement('div'); v.textContent=r[1]; dataEl.appendChild(k); dataEl.appendChild(v); });
+    }
+
+    function updateHysteresis(seat){
+      const badge = document.getElementById(seat.toLowerCase()+'Badge');
+      const fill = document.getElementById(seat.toLowerCase()+'Fill');
+      const enterLine = document.getElementById(seat.toLowerCase()+'Enter');
+      const exitLine = document.getElementById(seat.toLowerCase()+'Exit');
+      const tube = document.getElementById(seat.toLowerCase()+'Tube');
+      const hk = vm.seats[seat]; badge.textContent = hk||'-';
+      if(!hk){ fill.style.height='0%'; enterLine.style.display='none'; exitLine.style.display='none'; return; }
+      const pinch = vm.hands[hk]?.pinch;
+      if(!pinch){ fill.style.height='0%'; enterLine.style.display='none'; exitLine.style.display='none'; return; }
+      // normalized gap expected: lower => closer fingers
+      const gap = pinch.normalizedGap ?? pinch.norm ?? 1;
+      const hPct = Math.max(0, Math.min(1, 1-gap))*100; // invert so closed pinch fills up
+      fill.style.height = hPct.toFixed(1)+'%';
+      if(pinch.thresholds){
+        enterLine.style.display='block'; exitLine.style.display='block';
+        const enterY = (1 - (1 - pinch.thresholds.enter))*100; // mapping align with fill reference
+        const exitY = (1 - (1 - pinch.thresholds.exit))*100;
+        enterLine.style.top = (100-enterY)+'%';
+        exitLine.style.top = (100-exitY)+'%';
+      } else { enterLine.style.display='none'; exitLine.style.display='none'; }
+    }
+
+    function render(){
+      try { drawOverlay(); } catch(err){ if(vm.errors.length<5){ console.warn('overlay error', err); } vm.errors.push(String(err&&err.message||err)); }
+      document.getElementById('seatSummary').textContent = `P1=${vm.seats.P1||'-'} | P2=${vm.seats.P2||'-'}`;
+      fillSeat('p1', vm.seats.P1); fillSeat('p2', vm.seats.P2);
+      updateHysteresis('P1'); updateHysteresis('P2');
+      document.getElementById('log').textContent = vm.pinchLog.slice(-80).map(e=>`${e.t} ${e.type} ${e.seat} ${e.key}`).join('\n');
+      vm.frames++; globalThis.__hexVizDiag.frames = vm.frames;
+      const vReady = video.readyState; const vW = video.videoWidth; const vH = video.videoHeight;
+      document.getElementById('diagText').textContent = `frames=${vm.frames} hands=${globalThis.__hexVizDiag.lastHandCount} vReady=${vReady} v=${vW}x${vH}`;
+      // Boot guidance visibility
+      const boot = document.getElementById('bootMsg');
+      if(boot){
+        if(vm.frames>25 || globalThis.__hexVizDiag.lastHandCount>0 || vReady>=2){ boot.style.display='none'; }
+        else { boot.innerHTML = 'Idle – no frames yet.<br><span style="opacity:.7">Click Camera or Clip to start. (Auto idle soon)</span>'; }
+      }
+    }
+
+    function loop(){ render(); requestAnimationFrame(loop); }
+    loop();
+
+    async function runClip(){
+      const url = document.getElementById('clipSel').value; try { await shell.startVideoUrl(video,url); document.getElementById('statusMsg').textContent='clip:'+url; } catch(e){ document.getElementById('statusMsg').textContent='ERR clip'; }
+    }
+    document.getElementById('startCam').onclick = async()=>{ try { await shell.startCamera(video); document.getElementById('statusMsg').textContent='camera'; } catch(e){ document.getElementById('statusMsg').textContent='ERR cam'; } };
+    document.getElementById('runClip').onclick = runClip;
+    document.getElementById('flagOverlay').addEventListener('change', e=>{ vm.overlayEnabled = e.target.checked; });
+
+    // Query params
+    (function(){
+      const Q=new URLSearchParams(location.search);
+      const qpClip=Q.get('clip');
+      const auto=Q.get('autostart')==='1'||Q.get('auto')==='1';
+      const noauto=Q.get('noauto')==='1';
+      const nocam=Q.get('nocam')==='1'; // skip camera attempt
+      const overlayQ=Q.get('overlay');
+      if(overlayQ==='off'){ vm.overlayEnabled=false; document.getElementById('flagOverlay').checked=false; }
+
+      function normalizeClip(path){
+        if(!path.startsWith('/')){
+          if(path.startsWith('September2025/')) path='/'+path; else if(!path.startsWith('..')){ if(!path.startsWith('videos/')) path='videos/'+path; path='../'+path; }
+        }
+        return path;
+      }
+
+      async function tryCameraThenFallback(){
+        try {
+          await shell.startCamera(video);
+          document.getElementById('statusMsg').textContent='camera';
+        } catch(err){
+          console.warn('[v3] camera autostart failed, fallback clip', err);
+          runClip();
+        }
+      }
+
+      if(qpClip){
+        const clip=normalizeClip(qpClip.trim());
+        const sel=document.getElementById('clipSel'); let matched=false; for(const o of sel.options){ if(o.value===clip){ matched=true; sel.value=clip; break; } }
+        if(!matched){ const o=document.createElement('option'); o.value=clip; o.textContent='Query Clip'; sel.appendChild(o); sel.value=clip; }
+        if(auto){ setTimeout(runClip,140); }
+        else if(!noauto && !nocam){ // prefer camera if autostart not explicitly requested
+          setTimeout(tryCameraThenFallback,300);
+        }
+      } else if(auto){
+        // explicit autostart: prefer camera first unless ?nocam=1
+        if(!nocam) setTimeout(tryCameraThenFallback,140); else setTimeout(runClip,140);
+      } else if(!noauto){
+        // default: attempt camera, fallback to idle clip
+        if(!nocam) setTimeout(tryCameraThenFallback,300); else setTimeout(runClip,500);
+      }
+    })();
+  </script>
+</body>
+</html>

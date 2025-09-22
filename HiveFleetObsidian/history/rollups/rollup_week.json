@@ -1,0 +1,38 @@
+{
+  "span": "week",
+  "totalEvents": 56,
+  "distinctSnapshots": 6,
+  "newestTs": "2025-09-13T22:39:50.691Z",
+  "oldestTs": "2025-09-11T17:55:47.565Z",
+  "topSnapshots": [
+    {
+      "snapshot": "heartbeat",
+      "count": 48
+    },
+    {
+      "snapshot": "Orchestrator turn generated (counsel + chat)",
+      "count": 2
+    },
+    {
+      "snapshot": "turn_heartbeat",
+      "count": 2
+    },
+    {
+      "snapshot": "chat_turn",
+      "count": 2
+    },
+    {
+      "snapshot": "board_stale",
+      "count": 1
+    }
+  ],
+  "sampleLessons": [
+    "Ensure champion voices present; turn shape; glossary; frozen pass",
+    "Ensure champion voices present; turn shape; glossary; frozen pass",
+    "Ensure champion voices present; turn shape; glossary; frozen pass",
+    "Ensure champion voices present; turn shape; glossary; frozen pass",
+    "Ensure champion voices present; turn shape; glossary; frozen pass",
+    "Ensure champion voices present; turn shape; glossary; frozen pass",
+    "Ensure champion voices present; turn shape; glossary; frozen pass"
+  ]
+}

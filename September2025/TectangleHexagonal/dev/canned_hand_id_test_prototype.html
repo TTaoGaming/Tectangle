@@ -1,0 +1,120 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/e2e/hand_id_lab.test.js
+  - [ ] tests/e2e/hand_id_no_pinch_crossover.test.js
+  - [ ] tests/unit/handSessionManager.test.mjs
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Tectangle • Canned Hand ID Test Prototype (T1)</title>
+<style>
+  :root { --bg:#0b0d10; --fg:#e7edf3; --muted:#9fb3c8; --h1:#ff7ab6; --h2:#ffd479; --panel:#0c1117; }
+  *{ box-sizing:border-box; } body{ margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial,sans-serif; }
+  header{ padding:12px 16px; border-bottom:1px solid #1a222c; background:#0f141a; position:sticky; top:0; z-index:10; }
+  h2{ margin:0; font-size:16px; }
+  .row{ display:flex; flex-wrap:wrap; gap:12px; padding:12px 16px; }
+  .col{ flex:1 1 480px; min-width:320px; }
+  video, canvas{ width:100%; aspect-ratio:16/9; background:#000; border:1px solid #1a222c; border-radius:12px; display:block; }
+  .panel{ background:var(--panel); border:1px solid #1a222c; border-radius:10px; padding:12px; }
+  .kv{ display:grid; grid-template-columns: 1fr auto; gap:6px 10px; align-items:center; }
+  button{ cursor:pointer; background:#1c2733; color:var(--fg); border:1px solid #2a3949; padding:6px 12px; border-radius:6px; }
+  button:hover{ background:#223240; }
+  .idBadge{ position:absolute; transform:translate(-50%, -50%); background:rgba(0,0,0,0.55); padding:2px 6px; border-radius:6px; font-size:12px; font-weight:600; letter-spacing:0.5px; }
+  .layer{ position:relative; }
+</style>
+</head>
+<body>
+  <header>
+    <h2>Canned Hand ID Test Prototype <small style="color:var(--muted); font-weight:400;">(Persistent IDs across occlusion & frame exit) WEBWAY:ww-2025-001</small></h2>
+  </header>
+  <div class="row">
+    <div class="col layer">
+      <iframe id="base" src="index.html?noauto=1" style="width:100%; aspect-ratio:16/9; border:1px solid #1a222c; border-radius:12px; background:#000;"></iframe>
+    </div>
+    <div class="col layer">
+      <canvas id="overlay" width="960" height="540" style="width:100%; aspect-ratio:16/9; border:1px solid #1a222c; border-radius:12px; background:#000;"></canvas>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col panel">
+      <div class="kv">
+        <div>Feature Flag</div><div><label><input type="checkbox" id="flag" checked> T1 Enabled</label></div>
+        <div><button id="startCam">Start Camera (iframe)</button></div><div></div>
+        <div><button id="loadVideo">Load MP4 (iframe)</button><input type="file" id="videoFile" accept="video/*" style="display:none"></div><div></div>
+        <div><button id="resetStats">Reset Stats</button></div><div></div>
+        <div>Frames</div><div id="frames">0</div>
+        <div>Teleports</div><div id="teleports">0</div>
+        <div>Reassigns</div><div id="reassigns">0</div>
+  <div>Alive</div><div id="alive">0</div>
+  <div>dupSeatFixes</div><div id="dupSeatFixes">0</div>
+  <div style="grid-column:1 / span 2; margin-top:6px; font-weight:600;">Continuity</div>
+  <div>H1</div><div id="h1Cont" style="min-width:120px"></div>
+  <div>H2</div><div id="h2Cont" style="min-width:120px"></div>
+      </div>
+      <p class="stat" style="color:var(--muted); margin-top:12px;">Left iframe = canonical pinch pipeline. Right = overlay tracker reading canned landmarks seam (<code>__hexLastHands</code>). Goal: stable H1/H2 even with occlusion & leave/return.</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createHandTrackerT1 } from '../src/ports/handTrackerT1.js';
+    const iframe = document.getElementById('base');
+    const canvas = document.getElementById('overlay');
+    const ctx = canvas.getContext('2d');
+  const ui = { frames:byId('frames'), teleports:byId('teleports'), reassigns:byId('reassigns'), alive:byId('alive'), dupSeatFixes:byId('dupSeatFixes'), h1Cont:byId('h1Cont'), h2Cont:byId('h2Cont') };
+    function byId(id){ return document.getElementById(id); }
+    let tracker = createHandTrackerT1();
+    function resetStats(){ tracker.reset(); render(); }
+    function poll(){
+      const w = iframe.contentWindow; if(!w) return;
+      const hands = (w.__hexLastHands||[]); // array of [ [x,y,z], ...21 ] per hand
+      const dets = hands.map(lm => ({ wrist:[lm[0][0], lm[0][1]], landmarks: lm }));
+      const t = performance.now();
+      const anns = tracker.assign(dets, t);
+      draw(anns);
+      updateStats();
+    }
+    function draw(anns){
+      if(!anns) return; resize(); ctx.clearRect(0,0,canvas.width,canvas.height);
+      for(let i=0;i<anns.length;i++){
+        const a=anns[i]; const lm = (iframe.contentWindow.__hexLastHands?.[i])||[];
+        ctx.fillStyle = a.hand==='Left'? '#93d977':'#82d4ff';
+        for(const p of lm){ const x=p[0]*canvas.width, y=p[1]*canvas.height; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); }
+        if(a.handId){ const x=lm[0][0]*canvas.width, y=lm[0][1]*canvas.height; ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(x-40,y-18,80,16); ctx.fillStyle=a.handId==='H1'? '#ff7ab6':'#ffd479'; ctx.font='12px system-ui'; ctx.fillText(`${a.handId}/${a.controllerId}`, x-34, y-6); }
+      }
+    }
+    function resize(){ const v = iframe.contentDocument?.querySelector('video#cam'); if(v){ canvas.width=v.videoWidth||960; canvas.height=v.videoHeight||540; } }
+    function barHTML(val,max){ const pct = max? (val/max*100):0; const cl = pct>75? '#5ad67d': pct>40? '#d6c75a':'#d67d5a'; return `<div style="background:#1c2733; height:10px; width:120px; position:relative; border:1px solid #2a3949; border-radius:4px;">`+
+      `<div style="position:absolute; left:0; top:0; bottom:0; width:${pct}%; background:${cl}; border-radius:3px"></div>`+
+      `<span style="position:absolute; left:4px; top:-2px; font-size:10px; color:#ccc;">${Math.round(val)}</span>`+
+      `</div>`; }
+    function updateStats(){ const s = tracker.getStats(); ui.frames.textContent=s.frames; ui.teleports.textContent=s.teleports; ui.reassigns.textContent=s.reassigns; ui.alive.textContent=s.alive; ui.dupSeatFixes.textContent=s.dupSeatFixes; 
+      let h1=null, h2=null; for(const tr of s.tracks){ if(tr.id==='H1') h1=tr; else if(tr.id==='H2') h2=tr; }
+      ui.h1Cont.innerHTML = h1? barHTML(h1.continuity, 100): '';
+      ui.h2Cont.innerHTML = h2? barHTML(h2.continuity, 100): '';
+    }
+    function startCam(){ const w=iframe.contentWindow; if(!w) return; w.document.getElementById('startStop').checked=true; w.document.getElementById('startStop').dispatchEvent(new Event('change')); tracker.reset(); }
+    async function startVideoFile(file){ const url = URL.createObjectURL(file); await startVideoUrl(url); }
+    async function startVideoUrl(url){ const w=iframe.contentWindow; if(!w) return; const input=w.document.getElementById('videoFile'); if(input){ input.value=''; } const btn=w.document.getElementById('loadVideo'); if(btn){ btn.click(); setTimeout(()=>{ const i=w.document.getElementById('videoFile'); if(i){ /* user interaction required for file; fallback unsupported automatically */ } }, 300);} }
+    function loop(){ poll(); requestAnimationFrame(loop); }
+    loop();
+    // UI
+    byId('startCam').addEventListener('click', startCam);
+    const btn = byId('loadVideo'); const input = byId('videoFile'); btn.addEventListener('click', ()=> input.click()); input.addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f) startVideoFile(f); });
+    byId('resetStats').addEventListener('click', resetStats);
+    byId('flag').addEventListener('change', e=> { /* future: hook into upstream flag */ });
+    window.__hex = { getTrackerStats: ()=> tracker.getStats(), resetStats, startCam };
+  </script>
+</body>
+</html>

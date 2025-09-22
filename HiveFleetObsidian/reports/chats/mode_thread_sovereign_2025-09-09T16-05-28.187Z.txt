@@ -1,0 +1,7 @@
+TTao: Prompt: Hello. Let's keep it green and simple.
+Thread Sovereign: I cut indecision; we move one safe step.
+Thread Sovereign: Small, safe cut: Daily health + one reversible improvement OODA
+Thread Sovereign: Small, safe cut: Final: Daily health + one reversible improvement Ship only if frozen stays green.
+TTao: Acknowledged. Next: npm run hive:daily
+Silk Scribe: Logged chat | mode: Thread Sovereign
+Help: Controls - tone=casual|formal, rounds=1|2, --intro, seed=<text>. Edit BOARD.current.txt to steer.

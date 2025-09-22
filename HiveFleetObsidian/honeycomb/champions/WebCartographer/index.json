@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2025-09-22T19:00:02.966Z",
+  "canonical": {
+    "path": "September2025/Tectangle/docs/DevReadme.md",
+    "title": "DEV_README — September Tectangle (canonical)",
+    "snippet": "Clear 5-step non-coder workflow, an AI playbook, and three standardization options.",
+    "mtime": "2025-09-22T16:25:48.768Z",
+    "mtimeMs": 1758558348768.936
+  },
+  "items": [
+    {
+      "path": "September2025/Tectangle/docs/DevReadme.md",
+      "title": "DEV_README — September Tectangle (canonical)",
+      "snippet": "Clear 5-step non-coder workflow, an AI playbook, and three standardization options.",
+      "mtime": "2025-09-22T16:25:48.768Z",
+      "mtimeMs": 1758558348768.936
+    },
+    {
+      "path": "September2025/PinchFSM/docs/README-vendor-mediapipe.md",
+      "title": "Vendoring MediaPipe assets",
+      "snippet": "# Vendoring MediaPipe assets",
+      "mtime": "2025-09-22T04:48:39.016Z",
+      "mtimeMs": 1758516519016.1292
+    }
+  ]
+}

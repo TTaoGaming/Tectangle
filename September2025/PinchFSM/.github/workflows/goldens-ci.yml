@@ -1,0 +1,65 @@
+name: Goldens CI (Subproject)
+
+on:
+  push:
+    paths:
+      - 'September2025/PinchFSM/**'
+  pull_request:
+    paths:
+      - 'September2025/PinchFSM/**'
+
+concurrency:
+  group: pinchfsm-sub-goldens-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: September2025/PinchFSM
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: September2025/PinchFSM/package.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify prerequisites
+        run: npm run verify
+
+      - name: Generate goldens (JSONL)
+        run: npm run human:extract
+        env:
+          PUPPETEER_PRODUCT: chrome
+          PUPPETEER_SKIP_DOWNLOAD: 'false'
+
+      - name: Run tests
+        run: npm test --silent
+
+      - name: Verify against frozen manifest (if present)
+        run: |
+          if [ -f data/goldens/manifest.current.json ]; then npm run goldens:verifyFrozen; else echo "No frozen manifest; skipping"; fi
+
+      - name: Summarize goldens
+        if: always()
+        run: |
+          echo "Listing data/goldens"; ls -1 data/goldens || true
+          if [ -f data/goldens/manifest.current.json ]; then echo "Manifest:"; cat data/goldens/manifest.current.json; fi
+
+      - name: Upload goldens artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: subproject-goldens-jsonl
+          path: |
+            September2025/PinchFSM/data/goldens/**/*.jsonl
+            September2025/PinchFSM/data/goldens/manifest*.json
+            September2025/PinchFSM/http-server-*.log

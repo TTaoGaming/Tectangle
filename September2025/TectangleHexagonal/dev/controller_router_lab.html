@@ -1,0 +1,223 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/e2e/controller_router_lockin.test.js
+  - [ ] tests/e2e/p1p2_lockin.test.cjs
+  - [ ] tests/unit/controllerRouterCore.test.mjs
+  - [ ] tests/unit/controllerRouterCore.concurrent.test.mjs
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Controller Router Lab — Tier‑1 Physics</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 16px; background:#0b0e12; color:#e6ecf1; }
+    header { margin-bottom: 12px; }
+    .row { display:flex; gap:16px; align-items: center; flex-wrap: wrap; }
+    label { font-size: 12px; opacity: 0.85; }
+    input[type=number] { width: 64px; background:#121820; color:#e6ecf1; border:1px solid #223; border-radius:4px; padding:2px 6px; }
+    input[type=checkbox] { transform: translateY(1px); }
+    button { background:#1b2735; color:#e6ecf1; border:1px solid #2a3a4f; border-radius:6px; padding:8px 12px; cursor:pointer; }
+    button:hover { background:#223649; }
+    .grid { display:grid; grid-template-columns: 1fr 320px; gap:16px; align-items:start; }
+    .card { border:1px solid #223; border-radius:8px; padding:12px; background:#0f141b; }
+    #events { height:240px; overflow:auto; font-family: ui-monospace, Menlo, Consolas, monospace; font-size:12px; background:#0b0f15; border:1px solid #223; border-radius:6px; padding:8px; }
+    .caps { font-variant: all-small-caps; letter-spacing: .04em; opacity: .9; }
+    .ok { color:#7ae07a; }
+    .warn { color:#ffd479; }
+    .dim { opacity:.7; }
+    canvas { background: transparent; }
+    .hud-row { display:flex; gap:12px; align-items:center; flex-wrap: wrap; }
+    .small { font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>Controller Router Lab <span class="dim">— Tier‑1 Physics‑first</span></h2>
+    <div class="small dim">Goal: First gate‑passing pinch locks P1, second locks P2. Hands shouldn’t cross; keep wrists apart; palms toward camera.</div>
+  </header>
+
+  <div class="row" style="margin-bottom:12px;">
+    <label>Clip URL:
+      <input id="clip" type="text" size="100" value="September2025/TectangleHexagonal/videos/two_hands_stationary_right_then_left_index_pinch_hold_1s_v1.mp4" />
+    </label>
+    <button id="run">Run clip</button>
+    <button id="reset">Reset (P‑slots)</button>
+    <span class="caps dim">status:</span> <span id="status" class="warn">idle</span>
+  </div>
+
+  <div class="row hud-row" style="margin-bottom:10px;">
+    <label>enter <input id="enter" type="number" step="0.01" value="0.40" /></label>
+    <label>exit <input id="exit" type="number" step="0.01" value="0.70" /></label>
+    <label>cone° <input id="cone" type="number" step="1" value="30" /></label>
+    <label><input id="palmGate" type="checkbox" checked /> palmGate</label>
+    <label><input id="speculative" type="checkbox" checked /> speculative</label>
+    <label>minCut <input id="minCutoff" type="number" step="0.1" value="2.2" /></label>
+    <label>beta <input id="beta" type="number" step="0.01" value="0.04" /></label>
+    <label>dCut <input id="dCutoff" type="number" step="0.1" value="1.2" /></label>
+    <label class="dim"><input id="beep" type="checkbox" /> beep</label>
+    <label class="dim"><input id="midi" type="checkbox" /> midi</label>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="row" style="gap:8px;">
+        <video id="cam" playsinline muted style="width: 100%; max-width: 640px; background:#000;" crossorigin="anonymous"></video>
+        <canvas id="overlay" width="640" height="360" style="position:relative; width: 100%; max-width:640px; height:auto;"></canvas>
+        <div id="badges" style="position:absolute; pointer-events:none; transform: translate(12px,12px);"></div>
+      </div>
+      <div class="row small dim" style="margin-top:6px;">
+        <canvas id="r_hyst" width="320" height="72"></canvas>
+        <canvas id="l_hyst" width="320" height="72"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="caps dim">events</div>
+      <div id="events"></div>
+      <div class="caps dim" style="margin-top:10px;">controller state</div>
+      <pre id="state" class="small" style="margin:0; white-space: pre-wrap;"></pre>
+    </div>
+  </div>
+
+  <script type="module">
+    import { startVideoUrl, stop, applyConfigToCores } from '../src/app/main.js';
+
+    const byId = (id)=> document.getElementById(id);
+    const logEl = byId('events');
+    const stateEl = byId('state');
+    const statusEl = byId('status');
+
+    function log(line){
+      const ts = new Date().toISOString().slice(11,23);
+      const s = `[${ts}] ${line}`;
+      const div = document.createElement('div');
+      div.textContent = s;
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function showState(){
+      try{
+        const st = window.__controller?.getState?.();
+        stateEl.textContent = st ? JSON.stringify(st, null, 2) : '(no controller state)';
+        // Draw simple badges for seats
+        const b = document.getElementById('badges'); if(b){ b.innerHTML = ''; if(st){
+          const map = new Map(st.map);
+          for(const [key, seat] of map.entries()){
+            const div = document.createElement('div');
+            div.textContent = seat;
+            div.style.display='inline-block'; div.style.marginRight='8px'; div.style.padding='2px 6px';
+            div.style.background = seat==='P1' ? '#1e3a8a' : (seat==='P2' ? '#166534' : '#6b21a8');
+            div.style.color='#fff'; div.style.borderRadius='10px'; div.style.fontSize='12px';
+            b.appendChild(div);
+          }
+        } }
+      }catch{ stateEl.textContent = '(state unavailable)'; }
+    }
+
+    // Listen for pinch key posts from app (down/up) and show controllerId
+    window.addEventListener('message', (ev)=>{
+      try{
+        const d = ev.data || {};
+        if(d && d.source === 'hex' && d.type === 'pinch-key'){
+          log(`${d.action.toUpperCase()} key=${d.key} hand? controller=${d.controllerId ?? 'null'}`);
+          showState();
+        }
+      }catch{}
+    });
+
+    function normalizeClipPath(url){
+      if(!url) return url;
+      // If starts with '/' keep; if starts with 'September2025/' leave; otherwise assume already relative in served root
+      let clip = url.trim().replace(/^\.\//,'');
+      if(!clip.startsWith('/')){
+        if(clip.startsWith('September2025/')){
+          clip = '/' + clip; // ensure absolute so we don't duplicate dev/ segment
+        }
+      }
+      return clip;
+    }
+
+    async function runClip(url){
+      try{
+        url = normalizeClipPath(url);
+      } catch(e){
+        console.warn('Error normalizing clip path', e);
+        throw e;
+      }
+      statusEl.textContent = 'running'; statusEl.className = 'ok';
+      // Apply any parameter tweaks
+      applyConfigToCores?.();
+      try{
+        // Ensure clean state
+        try{ window.__controller?.reset?.(); }catch{}
+        try{ stop?.(); }catch{}
+        // Start pipeline with metadata and MP readiness gating inside startVideoUrl
+        try{
+          await startVideoUrl(url);
+        } catch(e){
+          // Fallback: if not absolute already, retry with leading slash
+          if(!url.startsWith('/')){
+            const abs = '/' + url.replace(/^\/+/,'');
+            try { await startVideoUrl(abs); } catch(err2){ console.warn('Fallback absolute load failed', abs, err2); throw e; }
+          } else { throw e; }
+        }
+        // Double-check run-state for harnesses
+        const waitReady = async ()=>{
+          const started = (window.__hexRunState && window.__hexRunState.mpStarted);
+          if(started) return;
+          await new Promise(r=> setTimeout(r, 50));
+          return waitReady();
+        };
+        await waitReady();
+        log(`Started video: ${url}`);
+      }catch(e){
+        statusEl.textContent = 'error'; statusEl.className = 'warn';
+        log(`ERROR starting video: ${e?.message||e}`);
+      }
+    }
+
+    byId('run').addEventListener('click', async ()=>{
+      const url = byId('clip').value.trim();
+      // Reset before a new run
+      try{ window.__controller?.reset?.(); }catch{}
+      try{ stop?.(); }catch{}
+      logEl.textContent = '';
+      showState();
+      await runClip(url);
+      try{ window.__hexReady = true; }catch{}
+    });
+
+    byId('reset').addEventListener('click', ()=>{
+      try{ window.__controller?.reset?.(); }catch{}
+      try{ stop?.(); }catch{}
+      showState();
+      statusEl.textContent = 'idle'; statusEl.className = 'warn';
+      log('Reset controller mapping and stopped');
+    });
+
+    // Auto-run wiring: support both ?clip= and ?src=, and auto flags (?auto=1 or ?noauto=0)
+    const Q = new URLSearchParams(location.search);
+  const qpClip = Q.get('clip') || Q.get('src');
+  if(qpClip){ byId('clip').value = qpClip; }
+  // Optional thresholds & flags via query params: ?enter=&exit=&palmGate=0|1
+  const qpEnter = Q.get('enter'); if(qpEnter) { const v = parseFloat(qpEnter); if(!isNaN(v)) byId('enter').value = v.toFixed(2); }
+  const qpExit = Q.get('exit'); if(qpExit) { const v = parseFloat(qpExit); if(!isNaN(v)) byId('exit').value = v.toFixed(2); }
+  const qpPalm = Q.get('palmGate'); if(qpPalm==='0'||qpPalm==='false'){ byId('palmGate').checked = false; }
+  const shouldAuto = (Q.get('auto') === '1') || (Q.get('noauto') === '0');
+    if(shouldAuto){
+      setTimeout(()=> byId('run').click(), 150);
+    }
+  </script>
+</body>
+</html>

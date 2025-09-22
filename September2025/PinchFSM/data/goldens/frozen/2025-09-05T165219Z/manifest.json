@@ -1,0 +1,40 @@
+{
+  "kind": "pinchfsm-goldens-manifest",
+  "version": 1,
+  "createdAt": "2025-09-05T16:52:19.598Z",
+  "commit": "28ab15358c0d3e76ee51462c89dee5230acf3178",
+  "node": "v22.13.0",
+  "dependencies": {
+    "@mediapipe/tasks-vision": "0.10.14",
+    "@tensorflow/tfjs-backend-wasm": "4.21.0",
+    "@tensorflow/tfjs-converter": "4.21.0",
+    "@tensorflow/tfjs-core": "4.21.0",
+    "@vladmandic/human": "3.3.6",
+    "ffmpeg-static": "5.2.0",
+    "jpeg-js": "0.4.4",
+    "pipe2jpeg": "0.5.0",
+    "pngjs": "7.0.0",
+    "puppeteer": "^24.19.0",
+    "yargs": "17.7.2",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {},
+  "files": [
+    {
+      "name": "right hand hand oriented towards the camera and wrist to middle knuckle pointing up index to thumb pinch.human.landmarks.jsonl",
+      "relativePath": "data/goldens/right hand hand oriented towards the camera and wrist to middle knuckle pointing up index to thumb pinch.human.landmarks.jsonl",
+      "sha256": "d4831e6ac6748078728fa3ba88f0d92aa90db0fd3a925b599da0f529988aa405",
+      "size": 139919,
+      "frames": 130,
+      "frozenPath": "data/goldens/frozen/2025-09-05T165219Z/right hand hand oriented towards the camera and wrist to middle knuckle pointing up index to thumb pinch.human.landmarks.jsonl"
+    },
+    {
+      "name": "right hand palm oriented to my left index and thumb pinch should be GATED.human.landmarks.jsonl",
+      "relativePath": "data/goldens/right hand palm oriented to my left index and thumb pinch should be GATED.human.landmarks.jsonl",
+      "sha256": "4809bbb6c415dfdffd2d9ba104a92e12d3e5d1f04ca6fb49bfe122668253ba7f",
+      "size": 207066,
+      "frames": 188,
+      "frozenPath": "data/goldens/frozen/2025-09-05T165219Z/right hand palm oriented to my left index and thumb pinch should be GATED.human.landmarks.jsonl"
+    }
+  ]
+}

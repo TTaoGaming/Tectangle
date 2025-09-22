@@ -1,0 +1,31 @@
+{
+  "acceptance": [],
+  "emits": [
+    {
+      "detailSchema": {},
+      "event": "landmark:raw"
+    },
+    {
+      "detailSchema": {},
+      "event": "landmarkraw.config"
+    },
+    {
+      "detailSchema": {},
+      "event": "landmarkraw.destroyed"
+    }
+  ],
+  "generatedFrom": "src/LandmarkRawManager.js",
+  "name": "LandmarkRawManager",
+  "tests": [
+    "tests/unit/_debug_landmarkSmooth.oneEuro.log.test.mjs",
+    "tests/unit/landmarkSmooth.kalman.noisy.test.mjs",
+    "tests/unit/landmarkSmooth.kalman.test.mjs",
+    "tests/unit/landmarkSmooth.oneEuro.test.mjs",
+    "tests/unit/landmarkSmooth.red.kalman.test.mjs",
+    "tests/unit/landmarkSmooth.red.oneEuro.test.mjs",
+    "tests/unit/landmarkraw.filter.red.test.mjs",
+    "tests/unit/landmarkraw.red.test.mjs"
+  ],
+  "timestamp": "2025-09-01T16:40:33.330Z",
+  "version": "0.1.0"
+}

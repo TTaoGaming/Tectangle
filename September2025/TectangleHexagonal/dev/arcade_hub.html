@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Arcade Hub — Time‑gated Tool Atlas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style> html,body{height:100%} body{background:#0b1020;color:#e5e7eb} .card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px} </style>
+</head>
+<body class="h-full">
+  <div class="max-w-5xl mx-auto p-4 space-y-4">
+    <h1 class="text-xl font-semibold">Arcade Hub</h1>
+    <p class="opacity-80 text-sm">Time‑gated launchers for an endlessly growing set of useful tools.</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <!-- WEBWAY:ww-2025-086: Card 1 - Gesture Tasks → Dino -->
+      <div class="card p-3 space-y-2">
+        <div class="flex items-center justify-between"><div class="font-semibold">Gesture Tasks → Dino</div><span class="text-xs opacity-70">Unlock in <span id="t1">3</span>s</span></div>
+        <div class="text-xs opacity-70">Closed Fist jumps. Runs via CDN; great starter slice.</div>
+        <div class="flex gap-2">
+          <button id="p1" class="px-3 py-1 rounded bg-emerald-700 disabled:opacity-40" disabled>Play</button>
+          <a id="o1" class="px-3 py-1 rounded border opacity-60 pointer-events-none" href="./gesture_tasks_to_dino.html" target="_blank" rel="noopener noreferrer">Open</a>
+        </div>
+      </div>
+      <!-- WEBWAY:ww-2025-086: Card 2 - Open → Fist → Dino -->
+      <div class="card p-3 space-y-2">
+        <div class="flex items-center justify-between"><div class="font-semibold">Open → Fist → Dino</div><span class="text-xs opacity-70">Unlock in <span id="t2">5</span>s</span></div>
+        <div class="text-xs opacity-70">Heuristic landmarks with hysteresis; no extra deps.</div>
+        <div class="flex gap-2">
+          <button id="p2" class="px-3 py-1 rounded bg-sky-700 disabled:opacity-40" disabled>Play</button>
+          <a id="o2" class="px-3 py-1 rounded border opacity-60 pointer-events-none" href="./open_palm_to_fist_dino.html" target="_blank" rel="noopener noreferrer">Open</a>
+        </div>
+      </div>
+
+      <!-- WEBWAY:ww-2025-087: Card 3 - Party Quick Draw -->
+      <div class="card p-3 space-y-2">
+        <div class="flex items-center justify-between"><div class="font-semibold">Party Quick Draw</div><span class="text-xs opacity-70">Unlock in <span id="t3">4</span>s</span></div>
+        <div class="text-xs opacity-70">Wait for “DRAW!” then Closed Fist quickly to win coins.</div>
+        <div class="flex gap-2">
+          <button id="p3" class="px-3 py-1 rounded bg-amber-700 disabled:opacity-40" disabled>Play</button>
+          <a id="o3" class="px-3 py-1 rounded border opacity-60 pointer-events-none" href="./party_quickdraw.html" target="_blank" rel="noopener noreferrer">Open</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="arena" class="card p-2 hidden mt-2">
+      <div class="flex items-center justify-between"><div class="font-semibold">Arena (embedded)</div><button id="closeArena" class="px-2 py-1 text-xs rounded border">Close</button></div>
+      <div class="aspect-video bg-black rounded overflow-hidden">
+        <iframe id="arenaFrame" title="Arena" style="width:100%;height:100%;border:0"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // WEBWAY:ww-2025-086: Simple time gates and embedded launcher
+    const t1 = document.getElementById('t1');
+    const t2 = document.getElementById('t2');
+    const p1 = document.getElementById('p1');
+    const p2 = document.getElementById('p2');
+    const o1 = document.getElementById('o1');
+    const o2 = document.getElementById('o2');
+    const arena = document.getElementById('arena');
+    const arenaFrame = document.getElementById('arenaFrame');
+    const closeArena = document.getElementById('closeArena');
+
+    let g1 = 3, g2 = 5, g3 = 4;
+    const timer = setInterval(()=>{
+      if(g1>0){ g1--; t1.textContent = g1; if(g1===0){ p1.disabled=false; o1.classList.remove('opacity-60','pointer-events-none'); } }
+      if(g2>0){ g2--; t2.textContent = g2; if(g2===0){ p2.disabled=false; o2.classList.remove('opacity-60','pointer-events-none'); } }
+      if(g3>0){ g3--; document.getElementById('t3').textContent = g3; if(g3===0){ p3.disabled=false; document.getElementById('o3').classList.remove('opacity-60','pointer-events-none'); } }
+      if(g1===0 && g2===0 && g3===0){ clearInterval(timer); }
+    }, 1000);
+
+    function openInArena(url){ arena.classList.remove('hidden'); arenaFrame.src = url; }
+    p1.addEventListener('click', ()=> openInArena('./gesture_tasks_to_dino.html'));
+    p2.addEventListener('click', ()=> openInArena('./open_palm_to_fist_dino.html'));
+  p3.addEventListener('click', ()=> openInArena('./party_quickdraw.html'));
+    closeArena.addEventListener('click', ()=>{ arenaFrame.src='about:blank'; arena.classList.add('hidden'); });
+
+    // Tiny a11y/health ping for a smoke: ensure titles exist after open
+    window.addEventListener('message', (ev)=>{ /* reserved for ping */ });
+  </script>
+</body>
+</html>

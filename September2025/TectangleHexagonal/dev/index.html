@@ -1,0 +1,176 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/unit/pinchCore.test.mjs
+  - [ ] tests/unit/lookAheadCore.test.mjs
+  - [ ] tests/unit/controllerRouterCore.test.mjs
+  - [ ] tests/smoke/run_video_check_seats.mjs
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Tectangle ??? Pinch Piano (Hexagonal)</title>
+  <style>
+    :root { --bg:#0b0d10; --fg:#e7edf3; --muted:#9fb3c8; --accent:#82d4ff; --ok:#20c997; --warn:#ffb020; --bad:#ff6b6b; --key-bg:#0e1420; --key-on:#2a87ff; --key-left:#93d977; --key-right:#82d4ff; }
+    *{ box-sizing:border-box; } body{ margin:0; font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif; background:var(--bg); color:var(--fg); }
+    header{ padding:16px 20px; border-bottom:1px solid #1a222c; background:#0f141a; position:sticky; top:0; z-index:5; }
+    .row{ display:flex; gap:16px; padding: 16px 20px; flex-wrap:wrap; } .col{ flex:1 1 460px; min-width:320px; }
+    video, canvas { width:100%; border:1px solid #1a222c; border-radius:12px; background:#0c1117; display:block; }
+    .panel{ border:1px solid #1a222c; border-radius:12px; padding:12px; background:#0c1117; }
+    .controls{ display:grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap:8px; }
+    .control{ display:flex; align-items:center; gap:10px; background:#0f141a; border:1px solid #1a222c; padding:8px 10px; border-radius:10px; }
+    .control .lbl{ width:130px; color:var(--muted); font-size:12px; } .control .val{ min-width:42px; text-align:right; font-variant-numeric: tabular-nums; color:var(--fg); font-size:12px; }
+    .palm-indicator{ font-variant-numeric: tabular-nums; color:var(--muted); transition: color .2s ease; }
+    .palm-indicator[data-state="ok"]{ color:var(--ok); }
+    .palm-indicator[data-state="bad"]{ color:var(--bad); }
+    .palm-indicator[data-state="unknown"]{ color:var(--muted); }
+    .kbd{ display:flex; gap:10px; } .key{ position:relative; width:80px; height:100px; background:var(--key-bg); border:1px solid #1a222c; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:28px; color:var(--muted); transition: transform .05s ease, box-shadow .05s ease; }
+    .key .note{ position:absolute; bottom:6px; font-size:12px; color:var(--muted); } .key.right{ outline:2px solid var(--key-right);} .key.left{ outline:2px solid var(--key-left);} .key.down{ background:#071325; color:#d9eeff; transform: translateY(2px); box-shadow: inset 0 0 0 2px var(--key-on);} .key.hold{ box-shadow: inset 0 0 0 2px var(--ok);} .kv{ display:grid; grid-template-columns: 1fr auto; gap:6px 10px; align-items:center; }
+  </style>
+  <script type="module" src="../src/app/main.js"></script>
+</head>
+<body>
+<header>
+  <h1>Tectangle ??? Pinch Piano (Hexagonal) <span class="badge" id="status">ready</span></h1>
+</header>
+
+<div class="row">
+  <div class="col"><video id="cam" playsinline muted autoplay></video></div>
+  <div class="col"><canvas id="overlay" width="960" height="540"></canvas></div>
+</div>
+
+<div class="row">
+  <div class="col panel">
+    <h3>Controls</h3>
+    <div class="controls">
+      <div class="control"><span class="lbl">Smoothing preset</span>
+        <select id="smoothPreset">
+          <option value="responsive" selected>Responsive</option>
+          <option value="balanced">Balanced</option>
+          <option value="smooth">Smooth</option>
+        </select>
+        <span class="val">&nbsp;</span>
+      </div>
+      <div class="control"><label class="lbl"><input type="checkbox" id="startStop"> Start camera</label><span class="val">&nbsp;</span></div>
+      <div class="control"><label class="lbl"><input type="checkbox" id="palmGate" checked> Palm gate</label><input type="range" id="cone" min="10" max="60" step="1" value="30"><output class="val" id="coneOut">30??</output></div>
+      <div class="control"><label class="lbl"><input type="checkbox" id="speculative" checked> Speculative</label><span class="val">&nbsp;</span></div>
+  <!-- WEBWAY:ww-2025-003: Hold deadzone UI to ignore small flutters while held -->
+  <div class="control"><label class="lbl"><input type="checkbox" id="holdDeadzoneEnabled"> Hold deadzone</label><input type="range" id="holdDeadzone" min="0.000" max="0.200" step="0.005" value="0.030"><output class="val" id="holdDeadzoneOut">0.030</output></div>
+    <div class="control"><span class="lbl">Enter threshold</span><input type="range" id="enter" min="0.05" max="0.90" step="0.01" value="0.50"><output class="val" id="enterOut">0.50</output></div>
+    <div class="control"><span class="lbl">Exit threshold</span><input type="range" id="exit" min="0.10" max="0.95" step="0.01" value="0.80"><output class="val" id="exitOut">0.80</output></div>
+  <div class="control"><span class="lbl">MinCutoff</span><input type="range" id="minCutoff" min="0.1" max="3.0" step="0.1" value="2.2"><output class="val" id="minCutoffOut">2.2</output></div>
+  <div class="control"><span class="lbl">Beta</span><input type="range" id="beta" min="0.000" max="0.100" step="0.005" value="0.040"><output class="val" id="betaOut">0.040</output></div>
+    <div class="control"><span class="lbl">dCutoff</span><input type="range" id="dCutoff" min="0.1" max="3.0" step="0.1" value="1.2"><output class="val" id="dCutoffOut">1.2</output></div>
+      <div class="control"><label class="lbl"><input type="checkbox" id="beep" checked> Audio beep</label><span class="val">&nbsp;</span></div>
+      <div class="control"><label class="lbl"><input type="checkbox" id="midi"> WebMIDI</label><span class="val">&nbsp;</span></div>
+      <div class="control"><button class="btn" id="calibrate">Calibration wizard</button><span class="mini">Saves span per hand</span></div>
+      <div class="control"><button class="btn" id="download">Download golden JSONL</button><span class="mini">First line has meta</span></div>
+  <div class="control"><button class="btn" id="downloadAnalysis">Download analysis JSONL</button><span class="mini">Frames + events + TOI</span></div>
+      <div class="control"><button class="btn" id="loadVideo">Load video file</button><input type="file" id="videoFile" accept="video/*" style="display:none"></div>
+      <div class="control"><button class="btn" id="lmStart">Start landmarks</button><button class="btn" id="lmStop">Stop</button><button class="btn" id="lmDownload">Download landmarks</button></div>
+    </div>
+  </div>
+
+  <div class="col panel">
+    <h3>Telemetry</h3>
+    <div class="kv" id="kv">
+      <div>FPS</div><div id="fps">???</div>
+      <div>Right state</div><div id="fsmR">???</div>
+      <div>Left state</div><div id="fsmL">???</div>
+      <div>NormDist</div><div id="norm">???</div>
+      <div>Palm angle</div><div id="pg" class="palm-indicator" data-state="unknown">???</div>
+      <div>SpecCancel%</div><div id="specCancel">???</div>
+      <div>Down Latency (mean ms)</div><div id="lat">???</div>
+  <div>Predicted TOI</div><div id="toiPred">???</div>
+  <div>TOI error (last)</div><div id="toiErr">???</div>
+      <div>Downs</div><div id="downs">0</div>
+      <div>Ups</div><div id="ups">0</div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col panel">
+    <h3>Virtual keyboard</h3>
+    <div class="kbd" id="kbd">
+      <div class="key right" data-key="Z" title="Right hand + key Z (MIDI C4)">Z <span class="note">C4</span></div>
+      <div class="key left"  data-key="X" title="Left hand + key X (MIDI D4)">X <span class="note">D4</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col panel">
+    <h3>Debug (per hand)</h3>
+    <div class="kv">
+      <div><strong>Right</strong></div><div></div>
+      <div>Index raw</div><div id="r_ix_raw">-</div>
+      <div>Index smooth</div><div id="r_ix_sm">-</div>
+      <div>Thumb raw</div><div id="r_tx_raw">-</div>
+      <div>Thumb smooth</div><div id="r_tx_sm">-</div>
+      <div>Norm (raw/sm)</div><div id="r_norms">-</div>
+      <div>Palm angle</div><div id="r_ang" class="palm-indicator" data-state="unknown">???</div>
+      <div>Gate</div><div id="r_gate">-</div>
+      <div>Hysteresis</div><div><canvas id="r_hyst" width="240" height="20"></canvas></div>
+    </div>
+    <div class="kv" style="margin-top:8px;">
+      <div><strong>Left</strong></div><div></div>
+      <div>Index raw</div><div id="l_ix_raw">-</div>
+      <div>Index smooth</div><div id="l_ix_sm">-</div>
+      <div>Thumb raw</div><div id="l_tx_raw">-</div>
+      <div>Thumb smooth</div><div id="l_tx_sm">-</div>
+      <div>Norm (raw/sm)</div><div id="l_norms">-</div>
+      <div>Palm angle</div><div id="l_ang" class="palm-indicator" data-state="unknown">???</div>
+      <div>Gate</div><div id="l_gate">-</div>
+      <div>Hysteresis</div><div><canvas id="l_hyst" width="240" height="20"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { startCamera, startVideoFile } from '../src/app/main.js';
+  import { createHUD } from '../src/ui/hud.js';
+  import { createOverlay } from '../src/ui/overlay.js';
+
+  const byId = id => document.getElementById(id);
+  const hud = createHUD(document);
+  hud.syncOutputs(document);
+  byId('startStop').addEventListener('change', ()=>{ byId('startStop').checked ? startCamera() : window.__hex.stop(); });
+  byId('download').addEventListener('click', ()=>{ const lines = window.__getGolden ? window.__getGolden() : []; const blob=new Blob([lines.join('\n')+'\n'],{type:'application/jsonl'}); const url=URL.createObjectURL(blob); const a=Object.assign(document.createElement('a'),{href:url,download:`golden_${Date.now()}.jsonl`}); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
+  const btnLoad = byId('loadVideo'); const input = byId('videoFile'); btnLoad.addEventListener('click', ()=> input.click()); input.addEventListener('change', async e=>{ const f=e.target.files?.[0]; if(f) await startVideoFile(f); });
+  byId('lmStart').addEventListener('click', ()=> window.__landmarks?.start());
+  byId('lmStop').addEventListener('click', ()=> window.__landmarks?.stop());
+  byId('lmDownload').addEventListener('click', ()=> window.__landmarks?.download());
+  byId('downloadAnalysis').addEventListener('click', ()=>{ const lines = window.__getAnalysis ? window.__getAnalysis() : []; const blob=new Blob([lines.join('\n')+'\n'],{type:'application/jsonl'}); const url=URL.createObjectURL(blob); const a=Object.assign(document.createElement('a'),{href:url,download:`analysis_${Date.now()}.jsonl`}); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); });
+  const applyPreset = (p)=>{
+    const presets = {
+      responsive: { minCutoff:2.2, beta:0.040, dCutoff:1.2 },
+      balanced:   { minCutoff:1.4, beta:0.020, dCutoff:1.0 },
+      smooth:     { minCutoff:0.9, beta:0.008, dCutoff:0.8 }
+    };
+    const v = presets[p]||presets.balanced;
+    byId('minCutoff').value = String(v.minCutoff);
+    byId('beta').value = String(v.beta);
+    byId('dCutoff').value = String(v.dCutoff);
+    hud.syncOutputs(document);
+    window.__hex.applyConfigToCores();
+  };
+  byId('smoothPreset').addEventListener('change', (e)=> applyPreset(e.target.value));
+  // Apply initial preset on load
+  applyPreset(byId('smoothPreset').value);
+  ;['enter','exit','cone','minCutoff','beta','dCutoff','palmGate','speculative','holdDeadzone','holdDeadzoneEnabled'].forEach(id=> byId(id).addEventListener('input', ()=> { hud.syncOutputs(document); window.__hex.applyConfigToCores(); }));
+</script>
+
+</body>
+</html>
+

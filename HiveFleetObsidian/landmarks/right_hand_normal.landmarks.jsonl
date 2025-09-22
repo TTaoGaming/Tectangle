@@ -1,0 +1,9 @@
+{"meta":{"name":"right_hand_normal","notes":"synthetic demo trace: one pinch down then up"}}
+{"t":0,"indexTip":[0.80,0.50],"thumbTip":[0.20,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}
+{"t":80,"indexTip":[0.70,0.50],"thumbTip":[0.30,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}
+{"t":160,"indexTip":[0.62,0.50],"thumbTip":[0.38,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}
+{"t":240,"indexTip":[0.58,0.50],"thumbTip":[0.42,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}
+{"t":400,"indexTip":[0.60,0.50],"thumbTip":[0.40,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}
+{"t":520,"indexTip":[0.65,0.50],"thumbTip":[0.35,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}
+{"t":640,"indexTip":[0.70,0.50],"thumbTip":[0.30,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}
+{"t":760,"indexTip":[0.80,0.50],"thumbTip":[0.20,0.50],"indexMCP":[0.80,0.60],"pinkyMCP":[0.20,0.60]}

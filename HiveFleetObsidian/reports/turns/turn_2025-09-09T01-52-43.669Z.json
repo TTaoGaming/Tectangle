@@ -1,0 +1,78 @@
+{
+  "counsel": {
+    "explore": {
+      "what": "Design 1–3 micro-tests and replay a short trace | focus: Speed up replay",
+      "why": "Reduce uncertainty fast with cheap probes",
+      "win": "Stop on signal or timeout",
+      "warnings": "Keep experiments cheap; archive findings",
+      "how": [
+        "Name assumption in Board",
+        "Record 60s trace",
+        "Run replay and log result"
+      ],
+      "guardrail": "Ship only if frozen stays green.",
+      "provenance": [
+        "HiveFleetObsidian/tools/README.md",
+        "board:problem:Speed up replay"
+      ]
+    },
+    "pivot": {
+      "what": "Try a small method swap framed by constraints | focus: Speed up replay",
+      "why": "Keep the aim; change the path to higher EV",
+      "win": "EV_new > EV_old; no regressions",
+      "warnings": "Keep experiments cheap; archive findings",
+      "how": [
+        "Define metric and budget",
+        "Run prism_reframe.mjs",
+        "Keep winner; archive other"
+      ],
+      "guardrail": "Ship only if frozen stays green.",
+      "provenance": [
+        "HiveFleetObsidian/tools/README.md",
+        "board:problem:Speed up replay"
+      ]
+    },
+    "reorient": {
+      "what": "Adopt ports/adapters; land the smallest first step | focus: Speed up replay",
+      "why": "Reduce drift and enable parallel adapters",
+      "win": "Pattern named; first step merged",
+      "warnings": "Keep experiments cheap; archive findings",
+      "how": [
+        "Name ports",
+        "Stub one adapter",
+        "Map links in web_map.md"
+      ],
+      "guardrail": "Ship only if frozen stays green.",
+      "provenance": [
+        "HiveFleetObsidian/tools/README.md",
+        "board:problem:Speed up replay"
+      ]
+    },
+    "exploit": {
+      "what": "One reversible step after green frozen checks | focus: Speed up replay",
+      "why": "Move the metric today with minimal risk",
+      "win": "dup==0 && smoke:pass && frozen:pass && miss==0",
+      "warnings": "Ship only if frozen PASS",
+      "how": [
+        "npm run hive:daily",
+        "Fix any MISS/dup",
+        "Append Scribe line"
+      ],
+      "guardrail": "Ship only if frozen stays green.",
+      "provenance": [
+        "HiveFleetObsidian/tools/README.md",
+        "board:problem:Speed up replay"
+      ]
+    }
+  },
+  "guardrail": "Ship only if frozen smoke passes.",
+  "history": {
+    "snapshot": "llm_counsel",
+    "metric_delta": "provider:mock; model:mock",
+    "lesson": "Counsel generated via LLM port"
+  },
+  "llm": {
+    "provider": "mock",
+    "model": "mock"
+  }
+}

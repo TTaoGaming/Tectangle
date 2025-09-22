@@ -1,0 +1,42 @@
+{
+  "acceptance": [],
+  "emits": [
+    {
+      "detailSchema": {},
+      "event": "camera.device.changed"
+    },
+    {
+      "detailSchema": {},
+      "event": "camera.mirror.toggled"
+    },
+    {
+      "detailSchema": {},
+      "event": "camera.stream.started"
+    },
+    {
+      "detailSchema": {},
+      "event": "camera.stream.stopped"
+    },
+    {
+      "detailSchema": {},
+      "event": "camera:frame"
+    },
+    {
+      "detailSchema": {},
+      "event": "camera:params"
+    }
+  ],
+  "generatedFrom": "src/CameraManager.js",
+  "name": "CameraManager",
+  "tests": [
+    "tests/unit/camera.device-selection.test.mjs",
+    "tests/unit/camera.dynamic-resolution.test.mjs",
+    "tests/unit/camera.frame.test.mjs",
+    "tests/unit/camera.mirror.test.mjs",
+    "tests/unit/eventbus.normalization.test.mjs",
+    "tests/unit/eventbus.red.test.mjs",
+    "tests/unit/header.meta.CameraManager.test.mjs"
+  ],
+  "timestamp": "2025-09-01T16:40:33.257Z",
+  "version": "0.1.0"
+}

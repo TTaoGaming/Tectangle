@@ -1,0 +1,529 @@
+<!--
+Prototype: Dual-view raw vs One-Euro smoothed landmarks
+File: August Tectangle Sprint/tectangle-gesture-keyboard-mobile/prototype/landmark-dual/index.html
+Purpose: Minimal static prototype that shows raw MediaPipe landmarks (left) and One-Euro-smoothed landmarks (right).
+Instructions: Serve this folder with a static server (e.g., VSCode Live Server) or open in a browser with camera permissions. Click "Start" to enable webcam. Use controls to enable/disable smoothing, adjust One-Euro params, and reset filters.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Landmark Dual — Raw vs One-Euro</title>
+    <style>
+      :root {
+        --w: 640px;
+        --h: 480px;
+        --bg: #f7f7f8;
+        --muted: #666;
+      }
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial;
+        margin: 16px;
+        background: var(--bg);
+        color: #111;
+      }
+      h1 {
+        font-size: 16px;
+        margin: 0 0 8px 0;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+      .controls label {
+        font-size: 13px;
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background: white;
+        cursor: pointer;
+      }
+      .wrap {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .view {
+        width: var(--w);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .canvas-stack {
+        position: relative;
+        width: var(--w);
+        height: var(--h);
+        background: #000;
+        border-radius: 6px;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+      }
+      video {
+        display: none;
+      } /* single camera feed used for both canvases via drawImage */
+      canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        background: transparent;
+      }
+      .title {
+        font-size: 13px;
+        margin: 0;
+        padding: 6px 0;
+      }
+      .params {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .params input[type="range"] {
+        width: 120px;
+      }
+      .status {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .small {
+        font-size: 12px;
+        color: var(--muted);
+      }
+    </style>
+    <!-- MediaPipe scripts (reuse same Hands + drawing_utils versions used in prototype) -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.4/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  </head>
+  <body>
+    <h1>Landmark Dual — Raw (left) vs One-Euro Smoothed (right)</h1>
+    <div class="controls">
+      <button id="startBtn" class="btn">Start</button>
+      <button id="stopBtn" class="btn" disabled>Stop</button>
+      <label
+        ><input type="checkbox" id="enableOneEuro" checked /> Enable
+        OneEuro</label
+      >
+      <div class="params">
+        <label class="small"
+          >minCutoff
+          <input
+            id="minCutoff"
+            type="number"
+            step="0.001"
+            min="0.000"
+            max="1"
+            value="0.010"
+            style="width: 80px"
+        /></label>
+        <label class="small"
+          >beta
+          <input
+            id="beta"
+            type="number"
+            step="0.001"
+            min="0"
+            max="2"
+            value="0.000"
+            style="width: 80px"
+        /></label>
+        <label class="small"
+          >dCutoff
+          <input
+            id="dCutoff"
+            type="number"
+            step="0.1"
+            min="0.01"
+            max="20"
+            value="1.0"
+            style="width: 80px"
+        /></label>
+        <button id="resetFilters" class="btn">Reset filters</button>
+      </div>
+      <div style="flex: 1"></div>
+      <div id="status" class="status">idle</div>
+    </div>
+
+    <div class="wrap">
+      <div class="view">
+        <div class="title">Raw landmarks</div>
+        <div class="canvas-stack">
+          <canvas id="canvasRaw" width="640" height="480"></canvas>
+        </div>
+      </div>
+
+      <div class="view">
+        <div class="title">Smoothed (One-Euro)</div>
+        <div class="canvas-stack">
+          <canvas id="canvasSmooth" width="640" height="480"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden single video feed used as source for MediaPipe and for drawing into canvases -->
+    <video id="video" autoplay playsinline muted></video>
+
+    <script>
+      // Inlined OneEuroFilter (adapted from src/LandmarkSmoothManager.js)
+      class OneEuroFilter {
+        constructor(opts = {}) {
+          const { minCutoff = 1.0, beta = 0.007, dCutoff = 1.0 } = opts || {};
+          this.minCutoff = Number(minCutoff);
+          this.beta = Number(beta);
+          this.dCutoff = Number(dCutoff);
+          this._x = null;
+          this._dx = 0;
+          this._t = null;
+          this._prevRaw = null;
+        }
+        static _alpha(cutoff, dt) {
+          const tau = 1 / (2 * Math.PI * cutoff);
+          return 1 / (1 + tau / dt);
+        }
+        filter(value, tMs) {
+          const v = Number(value ?? 0);
+          const t = Number(tMs ?? Date.now());
+          if (this._t === null) {
+            this._x = v;
+            this._dx = 0;
+            this._t = t;
+            this._prevRaw = v;
+            return v;
+          }
+          let dt = (t - this._t) / 1000;
+          if (!(isFinite(dt) && dt > 0)) dt = 1 / 60;
+          const rawPrev = Number(this._prevRaw ?? this._x);
+          const dx = (v - rawPrev) / dt;
+          const aD = OneEuroFilter._alpha(Math.max(1e-6, this.dCutoff), dt);
+          const dxHat = aD * dx + (1 - aD) * this._dx;
+          const cutoff = this.minCutoff + this.beta * Math.abs(dxHat);
+          const a = OneEuroFilter._alpha(Math.max(1e-6, cutoff), dt);
+          const xHat = a * v + (1 - a) * this._x;
+          this._x = xHat;
+          this._dx = dxHat;
+          this._prevRaw = v;
+          this._t = t;
+          return xHat;
+        }
+        reset() {
+          this._x = null;
+          this._dx = 0;
+          this._t = null;
+        }
+      }
+
+      // App
+      (function () {
+        const WIDTH = 640,
+          HEIGHT = 480;
+        const video = document.getElementById("video");
+        const canvasRaw = document.getElementById("canvasRaw");
+        const canvasSmooth = document.getElementById("canvasSmooth");
+        const ctxRaw = canvasRaw.getContext("2d");
+        const ctxSmooth = canvasSmooth.getContext("2d");
+        const startBtn = document.getElementById("startBtn");
+        const stopBtn = document.getElementById("stopBtn");
+        const statusEl = document.getElementById("status");
+        const enableOneEuroEl = document.getElementById("enableOneEuro");
+        const minCutoffEl = document.getElementById("minCutoff");
+        const betaEl = document.getElementById("beta");
+        const dCutoffEl = document.getElementById("dCutoff");
+        const resetFiltersBtn = document.getElementById("resetFilters");
+
+        let camera = null;
+        let hands = null;
+        let running = false;
+
+        // smoothing state: filters[handIndex][landmarkIndex] => {x,y,z}
+        let filters = [];
+        function getOneEuroParams() {
+          return {
+            minCutoff: Number(minCutoffEl.value) || 0.01,
+            beta: Number(betaEl.value) || 0.0,
+            dCutoff: Number(dCutoffEl.value) || 1.0,
+          };
+        }
+        function resetFilters() {
+          filters = [];
+        }
+        function ensureFilters(numHands, numLandmarks) {
+          const params = getOneEuroParams();
+          for (let h = 0; h < numHands; h++) {
+            if (!filters[h] || filters[h].length !== numLandmarks) {
+              filters[h] = [];
+              for (let i = 0; i < numLandmarks; i++) {
+                filters[h].push({
+                  x: new OneEuroFilter(params),
+                  y: new OneEuroFilter(params),
+                  z: new OneEuroFilter(params),
+                });
+              }
+            }
+          }
+          // trim extra hands
+          if (filters.length > numHands) filters.length = numHands;
+        }
+
+        // drawing helpers
+        const chains = [
+          [0, 1, 2, 3, 4],
+          [0, 5, 6, 7, 8],
+          [0, 9, 10, 11, 12],
+          [0, 13, 14, 15, 16],
+          [0, 17, 18, 19, 20],
+        ];
+        const fingertipIdx = new Set([4, 8, 12, 16, 20]);
+        const handColors = [
+          { line: "#00b894", fill: "#00d28a" },
+          { line: "#0984e3", fill: "#74b9ff" },
+        ];
+
+        function clearCanvas(ctx) {
+          ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        }
+        function drawBackgroundFrame(ctx) {
+          try {
+            ctx.drawImage(video, 0, 0, ctx.canvas.width, ctx.canvas.height);
+          } catch (e) {
+            // ignore if video not yet ready
+          }
+        }
+        function drawLandmarks(ctx, landmarks, color) {
+          if (!landmarks || landmarks.length === 0) return;
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = color.line;
+          // draw chains
+          for (const c of chains) {
+            ctx.beginPath();
+            let moved = false;
+            for (let i = 0; i < c.length; i++) {
+              const idx = c[i];
+              const p = landmarks[idx];
+              if (!p) continue;
+              const x = p.x * ctx.canvas.width;
+              const y = p.y * ctx.canvas.height;
+              if (!moved) {
+                ctx.moveTo(x, y);
+                moved = true;
+              } else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+          }
+          // draw points
+          for (let i = 0; i < landmarks.length; i++) {
+            const p = landmarks[i];
+            if (!p) continue;
+            const x = p.x * ctx.canvas.width;
+            const y = p.y * ctx.canvas.height;
+            ctx.beginPath();
+            ctx.fillStyle = color.fill;
+            const r = fingertipIdx.has(i) ? 6 : 4;
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        // Map MediaPipe landmarks (array of {x,y,z}) into internal normalized objects
+        function normalizeLandmarks(landmarks) {
+          return landmarks.map((l) => ({ x: l.x, y: l.y, z: l.z ?? 0 }));
+        }
+
+        function onResults(results) {
+          const t = Date.now();
+          // draw video frame into both canvases as background
+          ctxRaw.clearRect(0, 0, canvasRaw.width, canvasRaw.height);
+          ctxSmooth.clearRect(0, 0, canvasSmooth.width, canvasSmooth.height);
+          drawBackgroundFrame(ctxRaw);
+          drawBackgroundFrame(ctxSmooth);
+
+          const multi = results.multiHandLandmarks || [];
+          const numHands = multi.length;
+          if (numHands === 0) {
+            statusEl.textContent = "No hands detected";
+            return;
+          }
+          statusEl.textContent = `Hands detected: ${numHands}`;
+
+          // ensure filters exist
+          ensureFilters(numHands, 21);
+
+          // compute smoothed landmarks
+          const smoothedMulti = [];
+          for (let h = 0; h < numHands; h++) {
+            const landmarks = multi[h];
+            const normalized = normalizeLandmarks(landmarks);
+            const smoothed = [];
+            for (let i = 0; i < normalized.length; i++) {
+              const p = normalized[i];
+              if (enableOneEuroEl.checked) {
+                const f = filters[h][i];
+                const sx = f.x.filter(p.x, t);
+                const sy = f.y.filter(p.y, t);
+                const sz = f.z.filter(p.z, t);
+                smoothed.push({ x: sx, y: sy, z: sz });
+              } else {
+                // pass-through
+                smoothed.push({ x: p.x, y: p.y, z: p.z });
+              }
+            }
+            smoothedMulti.push(smoothed);
+          }
+
+          // draw raw and smoothed, color by hand index
+          for (let h = 0; h < numHands; h++) {
+            const col = handColors[h % handColors.length];
+            drawLandmarks(ctxRaw, normalizeLandmarks(multi[h]), col);
+            drawLandmarks(ctxSmooth, smoothedMulti[h], col);
+          }
+        }
+
+        function start() {
+          if (running) return;
+          // instantiate MediaPipe Hands
+          if (typeof Hands === "undefined") {
+            statusEl.textContent = "ERROR: MediaPipe Hands not loaded";
+            return;
+          }
+          hands = new Hands({
+            locateFile: (file) =>
+              `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/${file}`,
+          });
+          hands.setOptions({
+            maxNumHands: 2,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5,
+          });
+          hands.onResults(onResults);
+
+          // start camera (use Camera from camera_utils if available)
+          const startCamera = async () => {
+            try {
+              if (typeof Camera !== "undefined") {
+                camera = new Camera(video, {
+                  onFrame: async () => {
+                    await hands.send({ image: video });
+                  },
+                  width: WIDTH,
+                  height: HEIGHT,
+                });
+                camera.start();
+              } else {
+                // fallback: getUserMedia + rAF loop
+                const stream = await navigator.mediaDevices.getUserMedia({
+                  video: { width: WIDTH, height: HEIGHT },
+                  audio: false,
+                });
+                video.srcObject = stream;
+                await video.play().catch(() => {});
+                // rAF loop to send frames
+                (async function loop() {
+                  if (!running) return;
+                  await hands.send({ image: video });
+                  requestAnimationFrame(loop);
+                })();
+              }
+            } catch (err) {
+              statusEl.textContent =
+                "Camera error: " +
+                (err && err.message ? err.message : String(err));
+              console.error(err);
+            }
+          };
+
+          // set canvas sizes to video default dims
+          canvasRaw.width = WIDTH;
+          canvasRaw.height = HEIGHT;
+          canvasSmooth.width = WIDTH;
+          canvasSmooth.height = HEIGHT;
+
+          running = true;
+          startCamera()
+            .then(() => {
+              statusEl.textContent = "running";
+              startBtn.disabled = true;
+              stopBtn.disabled = false;
+            })
+            .catch((e) => {
+              statusEl.textContent = "start failed";
+              console.error(e);
+            });
+        }
+        function stop() {
+          if (!running) return;
+          try {
+            if (camera && typeof camera.stop === "function") camera.stop();
+            if (video && video.srcObject) {
+              const tracks = video.srcObject.getTracks();
+              tracks.forEach((t) => t.stop());
+              video.srcObject = null;
+            }
+          } catch (e) {
+            console.debug(e);
+          }
+          running = false;
+          startBtn.disabled = false;
+          stopBtn.disabled = true;
+          statusEl.textContent = "idle";
+          // clear canvases
+          ctxRaw.clearRect(0, 0, canvasRaw.width, canvasRaw.height);
+          ctxSmooth.clearRect(0, 0, canvasSmooth.width, canvasSmooth.height);
+        }
+
+        // Wire controls
+        startBtn.addEventListener("click", start);
+        stopBtn.addEventListener("click", stop);
+        resetFiltersBtn.addEventListener("click", () => {
+          resetFilters();
+          statusEl.textContent = "filters reset";
+          setTimeout(() => {
+            statusEl.textContent = "running";
+          }, 800);
+        });
+        // When params change reinit filters immediately
+        [minCutoffEl, betaEl, dCutoffEl].forEach((el) => {
+          el.addEventListener("change", () => {
+            resetFilters();
+            statusEl.textContent = "filters reinitialized";
+            setTimeout(() => {
+              statusEl.textContent = "running";
+            }, 600);
+          });
+        });
+        enableOneEuroEl.addEventListener("change", () => {
+          resetFilters();
+          statusEl.textContent = enableOneEuroEl.checked
+            ? "OneEuro enabled"
+            : "OneEuro disabled";
+          setTimeout(() => {
+            statusEl.textContent = "running";
+          }, 600);
+        });
+
+        // On load quick check
+        window.addEventListener("load", () => {
+          if (typeof Hands === "undefined") {
+            statusEl.textContent =
+              "WARNING: MediaPipe Hands library failed to load";
+          } else {
+            statusEl.textContent = "idle";
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

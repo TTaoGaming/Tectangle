@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Offline Gesture Recognizer v2 (Hex)</title>
+  <style>
+    html,body{height:100%;margin:0}
+    body{background:#0b1020;color:#e5e7eb;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .card{border:1px solid rgba(255,255,255,0.12);border-radius:10px;background:rgba(255,255,255,0.05);padding:12px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .chip{display:inline-block;border:1px solid rgba(255,255,255,0.25);padding:2px 8px;border-radius:999px;margin-right:8px;font-size:12px}
+    button{background:#16a34a;color:white;border:0;border-radius:8px;padding:6px 10px;margin-right:8px;cursor:pointer}
+    button.stop{background:#ef4444}
+    button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.25);color:#e5e7eb}
+    .muted{opacity:.75;font-size:12px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:12px;text-align:left;white-space:nowrap}
+    tbody tr:nth-child(odd){background:rgba(255,255,255,0.02)}
+    .grid-3{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px}
+  </style>
+</head>
+<body class="h-full">
+  <div class="wrap">
+    <h1 style="margin:4px 0 8px">Offline Gesture Recognizer v2 (Hex)</h1>
+    <p class="muted">Runs MediaPipe Tasks Gesture Recognizer fully offline with live telemetry and a tiny FSM. Dino sidecar included.</p>
+
+    <div class="grid-3">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div style="font-weight:600">Camera</div><span id="status" class="muted">idle</span></div>
+        <video id="cam" playsinline muted autoplay style="width:100%;aspect-ratio:4/3;background:black;border-radius:8px"></video>
+        <div style="margin-top:8px">
+          <span class="chip" id="chipLabel">Label: –</span>
+          <span class="chip" id="chipScore">Score: –</span>
+          <span class="chip" id="chipFPS">FPS: –</span>
+          <span class="chip" id="chipState">FSM: Idle</span>
+        </div>
+        <div style="margin-top:8px">
+          <button id="btnStart">Start</button>
+          <button id="btnStop" class="stop">Stop</button>
+          <label class="chip" for="fileInput" style="cursor:pointer">Load MP4</label>
+          <input id="fileInput" type="file" accept="video/mp4,video/webm" style="display:none"/>
+          <span class="muted">Source: <strong id="chipSource">camera</strong></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div style="font-weight:600">Dino (optional)</div><button id="btnFocus" class="secondary">Focus</button></div>
+        <div style="aspect-ratio:16/9;background:black;border-radius:8px;overflow:hidden">
+          <iframe id="game" title="T‑Rex Runner" src="../vendor/dino/index.html" style="width:100%;height:100%;border:0"></iframe>
+        </div>
+        <div style="margin-top:8px">
+          <span class="chip" id="chipSelect">Selects: 0</span>
+          <button id="btnSim" class="secondary">Simulate Select</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div style="font-weight:600">Telemetry</div>
+          <div>
+            <button id="btnPause" class="secondary">Pause</button>
+            <button id="btnClear" class="secondary">Clear</button>
+            <button id="btnExport" class="secondary">Export JSONL</button>
+            <label class="secondary" style="margin-left:6px">
+              <input id="chkAutoExport" type="checkbox" style="vertical-align:middle;margin-right:4px"/> Auto-export on end
+            </label>
+          </div>
+        </div>
+        <div style="max-height:300px;overflow:auto;border-radius:6px">
+          <table id="telemetryTable">
+            <thead>
+              <tr>
+                <th>ts</th><th>frame</th><th>hands</th><th>dt</th><th>fps</th><th>label</th><th>score</th><th>cand2/3</th><th>event</th><th>state</th><th>gate</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <label class="muted">Idle label <input id="idleLabel" value="Open_Palm" class="secondary" style="margin-left:4px;padding:2px 6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.25);color:#e5e7eb"></label>
+          <label class="muted">Target label <input id="targetLabel" value="Closed_Fist" class="secondary" style="margin-left:4px;padding:2px 6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.25);color:#e5e7eb"></label>
+          <button id="btnValidate" class="secondary">Validate</button>
+        </div>
+        <pre id="valOut" class="muted" style="margin-top:6px;max-height:140px;overflow:auto;background:rgba(255,255,255,0.03);padding:6px;border-radius:6px"></pre>
+      </div>
+    </div>
+
+    <!-- Visuals: sparkline + state timeline + hands line -->
+    <div class="card" style="margin-top:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-weight:600">Visuals</div>
+        <div>
+          <button id="btnExportCSV" class="secondary">Export CSV</button>
+          <label class="secondary" style="margin-left:6px">
+            <input id="chkLiveViz" type="checkbox" style="vertical-align:middle;margin-right:4px" checked/> Live update
+          </label>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:10px">
+        <div>
+          <div class="muted" style="margin-bottom:4px">Score sparkline (Closed_Fist) — enter/exit thresholds</div>
+          <canvas id="vizScore" height="80" style="width:100%;background:rgba(255,255,255,0.03);border-radius:6px"></canvas>
+        </div>
+        <div>
+          <div class="muted" style="margin-bottom:4px">State timeline</div>
+          <canvas id="vizState" height="28" style="width:100%;background:rgba(255,255,255,0.03);border-radius:6px"></canvas>
+        </div>
+        <div>
+          <div class="muted" style="margin-bottom:4px">Hands count</div>
+          <canvas id="vizHands" height="56" style="width:100%;background:rgba(255,255,255,0.03);border-radius:6px"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <p class="muted" style="margin-top:10px">WEBWAY:ww-2025-092: V2 adds FSM + live telemetry, behind FEATURE_GESTURE_TELEM_V2.</p>
+  </div>
+
+  <script type="module">
+    // WEBWAY:ww-2025-092 — Feature guard
+    const FEATURE_GESTURE_TELEM_V2 = true;
+    // WEBWAY:ww-2025-093 — Visualization guard
+    const FEATURE_GESTURE_VIZ_V2 = true;
+    if(!FEATURE_GESTURE_TELEM_V2){
+      document.body.innerHTML = '<div style="padding:24px;color:#e5e7eb">Feature disabled (FEATURE_GESTURE_TELEM_V2=false)</div>';
+      throw new Error('FEATURE_GESTURE_TELEM_V2 disabled');
+    }
+
+    // Resolve local ESM/WASM and model (offline)
+    const nmBase = '/node_modules/@mediapipe/tasks-vision';
+    const wasmBase = `${nmBase}/wasm`;
+    const modelPath = '/September2025/TectangleHexagonal/assets/models/gesture_recognizer.task';
+
+    // Elements
+    const video = document.getElementById('cam');
+    const statusEl = document.getElementById('status');
+    const chipLabel = document.getElementById('chipLabel');
+    const chipScore = document.getElementById('chipScore');
+    const chipFPS = document.getElementById('chipFPS');
+    const chipState = document.getElementById('chipState');
+    const chipSelect = document.getElementById('chipSelect');
+    const btnStart = document.getElementById('btnStart');
+    const btnStop = document.getElementById('btnStop');
+    const btnFocus = document.getElementById('btnFocus');
+    const btnSim = document.getElementById('btnSim');
+    const btnPause = document.getElementById('btnPause');
+    const btnClear = document.getElementById('btnClear');
+    const btnExport = document.getElementById('btnExport');
+    const tableBody = document.querySelector('#telemetryTable tbody');
+    const gameIframe = document.getElementById('game');
+  const fileInput = document.getElementById('fileInput');
+  const chipSource = document.getElementById('chipSource');
+  const chkAutoExport = document.getElementById('chkAutoExport');
+  const idleLabelEl = document.getElementById('idleLabel');
+  const targetLabelEl = document.getElementById('targetLabel');
+  const btnValidate = document.getElementById('btnValidate');
+  const valOut = document.getElementById('valOut');
+
+  // Visuals elements
+  const btnExportCSV = document.getElementById('btnExportCSV');
+  const chkLiveViz = document.getElementById('chkLiveViz');
+  const cvScore = document.getElementById('vizScore');
+  const cvState = document.getElementById('vizState');
+  const cvHands = document.getElementById('vizHands');
+  const gScore = cvScore?.getContext?.('2d') || null;
+  const gState = cvState?.getContext?.('2d') || null;
+  const gHands = cvHands?.getContext?.('2d') || null;
+
+    // Dino helpers
+    const bumpSelect = (()=>{ let n=0; return ()=>{ n++; chipSelect.textContent = `Selects: ${n}`; }; })();
+    const sendSpaceDownUp = () => { try{ const w = gameIframe?.contentWindow; if(!w) return; w.postMessage({ type:'dino:key', action:'down', code:'Space', key:' ' }, '*'); setTimeout(()=>{ try{ w.postMessage({ type:'dino:key', action:'up', code:'Space', key:' ' }, '*'); }catch{} }, 60); }catch{} };
+    btnFocus.addEventListener('click', ()=>{ try{ const w=gameIframe.contentWindow; w?.focus?.(); const c=w?.document?.querySelector?.('canvas'); c?.focus?.(); c?.click?.(); }catch{} });
+
+    // Test hook
+    window.__gtOfflineSim = { fireOnce(){ bumpSelect(); sendSpaceDownUp(); enqueueEvent({ t: performance.now(), type:'select:simulated'}); } };
+    btnSim.addEventListener('click', ()=> window.__gtOfflineSim.fireOnce());
+
+    // Small event bus + telemetry ring
+    const MAX_ROWS = 200; let paused=false; const rows=[]; const jsonl=[];
+    // Viz buffers (sliding window)
+    const MAX_PTS = 400; const vScore=[]; const vState=[]; const vHands=[];
+
+    function pushVizPoint({label, score, state, hands}){
+      if(!FEATURE_GESTURE_VIZ_V2) return;
+      // score only for target label Closed_Fist, else 0 for clarity
+      const s = (label==='Closed_Fist' && typeof score==='number') ? Math.max(0, Math.min(1, score)) : 0;
+      vScore.push(s); if(vScore.length>MAX_PTS) vScore.shift();
+      vState.push(state || 'Idle'); if(vState.length>MAX_PTS) vState.shift();
+      vHands.push(Math.max(0, Math.min(2, Number.isFinite(hands)?hands:0))); if(vHands.length>MAX_PTS) vHands.shift();
+      if(chkLiveViz?.checked){ drawAllViz(); }
+    }
+
+    function drawAllViz(){ drawScore(); drawState(); drawHands(); }
+    function drawScore(){ if(!gScore || !FEATURE_GESTURE_VIZ_V2) return; const W=cvScore.width|0, H=cvScore.height|0; gScore.clearRect(0,0,W,H);
+      // thresholds
+      const yEnter = (1-FSM.enterThresh)*H; const yExit=(1-FSM.exitThresh)*H;
+      gScore.strokeStyle='rgba(34,197,94,0.7)'; gScore.beginPath(); gScore.moveTo(0,yEnter); gScore.lineTo(W,yEnter); gScore.stroke();
+      gScore.strokeStyle='rgba(239,68,68,0.6)'; gScore.beginPath(); gScore.moveTo(0,yExit); gScore.lineTo(W,yExit); gScore.stroke();
+      // sparkline
+      gScore.strokeStyle='#60a5fa'; gScore.lineWidth=1.5; gScore.beginPath();
+      const n=vScore.length; if(n<2) return; for(let i=0;i<n;i++){ const x=i*(W/(n-1)); const y=(1-vScore[i])*H; if(i===0) gScore.moveTo(x,y); else gScore.lineTo(x,y);} gScore.stroke();
+    }
+    function drawState(){ if(!gState || !FEATURE_GESTURE_VIZ_V2) return; const W=cvState.width|0, H=cvState.height|0; gState.clearRect(0,0,W,H);
+      const n=vState.length; if(n===0) return; const wSeg = Math.max(1, Math.floor(W/Math.max(1,n)));
+      for(let i=0;i<n;i++){
+        const st = vState[i]; let col='#52525b'; // Idle
+        if(st==='Triggered') col='#f59e0b'; else if(st==='Held') col='#10b981'; else if(st==='Released') col='#3b82f6';
+        gState.fillStyle=col; gState.fillRect(i*wSeg,0,wSeg,H);
+      }
+    }
+    function drawHands(){ if(!gHands || !FEATURE_GESTURE_VIZ_V2) return; const W=cvHands.width|0, H=cvHands.height|0; gHands.clearRect(0,0,W,H);
+      // grid lines for 0,1,2
+      gHands.strokeStyle='rgba(255,255,255,0.1)'; gHands.beginPath(); gHands.moveTo(0,H-1); gHands.lineTo(W,H-1); gHands.moveTo(0,Math.round(H*0.5)); gHands.lineTo(W,Math.round(H*0.5)); gHands.moveTo(0,0); gHands.lineTo(W,0); gHands.stroke();
+      // line
+      gHands.strokeStyle='#eab308'; gHands.lineWidth=1.5; gHands.beginPath();
+      const n=vHands.length; if(n<2) return; for(let i=0;i<n;i++){ const x=i*(W/(n-1)); const y=(1-(vHands[i]/2))*H; if(i===0) gHands.moveTo(x,y); else gHands.lineTo(x,y);} gHands.stroke();
+    }
+    function appendRow(obj){ if(paused) return; rows.push(obj); jsonl.push(JSON.stringify(obj)); if(rows.length>MAX_ROWS){ rows.shift(); }
+      // render minimal (only last row to avoid DOM thrash)
+      const tr = document.createElement('tr');
+      const cells = [
+        obj.t?.toFixed?.(1)||'',
+        (obj.frame??'')+'' ,
+        (obj.hands??'')+'',
+        obj.dt?.toFixed?.(1)||'',
+        obj.fps?.toFixed?.(1)||'',
+        obj.label||'',
+        (isNaN(obj.score)?'':obj.score.toFixed(2)),
+        obj.candAlt||'',
+        obj.event||'',
+        obj.state||'',
+        obj.gate||''
+      ];
+      for(const c of cells){ const td=document.createElement('td'); td.textContent = c; tr.appendChild(td); }
+      tableBody.appendChild(tr);
+      while(tableBody.children.length>MAX_ROWS){ tableBody.removeChild(tableBody.firstChild); }
+    }
+    btnPause.addEventListener('click', ()=>{ paused=!paused; btnPause.textContent = paused? 'Resume':'Pause'; });
+    btnClear.addEventListener('click', ()=>{ rows.length=0; jsonl.length=0; tableBody.innerHTML=''; });
+  // export bound later via doExport
+
+    // FSM for a single gesture: Closed_Fist => Select
+    const FSM = {
+      state: 'Idle',
+      enterThresh: 0.70, // WEBWAY:ww-2025-092
+      exitThresh: 0.55,
+      lastTs: 0,
+      step({ts,label,score}){
+        const prev = this.state;
+        const active = (label==='Closed_Fist' && score>=this.enterThresh);
+        const inactive = (label!=='Closed_Fist' || score<=this.exitThresh);
+        let evt=null;
+        if(prev==='Idle' && active){ this.state='Triggered'; evt='select:trigger'; }
+        else if((prev==='Triggered'||prev==='Held') && inactive){ this.state='Released'; evt='select:release'; }
+        else if(prev==='Triggered' && active){ this.state='Held'; }
+        else if(prev==='Released' && inactive){ this.state='Idle'; }
+        this.lastTs = ts;
+        return { state:this.state, event:evt };
+      }
+    };
+
+  function enqueueEvent(e){ appendRow({ t:e.t, frame:e.frame, hands:e.hands, dt:e.dt, fps:e.fps, label:e.label, score:e.score, candAlt:e.candAlt, event:e.type||e.event, state:e.state, gate:e.gate, per:e.per }); }
+
+    // Load local ESM
+  let recognizer; let lastT=0; let stream; let running=false; let lastFire=0; const MIN_GAP_MS=350;
+  let srcMode = 'camera'; let frameIdx = 0; let objectUrl = null;
+    try {
+      // WEBWAY:ww-2025-092: use local ESM/WASM/model
+      const visionPkg = await import(`${nmBase}/vision_bundle.mjs`);
+      const { FilesetResolver, GestureRecognizer } = visionPkg;
+      const filesetResolver = await FilesetResolver.forVisionTasks(wasmBase);
+      recognizer = await GestureRecognizer.createFromOptions(filesetResolver, {
+        baseOptions: { modelAssetPath: modelPath },
+        runningMode: 'VIDEO',
+        numHands: 2 // ensure multi-hand detection for two-hands goldens
+      });
+      window.__gtOfflineReady = true;
+    } catch (e) {
+      console.error('WEBWAY:ww-2025-092 offline import failed', e);
+      window.__gtOfflineError = String(e?.message || e);
+    }
+
+    async function start(){
+      try{
+        // switch to camera mode
+        srcMode = 'camera'; chipSource.textContent = 'camera'; frameIdx = 0;
+        // clean any prior file source
+        if(objectUrl){ try{ URL.revokeObjectURL(objectUrl); }catch{} objectUrl = null; }
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} }, audio:false });
+        video.srcObject = stream; await video.play(); running=true; statusEl.textContent='camera on'; loop();
+      }catch(e){ console.error(e); statusEl.textContent='error'; }
+    }
+    function stop(){ try{ running=false; statusEl.textContent='stopped'; video.pause(); stream?.getTracks()?.forEach(t=>t.stop()); }catch{} }
+    btnStart.addEventListener('click', start);
+    btnStop.addEventListener('click', stop);
+
+    // Load MP4 and process frames
+    fileInput.addEventListener('change', async (ev)=>{
+      const f = ev.target.files?.[0]; if(!f) return;
+      try{
+        // stop camera if active
+        stop();
+        srcMode = 'file'; chipSource.textContent = 'video'; frameIdx = 0; rows.length=0; jsonl.length=0; tableBody.innerHTML='';
+        objectUrl && URL.revokeObjectURL(objectUrl);
+        objectUrl = URL.createObjectURL(f);
+        video.srcObject = null; video.src = objectUrl; video.loop = false; video.currentTime = 0; await video.play();
+        statusEl.textContent = 'video on'; running = true;
+        // on end -> optionally auto export
+        video.onended = ()=>{ statusEl.textContent = 'ended'; running=false; window.__ended = true; if(chkAutoExport.checked){ doExport(); } };
+        loopFile();
+      }catch(err){ console.error(err); statusEl.textContent='error'; }
+    });
+
+    async function loadVideoUrl(url){
+      try{
+        stop();
+        srcMode = 'file'; chipSource.textContent = 'video'; frameIdx = 0; rows.length=0; jsonl.length=0; tableBody.innerHTML='';
+        video.srcObject = null; video.src = url; video.loop = false; video.currentTime = 0; await video.play();
+        statusEl.textContent = 'video on'; running = true;
+        video.onended = ()=>{ statusEl.textContent = 'ended'; running=false; window.__ended = true; if(chkAutoExport.checked){ doExport(); } };
+        loopFile();
+      }catch(e){ console.error('loadVideoUrl failed', e); statusEl.textContent='error'; }
+
+        // Headless hooks for CI
+        window.__v2 = {
+          isEnded: ()=> statusEl.textContent.includes('ended'),
+          getSummary: ()=> {
+            const idle = (idleLabelEl.value||'Open_Palm').trim();
+            const tgt = (targetLabelEl.value||'Closed_Fist').trim();
+            return summarize(rows, idle, tgt);
+          },
+          getRows: ()=> rows.slice(),
+          getJsonl: ()=> jsonl.join('\n')+'\n'
+        };
+    }
+
+    function onResults(res, ts){
+      try{
+        // Top candidates
+        const handsCount = Array.isArray(res?.gestures) ? res.gestures.length : 0;
+        const g0 = res?.gestures?.[0] || [];
+        const top = g0[0]; const alt1=g0[1]; const alt2=g0[2];
+        const label = top?.categoryName || '—';
+        const score = typeof top?.score==='number' ? top.score : NaN;
+        const candAlt = [alt1?.categoryName, alt2?.categoryName].filter(Boolean).join('/') || '';
+        // per-hand summary (if available)
+        const per = [];
+        for(let i=0;i<handsCount;i++){
+          const gi = res.gestures[i] || [];
+          const ti = gi[0];
+          const li = ti?.categoryName || '—';
+          const si = typeof ti?.score==='number' ? ti.score : NaN;
+          const hi = res?.handednesses?.[i]?.[0]?.categoryName || undefined;
+          per.push({ handed: hi, label: li, score: si });
+        }
+        const dt = lastT? (ts-lastT): 0; const fps = dt>0? (1000/dt): 0; lastT = ts;
+        chipLabel.textContent = `Label: ${label}`;
+        chipScore.textContent = `Score: ${isNaN(score)?'–':score.toFixed(2)}`;
+        chipFPS.textContent = `FPS: ${fps? fps.toFixed(1):'–'}`;
+
+        // FSM step
+        const { state, event } = FSM.step({ ts, label, score });
+        chipState.textContent = `FSM: ${state}`;
+        const gate = (label==='Closed_Fist' && score>=FSM.enterThresh) ? 'enter' : (score<=FSM.exitThresh? 'exit':'mid');
+  const rec = { t:ts, frame:frameIdx, hands:handsCount, dt, fps, label, score, candAlt, state, type:event, gate, per };
+  enqueueEvent(rec);
+  pushVizPoint({ label, score, state, hands:handsCount }); // WEBWAY:ww-2025-093
+
+        // Emit to Dino only on trigger with debounce
+        if(event==='select:trigger'){
+          const now = ts; if(now - lastFire > MIN_GAP_MS){ bumpSelect(); sendSpaceDownUp(); lastFire = now; }
+        }
+      }catch(err){ console.error(err); }
+    }
+
+    async function loop(){
+      while(running){
+        if(!recognizer){ await new Promise(r=>setTimeout(r, 50)); continue; }
+        const ts = performance.now();
+        const res = await recognizer.recognizeForVideo(video, ts);
+        frameIdx++; onResults(res, ts);
+        await new Promise(r=>setTimeout(r,16));
+      }
+    }
+
+    async function loopFile(){
+      if('requestVideoFrameCallback' in HTMLVideoElement.prototype){
+        const onFrame = async ()=>{
+          if(!running || video.paused || video.ended) return;
+          if(!recognizer){ video.requestVideoFrameCallback(()=>onFrame()); return; }
+          const ts = performance.now();
+          const res = await recognizer.recognizeForVideo(video, ts);
+          frameIdx++; onResults(res, ts);
+          video.requestVideoFrameCallback(()=>onFrame());
+        };
+        video.requestVideoFrameCallback(()=>onFrame());
+      } else {
+        // Fallback to timer-based loop
+        const tick = async ()=>{
+          if(!running || video.paused || video.ended) return;
+          if(!recognizer) return setTimeout(tick, 16);
+          const ts = performance.now();
+          const res = await recognizer.recognizeForVideo(video, ts);
+          frameIdx++; onResults(res, ts);
+          setTimeout(tick, 16);
+        };
+        setTimeout(tick, 0);
+      }
+    }
+
+    function doExport(){ const blob=new Blob([jsonl.join('\n')+'\n'], {type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='telemetry.gesture_v2.jsonl'; a.click(); URL.revokeObjectURL(a.href); }
+    btnExport.addEventListener('click', doExport);
+
+    // CSV export (human-friendly)
+    function toCSV(rows){
+      const headers = ['ts','frame','hands','dt','fps','label','score','cand2_3','event','state','gate'];
+      const escape = (v)=>{
+        if(v==null) return '';
+        const s = String(v);
+        return (s.includes(',')||s.includes('"')||s.includes('\n')) ? '"'+s.replace(/"/g,'""')+'"' : s;
+      };
+      const lines = [headers.join(',')];
+      for(const r of rows){
+        const line = [r.t?.toFixed?.(1)||'', r.frame??'', r.hands??'', r.dt?.toFixed?.(1)||'', r.fps?.toFixed?.(1)||'', r.label||'', isNaN(r.score)?'':Number(r.score).toFixed(3), r.candAlt||'', r.event||'', r.state||'', r.gate||''].map(escape).join(',');
+        lines.push(line);
+      }
+      return lines.join('\n')+'\n';
+    }
+    function doExportCSV(){ const csv = toCSV(rows); const blob=new Blob([csv], {type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='telemetry.gesture_v2.csv'; a.click(); URL.revokeObjectURL(a.href); }
+    btnExportCSV?.addEventListener('click', doExportCSV);
+
+    // Validator
+    function summarize(rows, idleLabel, targetLabel){
+      const out = { totalFrames: rows.length, twoHands: 0, twoHandsIdle: 0, twoHandsTarget: 0 };
+      for(const r of rows){
+        const hc = r.hands||0; if(hc>=2){ out.twoHands++; }
+        const per = Array.isArray(r.per)? r.per : [];
+        const idleHits = per.filter(p=>p && p.label===idleLabel && (isNaN(p.score) || p.score>=0.5)).length;
+        if(idleHits>=2) out.twoHandsIdle++;
+        const tgtHits = per.filter(p=>p && p.label===targetLabel && (isNaN(p.score) || p.score>=0.5)).length;
+        if(tgtHits>=2) out.twoHandsTarget++;
+      }
+      return out;
+    }
+    btnValidate.addEventListener('click', ()=>{
+      const idle = (idleLabelEl.value||'Open_Palm').trim();
+      const tgt = (targetLabelEl.value||'Closed_Fist').trim();
+      try{ valOut.textContent = JSON.stringify(summarize(rows, idle, tgt), null, 2); }catch(e){ valOut.textContent = 'Validator error: '+e; }
+    });
+
+    // Query param auto-run
+    (function(){
+      const q = new URLSearchParams(location.search);
+      const v = q.get('video');
+      const auto = q.get('auto')==='1' || q.get('auto')==='true';
+      const idleQ = q.get('idle');
+      const targetQ = q.get('target');
+      const autoExport = q.get('autoExport')==='1' || q.get('autoExport')==='true' || auto;
+      const autoValidate = q.get('validate')==='1' || q.get('validate')==='true' || auto;
+      if(idleQ) idleLabelEl.value = idleQ;
+      if(targetQ) targetLabelEl.value = targetQ;
+      if(autoExport) chkAutoExport.checked = true;
+      if(v){
+        // hook end event for auto behaviors
+        video.onended = ()=>{
+          statusEl.textContent = 'ended'; running=false; window.__ended = true;
+          if(chkAutoExport.checked) doExport();
+          if(autoValidate) btnValidate.click();
+        };
+        loadVideoUrl(v);
+      }
+    })();
+
+    // Headless hooks for smoke validation
+    window.__v2 = {
+      isEnded: ()=> !!window.__ended,
+      getSummary: ()=> {
+        try{
+          const idle = (idleLabelEl.value||'Open_Palm').trim();
+          const tgt = (targetLabelEl.value||'Closed_Fist').trim();
+          return summarize(rows, idle, tgt);
+        }catch(e){ return { error: String(e) }; }
+      }
+    };
+  </script>
+</body>
+</html>

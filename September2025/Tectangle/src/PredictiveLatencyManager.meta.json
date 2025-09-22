@@ -1,0 +1,13 @@
+{
+  "acceptance": [],
+  "emits": [],
+  "generatedFrom": "src/PredictiveLatencyManager.js",
+  "name": "PredictiveLatencyManager",
+  "tests": [
+    "tests/unit/landmarkSmooth.kalman.noisy.test.mjs",
+    "tests/unit/landmarkSmooth.red.kalman.test.mjs",
+    "tests/unit/predictiveLatency.red.test.mjs"
+  ],
+  "timestamp": "2025-09-01T16:40:33.365Z",
+  "version": "0.1.0"
+}

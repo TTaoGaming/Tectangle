@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Tectangle — Pinch Piano (Single‑File Modular Monolith)</title>
+  <style>
+    :root {
+      --bg: #0b0d10; --fg: #e7edf3; --muted: #9fb3c8; --accent: #82d4ff; --ok:#20c997; --warn:#ffb020; --bad:#ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--fg); }
+    header { padding: 16px 20px; border-bottom: 1px solid #1a222c; background: #0f141a; position: sticky; top: 0; z-index: 5; }
+    header h1 { margin:0; font-size: 18px; letter-spacing: .3px; }
+    .row { display:flex; gap:16px; padding: 16px 20px; flex-wrap: wrap; }
+    .col { flex: 1 1 420px; min-width: 320px; }
+    video, canvas { width: 100%; max-width: 100%; border: 1px solid #1a222c; border-radius: 12px; background: #0c1117; display:block; }
+    .panel { border: 1px solid #1a222c; border-radius: 12px; padding: 12px; background: #0c1117; }
+    .panel h3 { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 8px; }
+    .controls label { display:flex; align-items:center; gap: 8px; background:#0f141a; border:1px solid #1a222c; padding:8px 10px; border-radius: 10px; }
+    .controls input[type="range"] { width: 100%; }
+    button, .btn { cursor:pointer; background:#11202b; color: var(--fg); border:1px solid #1a222c; padding:8px 12px; border-radius:10px; }
+    button:hover { background:#122636; }
+    .badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #1a222c; background:#0f141a; color: var(--muted); }
+    .kv { display:grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; }
+    .kv div:nth-child(2n) { color: var(--muted); text-align:right; }
+    footer { padding: 16px 20px; border-top:1px solid #1a222c; color: var(--muted); }
+    .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; margin-right: 4px; }
+    .ok{ background:#0d1e17; color:#7be1bf; }
+    .warn{ background:#1d1a0c; color:#ffd47a; }
+    .bad{ background:#2a1414; color:#ff9a9a; }
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .mini { font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Tectangle — Pinch Piano (Palm‑Gated Index↔Thumb) <span class="badge" id="status">booting…</span></h1>
+</header>
+
+<div class="row">
+  <div class="col">
+    <video id="cam" playsinline muted autoplay></video>
+  </div>
+  <div class="col">
+    <canvas id="overlay" width="960" height="540"></canvas>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col panel">
+    <h3>Controls</h3>
+    <div class="controls">
+      <label><input type="checkbox" id="startStop"> <span>Start camera</span></label>
+      <label><input type="checkbox" id="palmGate" checked> <span>Palm gate</span></label>
+      <label><input type="checkbox" id="speculative" checked> <span>Speculative down</span></label>
+      <label><input type="checkbox" id="drawLandmarks" checked> <span>Draw landmarks</span></label>
+      <label><input type="checkbox" id="beep" checked> <span>Audio beep (WebAudio)</span></label>
+      <label><input type="checkbox" id="midi"> <span>WebMIDI (note C4)</span></label>
+      <label><span>Enter thresh</span> <input type="range" id="enter" min="0.05" max="0.60" step="0.01" value="0.30"></label>
+      <label><span>Exit thresh</span> <input type="range" id="exit"  min="0.10" max="0.90" step="0.01" value="0.42"></label>
+      <label><span>Palm cone (°)</span> <input type="range" id="cone" min="10" max="60" step="1" value="30"></label>
+      <label><span>MinCutoff</span> <input type="range" id="minCutoff" min="0.1" max="3.0" step="0.1" value="1.0"></label>
+      <label><span>Beta</span> <input type="range" id="beta" min="0.00" max="0.10" step="0.005" value="0.01"></label>
+      <label><span>dCutoff</span> <input type="range" id="dCutoff" min="0.1" max="3.0" step="0.1" value="1.0"></label>
+      <label><button id="calibrate">Calibration wizard</button></label>
+      <label><button id="download">Download golden JSONL</button></label>
+    </div>
+  </div>
+
+  <div class="col panel">
+    <h3>Telemetry</h3>
+    <div class="kv" id="kv">
+      <div>FPS</div><div id="fps">–</div>
+      <div>State</div><div id="fsm">Idle</div>
+      <div>NormDist</div><div id="norm">–</div>
+      <div>PalmGate</div><div id="pg">–</div>
+      <div>SpecCancel%</div><div id="specCancel">–</div>
+      <div>Down Latency (mean ms)</div><div id="lat">–</div>
+      <div>Downs</div><div id="downs">0</div>
+      <div>Ups</div><div id="ups">0</div>
+    </div>
+    <p class="mini">Query flags: <code>?disableSpec</code> <code>?disablePalm</code> <code>?fixedSpan=8</code></p>
+  </div>
+</div>
+
+<footer>
+  <span class="pill ok">Hex‑ready ports</span> <span class="pill warn">Demo‑only KeyEvents</span> <span class="pill bad">Allow camera</span>
+  <div class="mini">This single file intentionally models a <em>modular monolith</em> with clean seams for future hexagonal ports/adapters and CI harness (golden JSONL export).</div>
+</footer>
+
+<script type="module">
+// =========================
+// UTIL & ARCH BOUNDARIES
+// =========================
+const Q = new URLSearchParams(location.search);
+const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+const median = arr => { const a=[...arr].sort((x,y)=>x-y); const m=a.length>>1; return a.length? (a.length%2?a[m]:(a[m-1]+a[m])/2):0; };
+
+class RollingMedian {
+  constructor(n){ this.n=n; this.buf=[]; }
+  push(x){ this.buf.push(x); if(this.buf.length>this.n) this.buf.shift(); return median(this.buf); }
+  get med(){ return median(this.buf); }
+}
+
+// OneEuro filter per https://cristal.univ-lille.fr/~casiez/1euro/
+class OneEuro {
+  constructor({minCutoff=1.0, beta=0.01, dCutoff=1.0}={}){
+    this.minCutoff=minCutoff; this.beta=beta; this.dCutoff=dCutoff;
+    this.xPrev=null; this.dxPrev=0; this.tPrev=null;
+  }
+  static alpha(cutoff, dt){ const r=2*Math.PI*cutoff*dt; return r/(r+1); }
+  filter(x, t){
+    if(this.tPrev==null){ this.tPrev=t; this.xPrev=x; return x; }
+    const dt = Math.max(1e-3, (t - this.tPrev)/1000);
+    const dx = (x - this.xPrev)/dt;
+    const aD = OneEuro.alpha(this.dCutoff, dt);
+    const dxHat = aD*dx + (1-aD)*this.dxPrev;
+    const cutoff = this.minCutoff + this.beta*Math.abs(dxHat);
+    const aX = OneEuro.alpha(cutoff, dt);
+    const xHat = aX*x + (1-aX)*this.xPrev;
+    this.tPrev=t; this.xPrev=xHat; this.dxPrev=dxHat; return xHat;
+  }
+}
+
+// Simple PubSub for events
+class Emitter {
+  constructor(){ this.s=new Set(); }
+  on(h){ this.s.add(h); return ()=>this.s.delete(h); }
+  emit(e){ this.s.forEach(h=>h(e)); }
+}
+
+// =========================
+// TELEMETRY (Console + DOM)
+// =========================
+const Telemetry = (()=>{
+  const rec = { downs:0, ups:0, spec:0, specCancel:0, downLat:[], frames:0 };
+  let lastDownT=null;
+  return {
+    noteFrame(){ rec.frames++; },
+    noteDown(t, speculative){ if(speculative) rec.spec++; rec.downs++; lastDownT=t; },
+    noteUp(t){ rec.ups++; if(lastDownT!=null){ const d=t-lastDownT; if(d>=0 && d<2000) rec.downLat.push(d); }},
+    noteSpecCancel(){ rec.specCancel++; },
+    snapshot(){
+      return {
+        downs: rec.downs, ups: rec.ups,
+        specCancelRate: rec.spec? (rec.specCancel/Math.max(1,rec.spec)) : 0,
+        meanDownLatency: rec.downLat.length? Math.round(rec.downLat.reduce((a,b)=>a+b,0)/rec.downLat.length) : 0,
+        frames: rec.frames
+      };
+    }
+  };
+})();
+
+// =========================
+// MIDI & AUDIO PORTS (Adapters)
+// =========================
+class MidiOut {
+  constructor(){ this.out=null; }
+  async init(){
+    try{ const access = await navigator.requestMIDIAccess(); this.out=[...access.outputs.values()][0]||null; }catch{}
+  }
+  send(status,data1,data2){ if(this.out) this.out.send([status,data1,data2]); }
+}
+class Beeper {
+  constructor(){ this.ctx=null; this.osc=null; this.gain=null; }
+  ensure(){ if(!this.ctx){ this.ctx = new (window.AudioContext||window.webkitAudioContext)(); } }
+  down(){ this.ensure(); if(this.osc) return; this.osc=this.ctx.createOscillator(); this.gain=this.ctx.createGain(); this.osc.frequency.value=440; this.gain.gain.value=0.1; this.osc.connect(this.gain).connect(this.ctx.destination); this.osc.start(); }
+  up(){ if(this.osc){ this.osc.stop(); this.osc.disconnect(); this.gain.disconnect(); this.osc=null; this.gain=null; } }
+}
+
+// =========================
+// GOLDEN TRACE RECORDER (JSONL)
+// =========================
+class GoldenRecorder {
+  constructor(){ this.lines=[]; this.started=false; }
+  start(meta){ if(this.started) return; this.started=true; this.lines.push(JSON.stringify({meta})); }
+  frame(obj){ if(!this.started) return; this.lines.push(JSON.stringify(obj)); }
+  download(){
+    const blob = new Blob([this.lines.join('\n')+'\n'], {type:'application/jsonl'});
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), {href:url, download:`pinch_golden_${new Date().toISOString().replace(/[:.]/g,'-')}.jsonl`});
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
+}
+
+// =========================
+// PINCH FEATURE (Domain Core)
+// =========================
+function createPinchFeature(cfg={}){
+  const C = Object.assign({
+    palmConeDeg: +document.querySelector('#cone').value || 30,
+    enterThresh: +document.querySelector('#enter').value || 0.30,
+    exitThresh:  +document.querySelector('#exit').value  || 0.42,
+    enterDebounceMs: 40, exitDebounceMs: 40,
+    holdTimeoutMs: 500, autoReleaseMs: 5000,
+    enableTOI: !Q.has('disableTOI'), enableSpeculative: !Q.has('disableSpec') && document.querySelector('#speculative').checked,
+    fixedKnuckleSpan: Q.get('fixedSpan')? +Q.get('fixedSpan'): null,
+    palmGate: !Q.has('disablePalm') && document.querySelector('#palmGate').checked,
+    oneEuro: { minCutoff:+document.querySelector('#minCutoff').value, beta:+document.querySelector('#beta').value, dCutoff:+document.querySelector('#dCutoff').value }
+  }, cfg);
+
+  const emitter = new Emitter();
+  let state='Idle', lastDown=0, speculative=false;
+  const filt = { ix:new OneEuro(C.oneEuro), iy:new OneEuro(C.oneEuro), iz:new OneEuro(C.oneEuro), tx:new OneEuro(C.oneEuro), ty:new OneEuro(C.oneEuro), tz:new OneEuro(C.oneEuro) };
+  const medV = new RollingMedian(30), medA = new RollingMedian(30);
+
+  let lastNorm=null, lastT=null, vRel=0, aRel=0;
+
+  function palmOk(wrist, indexMCP, pinkyMCP){
+    if(!C.palmGate) return true;
+    if(!wrist || !indexMCP || !pinkyMCP) return true; // be forgiving if missing
+    const vx = indexMCP[0]-wrist[0], vy=indexMCP[1]-wrist[1], vz=(indexMCP[2]??0)-(wrist[2]??0);
+    const ux = pinkyMCP[0]-wrist[0], uy=pinkyMCP[1]-wrist[1], uz=(pinkyMCP[2]??0)-(wrist[2]??0);
+    // normal = v x u
+    const nx = vy*uz - vz*uy, ny = vz*ux - vx*uz, nz = vx*uy - vy*ux;
+    // camera looks down -Z in mediapipe image coords (z~0 at image plane, negative in front) — use nz sign and cone
+    const nzNorm = Math.hypot(nx,ny,nz) || 1; const cos = (-nz)/nzNorm; // favor palm facing camera (normal toward -Z)
+    const ang = Math.acos(clamp(cos,-1,1))*180/Math.PI;
+    return ang <= C.palmConeDeg;
+  }
+
+  function update(frame){
+    const t=frame.t;
+    const ix=filt.ix.filter(frame.indexTip[0],t), iy=filt.iy.filter(frame.indexTip[1],t), iz=filt.iz.filter(frame.indexTip[2]||0,t);
+    const tx=filt.tx.filter(frame.thumbTip[0],t), ty=filt.ty.filter(frame.thumbTip[1],t), tz=filt.tz.filter(frame.thumbTip[2]||0,t);
+
+    let kn = C.fixedKnuckleSpan;
+    if(!kn && frame.indexMCP && frame.pinkyMCP){ kn = Math.hypot(frame.indexMCP[0]-frame.pinkyMCP[0], frame.indexMCP[1]-frame.pinkyMCP[1]); }
+    if(!kn) kn=0.08; // normalized approx if coords are 0..1
+
+    const raw = Math.hypot(ix-tx, iy-ty);
+    const norm = raw / kn;
+
+    if(lastNorm!=null){ const dt=Math.max(1,(t-lastT)); vRel = (norm-lastNorm)/(dt/1000); medV.push(Math.abs(vRel)); }
+    if(lastT!=null){ const dt=Math.max(1,(t-lastT)); const vPrev=vRel; aRel = (vRel - vPrev)/(dt/1000); medA.push(Math.abs(aRel)); }
+    lastNorm=norm; lastT=t;
+
+    const kinOk = Math.abs(vRel) < 3*(medV.med||1) + 3 && Math.abs(aRel) < 5*(medA.med||1) + 5;
+    const gate = palmOk(frame.wrist, frame.indexMCP, frame.pinkyMCP) && kinOk;
+
+    // speculative TOI (constant velocity)
+    const TOI = vRel<0 ? (norm / Math.abs(vRel))*1000 : Infinity;
+    const allowSpec = C.enableSpeculative && gate && TOI<120 && TOI>-40;
+
+    switch(state){
+      case 'Idle':
+        if(gate && norm < C.enterThresh){
+          if(allowSpec){ speculative=true; emitter.emit({type:'pinch:down', t, speculative:true}); Telemetry.noteDown(t, true); }
+          state='PrePinch'; lastDown=t;
+        }
+        break;
+      case 'PrePinch':
+        if(!gate){ if(speculative){ Telemetry.noteSpecCancel(); } speculative=false; state='Idle'; break; }
+        if(norm < C.enterThresh){ if(!speculative){ emitter.emit({type:'pinch:down', t}); Telemetry.noteDown(t, false); } speculative=false; state='Pinched'; }
+        else if(t - lastDown > 120){ if(speculative){ Telemetry.noteSpecCancel(); } speculative=false; state='Idle'; }
+        break;
+      case 'Pinched':
+        if(norm > C.exitThresh){ state='ReleasePending'; }
+        if(t - lastDown > C.autoReleaseMs){ emitter.emit({type:'pinch:up', t}); Telemetry.noteUp(t); state='Idle'; }
+        break;
+      case 'ReleasePending':
+        if(norm > C.exitThresh){ emitter.emit({type:'pinch:up', t}); Telemetry.noteUp(t); state='Idle'; }
+        else state='Pinched';
+        break;
+    }
+
+    HUD.update({ state, norm, gate, fps: FPS.tick(t) });
+    Golden.frame({ t, norm: +norm.toFixed(4), state, gate, evt: null });
+  }
+
+  return { update, on: h=>emitter.on(h) };
+}
+
+// =========================
+// HUD & FPS
+// =========================
+const HUD = (()=>{
+  const el = {
+    fps: document.querySelector('#fps'), fsm: document.querySelector('#fsm'), norm: document.querySelector('#norm'), pg: document.querySelector('#pg'), lat: document.querySelector('#lat'), downs: document.querySelector('#downs'), ups: document.querySelector('#ups'), specCancel: document.querySelector('#specCancel'), status: document.querySelector('#status')
+  };
+  return {
+    status(msg){ el.status.textContent = msg; },
+    update({state, norm, gate, fps}){
+      el.fsm.textContent = state; el.norm.textContent = norm? norm.toFixed(3) : '–'; el.pg.textContent = gate? 'OK':'—'; el.fps.textContent = fps? fps.toFixed(1):'–';
+      const s = Telemetry.snapshot();
+      el.lat.textContent = s.meanDownLatency||'–'; el.downs.textContent = s.downs; el.ups.textContent = s.ups; el.specCancel.textContent = (s.specCancelRate*100).toFixed(1)+'%';
+    }
+  };
+})();
+const FPS = (()=>{ let lastT=null, fps=null; return { tick(t){ if(lastT!=null){ const dt=(t-lastT)/1000; fps = clamp(1/dt,0,240); } lastT=t; return fps; } };})();
+
+// =========================
+// DRAW OVERLAY
+// =========================
+const Overlay = (()=>{
+  const canvas = document.querySelector('#overlay'); const g = canvas.getContext('2d');
+  function clear(){ g.clearRect(0,0,canvas.width,canvas.height); }
+  function drawLandmarks(landmarks){ if(!document.querySelector('#drawLandmarks').checked) return; if(!landmarks) return; g.save(); g.strokeStyle='#2a87ff'; g.fillStyle='#82d4ff'; g.lineWidth=2; for(const p of landmarks){ g.beginPath(); g.arc(p[0]*canvas.width, p[1]*canvas.height, 3,0,Math.PI*2); g.fill(); }
+    // draw lines index-thumb
+    const it = landmarks[8], tt=landmarks[4]; if(it && tt){ g.beginPath(); g.moveTo(it[0]*canvas.width, it[1]*canvas.height); g.lineTo(tt[0]*canvas.width, tt[1]*canvas.height); g.stroke(); }
+    g.restore(); }
+  function annotate(text){ g.save(); g.fillStyle='rgba(0,0,0,.4)'; g.fillRect(8,8,260,64); g.fillStyle='#e7edf3'; g.font='12px system-ui'; g.fillText(text, 16, 28); g.restore(); }
+  return { clear, drawLandmarks, annotate };
+})();
+
+// =========================
+// MEDIAPIPE HANDS ADAPTER (Video Source → LandmarksFrame)
+// =========================
+function createMediaPipeSource(video, onFrame){
+  let landmarker=null; let rafId=null; let running=false; let lastLandmarks=null;
+  async function init(){
+    const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.19/vision_bundle.mjs');
+    const { FilesetResolver, HandLandmarker } = vision;
+    const fileset = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.19/wasm');
+    landmarker = await HandLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task' },
+      runningMode: 'VIDEO', numHands: 2
+    });
+  }
+  function toArr(lm){ return [lm.x, lm.y, lm.z ?? 0]; }
+  function loop(){ if(!running) return; const t=performance.now(); try{
+      const res = landmarker.detectForVideo(video, t);
+      const h = res?.landmarks?.[0];
+      if(h && h.length>=21){ lastLandmarks = h.map(toArr); onFrame({ t, hand:'Right', indexTip: toArr(h[8]), thumbTip: toArr(h[4]), wrist: toArr(h[0]), indexMCP: toArr(h[5]), pinkyMCP: toArr(h[17]) }); }
+    }catch(e){ /* swallow per-frame issues */ }
+    rafId = requestAnimationFrame(loop);
+  }
+  return {
+    async start(){ if(running) return; await init(); running=true; loop(); },
+    stop(){ running=false; if(rafId) cancelAnimationFrame(rafId); },
+    getLastLandmarks(){ return lastLandmarks; }
+  };
+}
+
+// =========================
+// CALIBRATION (micro‑wizard)
+// =========================
+function runCalibration(getLandmarks){
+  return new Promise(async (resolve)=>{
+    alert('Calibration: Open/close hand slowly for ~3 seconds. Click OK to start.');
+    const samples=[]; const start=performance.now();
+    while(performance.now()-start < 3200){
+      const lm = getLandmarks?.(); if(lm && lm.length>=21){ const kn = Math.hypot(lm[5][0]-lm[17][0], lm[5][1]-lm[17][1]); samples.push(kn); }
+      await new Promise(r=>requestAnimationFrame(r));
+    }
+    const span = median(samples) || 0.08;
+    alert('Calibration done. Knuckle span = '+span.toFixed(4)+' (normalized img units).');
+    resolve(span);
+  });
+}
+
+// =========================
+// DEMO ORCHESTRATOR (Ports → Core → Bridges)
+// =========================
+const video = document.querySelector('#cam');
+const status = document.querySelector('#status');
+const startStop = document.querySelector('#startStop');
+const btnCalib = document.querySelector('#calibrate');
+const btnDownload = document.querySelector('#download');
+
+const Golden = new GoldenRecorder();
+const midi = new MidiOut();
+const beeper = new Beeper();
+
+let mp=null, core=null, unsub=null;
+
+window.addEventListener('unhandledrejection', (e)=>{ console.error('Unhandled rejection', e.reason); HUD.status('Recovered from error'); });
+
+async function start(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'user' }, audio:false });
+    video.srcObject = stream; await video.play();
+  }catch(e){ alert('Camera permission required.'); throw e; }
+
+  mp = createMediaPipeSource(video, f=>{
+    Telemetry.noteFrame(); core.update(f); Overlay.clear(); Overlay.drawLandmarks(mp.getLastLandmarks());
+    Overlay.annotate(`state: ${document.querySelector('#fsm').textContent}\nenter: ${document.querySelector('#enter').value} exit: ${document.querySelector('#exit').value}`);
+  });
+
+  core = createPinchFeature();
+  unsub = core.on(e=>{
+    if(e.type==='pinch:down'){
+      document.dispatchEvent(new KeyboardEvent('keydown', { key:'z', bubbles:true }));
+      if(document.querySelector('#beep').checked) beeper.down();
+      if(document.querySelector('#midi').checked) midi.send(0x90,60,100);
+      Golden.frame({ t:e.t, event:'down', spec: !!e.speculative });
+    } else if(e.type==='pinch:up'){
+      document.dispatchEvent(new KeyboardEvent('keyup', { key:'z', bubbles:true }));
+      if(document.querySelector('#beep').checked) beeper.up();
+      if(document.querySelector('#midi').checked) midi.send(0x80,60,0);
+      Golden.frame({ t:e.t, event:'up' });
+    }
+  });
+
+  await mp.start();
+  await midi.init();
+  HUD.status('running');
+
+  Golden.start({ sha:'demo-local', device:navigator.userAgent, fps:'rAF', cfg:{ enter:+document.querySelector('#enter').value, exit:+document.querySelector('#exit').value, cone:+document.querySelector('#cone').value } });
+}
+function stop(){ if(unsub) unsub(); if(mp) mp.stop(); if(video.srcObject){ video.srcObject.getTracks().forEach(t=>t.stop()); video.srcObject=null; } beeper.up(); HUD.status('stopped'); }
+
+startStop.addEventListener('change', e=>{ startStop.checked ? start() : stop(); });
+btnCalib.addEventListener('click', async ()=>{
+  if(!mp){ alert('Start camera first.'); return; }
+  const span = await runCalibration(()=> mp.getLastLandmarks());
+  const url = new URL(location.href); url.searchParams.set('fixedSpan', String(span)); history.replaceState(null,'',url);
+});
+btnDownload.addEventListener('click', ()=> Golden.download());
+
+// Sync sliders to live config by recreating the core on change (demo simplicity)
+for(const id of ['enter','exit','cone','minCutoff','beta','dCutoff','palmGate','speculative']){
+  document.querySelector('#'+id).addEventListener('input', ()=>{
+    if(!core) return; // not running yet
+    // Rebuild core with new config
+    if(unsub) unsub();
+    core = createPinchFeature();
+    unsub = core.on(e=>{
+      if(e.type==='pinch:down'){
+        document.dispatchEvent(new KeyboardEvent('keydown', { key:'z', bubbles:true }));
+        if(document.querySelector('#beep').checked) beeper.down();
+        if(document.querySelector('#midi').checked) midi.send(0x90,60,100);
+      } else if(e.type==='pinch:up'){
+        document.dispatchEvent(new KeyboardEvent('keyup', { key:'z', bubbles:true }));
+        if(document.querySelector('#beep').checked) beeper.up();
+        if(document.querySelector('#midi').checked) midi.send(0x80,60,0);
+      }
+    });
+  });
+}
+
+// Auto-start if ?autostart
+if(Q.has('autostart')){ startStop.checked=true; start(); }
+
+HUD.status('ready');
+</script>
+</body>
+</html>

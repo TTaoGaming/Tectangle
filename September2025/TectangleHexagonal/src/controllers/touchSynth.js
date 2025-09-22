@@ -1,0 +1,1 @@
+﻿// TouchSynth: translates GateFSM + predictor events into touch semantics.\n// TODO: export createTouchMachine(config) for XState chart handling DOWN/HOLD/DRAG/UP.\nexport function createTouchMachine(/* config */) {\n  throw new Error('touchSynth.createTouchMachine not implemented');\n}\n

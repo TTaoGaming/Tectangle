@@ -1,0 +1,848 @@
+<!--
+Live Server: Serve this folder with VSCode Live Server (or another local static server).
+Open this file in the browser (example URL: http://127.0.0.1:5500/August%20Tectangle%20Sprint/tectangle-gesture-keyboard-mobile/prototype/landmark-raw/index.html)
+This page uses the repo managers (CameraManager, LandmarkRawManager) as standalone ES modules.
+Start → Allow camera → see 21 landmarks from the manager pipeline.
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Landmark Raw Prototype — Managers</title>
+    <style>
+      :root {
+        --w: 640px;
+        --h: 480px;
+        --bg: #f7f7f8;
+        --accent: #007aff;
+        --muted: #666;
+      }
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial;
+        margin: 16px;
+        background: var(--bg);
+        color: #111;
+      }
+      h1 {
+        font-size: 16px;
+        margin: 0 0 8px 0;
+      }
+      .wrap {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+      }
+      .left {
+        width: var(--w);
+      }
+      .video-stack {
+        position: relative;
+        width: var(--w);
+        height: var(--h);
+        background: #000;
+        border-radius: 6px;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+      }
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        background: #000;
+      }
+      canvas#overlay {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+      .controls {
+        margin: 10px 0;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      button {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background: white;
+        cursor: pointer;
+      }
+      label.switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        color: var(--muted);
+      }
+      .right {
+        flex: 1;
+        min-width: 260px;
+        max-width: 520px;
+      }
+      .status {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      thead {
+        background: #f0f0f3;
+        font-weight: 600;
+        color: #222;
+      }
+      td,
+      th {
+        padding: 6px 8px;
+        border-bottom: 1px solid #eee;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+      .small {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .note {
+        font-size: 12px;
+        color: #444;
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Landmark Raw Prototype — Managers</h1>
+    <div class="note small">
+      Default: 640×480 @ 30fps. This page imports CameraManager +
+      LandmarkRawManager from <code>src/</code> and consumes canonical
+      <code>landmark:raw</code> events.
+    </div>
+
+    <div class="controls" style="margin-top: 8px">
+      <button id="startBtn">Start</button>
+      <button id="stopBtn" disabled>Stop</button>
+      <label class="switch"
+        ><input type="checkbox" id="overlayToggle" checked /> Overlay</label
+      >
+      <label class="switch" style="margin-left: 8px"
+        ><input type="checkbox" id="sendToHarness" /> Send landmarks to
+        harness</label
+      >
+      <label class="small" style="margin-left: 8px; display: inline-block">
+        Harness URL:
+        <input
+          id="harnessUrl"
+          value="http://localhost:4100/landmark"
+          style="width: 260px"
+        />
+      </label>
+      <label class="small" style="margin-left: 8px; display: inline-block">
+        Send every Nth frame:
+        <input
+          id="sendNth"
+          type="number"
+          min="1"
+          value="5"
+          style="width: 60px"
+        />
+      </label>
+
+      <!-- MediaPipe runtime controls -->
+      <label class="small" style="margin-left: 8px; display: inline-block">
+        Model Complexity:
+        <select id="modelComplexitySelect" style="margin-left: 6px">
+          <option value="0">0 (light)</option>
+          <option value="1" selected>1 (medium)</option>
+          <option value="2">2 (heavy)</option>
+        </select>
+      </label>
+      <label class="small" style="margin-left: 8px; display: inline-block">
+        Max num hands:
+        <input
+          id="maxNumHandsInput"
+          type="number"
+          min="1"
+          max="4"
+          step="1"
+          value="2"
+          style="width: 60px; margin-left: 6px"
+        />
+        <span class="small" style="margin-left: 6px">maxNumHands: 1..4</span>
+      </label>
+      <label class="small" style="margin-left: 8px; display: inline-block">
+        Min detection confidence:
+        <input
+          id="minDetectInput"
+          type="number"
+          step="0.05"
+          min="0"
+          max="1"
+          value="0.50"
+          style="width: 80px; margin-left: 6px"
+        />
+      </label>
+      <label class="small" style="margin-left: 8px; display: inline-block">
+        Min tracking confidence:
+        <input
+          id="minTrackInput"
+          type="number"
+          step="0.05"
+          min="0"
+          max="1"
+          value="0.50"
+          style="width: 80px; margin-left: 6px"
+        />
+      </label>
+
+      <div id="status" class="status" role="status" aria-live="polite">
+        idle
+      </div>
+      <div
+        id="harnessNotice"
+        class="small"
+        aria-live="polite"
+        style="color: crimson; display: none; margin-left: 8px"
+      ></div>
+    </div>
+
+    <div class="wrap">
+      <div class="left">
+        <div class="video-stack" aria-hidden="false">
+          <video id="video" playsinline autoplay muted></video>
+          <canvas id="overlay" width="640" height="480"></canvas>
+        </div>
+      </div>
+      <div class="right">
+        <div class="small">
+          First detected hand — index, x, y, z (x,y normalized 0..1; z as
+          provided)
+        </div>
+        <div style="height: 12px"></div>
+        <div style="max-height: 420px; overflow: auto">
+          <table id="landmarkTable" aria-label="landmark coordinates">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>X</th>
+                <th>Y</th>
+                <th>Z</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- rows populated by script -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MediaPipe CDN scripts (Hands used by LandmarkRawManager if available) -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.4/drawing_utils.js"></script>
+
+    <script type="module">
+      // Import repo managers as standalone ES modules
+      import EventBus from "../../src/EventBusManager.js";
+      import CameraManager from "../../src/CameraManager.js";
+      import LandmarkRawManager from "../../src/LandmarkRawManager.js";
+
+      (function () {
+        const WIDTH = 640,
+          HEIGHT = 480,
+          FPS = 30;
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("overlay");
+        const ctx = canvas.getContext("2d");
+        const startBtn = document.getElementById("startBtn");
+        const stopBtn = document.getElementById("stopBtn");
+        const overlayToggle = document.getElementById("overlayToggle");
+        const statusEl = document.getElementById("status");
+        const tableBody = document.querySelector("#landmarkTable tbody");
+
+        // Send-to-harness controls
+        const DEFAULT_MODEL_COMPLEXITY = 1;
+        const sendToHarness = document.getElementById("sendToHarness");
+        const harnessUrlInput = document.getElementById("harnessUrl");
+        const sendNthInput = document.getElementById("sendNth");
+        const harnessNotice = document.getElementById("harnessNotice");
+
+        // MediaPipe UI controls (optional)
+        const modelComplexitySelect = document.getElementById(
+          "modelComplexitySelect"
+        );
+        const maxNumHandsInput = document.getElementById("maxNumHandsInput");
+        const minDetectionInput = document.getElementById("minDetectInput");
+        const minTrackingInput = document.getElementById("minTrackInput");
+
+        let frameCounter = 0;
+        let cameraManager = null;
+        let landmarkManager = null;
+        let running = false;
+        let overlayEnabled = true;
+        // If user changes UI before manager exists, queue config here and apply on Start
+        let pendingLandmarkConfig = null;
+
+        function initTable() {
+          tableBody.innerHTML = "";
+          for (let i = 0; i < 21; i++) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${i}</td><td data-x>—</td><td data-y>—</td><td data-z>—</td>`;
+            tableBody.appendChild(tr);
+          }
+        }
+        initTable();
+
+        overlayToggle.addEventListener("change", () => {
+          overlayEnabled = overlayToggle.checked;
+          canvas.style.display = overlayEnabled ? "block" : "none";
+          if (!overlayEnabled) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        // Helper: apply config to active manager or queue until manager is constructed
+        function applyOrQueueLandmarkConfig(cfg) {
+          const normalized = {};
+          if (cfg.modelComplexity !== undefined)
+            normalized.modelComplexity = Number(cfg.modelComplexity);
+          if (cfg.minDetectionConfidence !== undefined)
+            normalized.minDetectionConfidence = Number(
+              cfg.minDetectionConfidence
+            );
+          if (cfg.minTrackingConfidence !== undefined)
+            normalized.minTrackingConfidence = Number(
+              cfg.minTrackingConfidence
+            );
+          if (cfg.maxNumHands !== undefined) {
+            let v = Number(cfg.maxNumHands);
+            if (!Number.isFinite(v)) v = 2;
+            v = Math.min(4, Math.max(1, Math.round(v)));
+            normalized.maxNumHands = v;
+          }
+
+          if (
+            landmarkManager &&
+            typeof landmarkManager.setConfig === "function"
+          ) {
+            try {
+              landmarkManager.setConfig(normalized);
+              console.debug("Landmark UI: applied config", normalized);
+            } catch (e) {
+              console.debug("Landmark UI: setConfig error", e);
+            }
+          } else {
+            pendingLandmarkConfig = Object.assign(
+              {},
+              pendingLandmarkConfig || {},
+              normalized
+            );
+            console.debug("Landmark UI: queued config", pendingLandmarkConfig);
+          }
+        }
+
+        // Wire MediaPipe control changes to manager (or queue)
+        if (modelComplexitySelect)
+          modelComplexitySelect.addEventListener("change", () =>
+            applyOrQueueLandmarkConfig({
+              modelComplexity: modelComplexitySelect.value,
+            })
+          );
+        if (maxNumHandsInput)
+          maxNumHandsInput.addEventListener("change", () =>
+            applyOrQueueLandmarkConfig({ maxNumHands: maxNumHandsInput.value })
+          );
+        if (minDetectionInput)
+          minDetectionInput.addEventListener("change", () =>
+            applyOrQueueLandmarkConfig({
+              minDetectionConfidence: minDetectionInput.value,
+            })
+          );
+        if (minTrackingInput)
+          minTrackingInput.addEventListener("change", () =>
+            applyOrQueueLandmarkConfig({
+              minTrackingConfidence: minTrackingInput.value,
+            })
+          );
+
+        startBtn.addEventListener("click", start);
+        stopBtn.addEventListener("click", stop);
+
+        const round3 = (v) => (Math.round(v * 1000) / 1000).toFixed(3);
+
+        function updateTableFromArray(landmarks) {
+          for (let i = 0; i < 21; i++) {
+            const tr = tableBody.children[i];
+            const xTd = tr.querySelector("[data-x]");
+            const yTd = tr.querySelector("[data-y]");
+            const zTd = tr.querySelector("[data-z]");
+            if (landmarks && landmarks[i]) {
+              const p = landmarks[i];
+              xTd.textContent = round3(p[0]);
+              yTd.textContent = round3(p[1]);
+              zTd.textContent =
+                typeof p[2] === "number" ? round3(p[2]) : "0.000";
+            } else {
+              xTd.textContent = "—";
+              yTd.textContent = "—";
+              zTd.textContent = "—";
+            }
+          }
+        }
+
+        function drawLandmarksFromArray(landmarks) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          if (!overlayEnabled) return;
+          if (!landmarks || landmarks.length === 0) return;
+          const chains = [
+            [0, 1, 2, 3, 4],
+            [0, 5, 6, 7, 8],
+            [0, 9, 10, 11, 12],
+            [0, 13, 14, 15, 16],
+            [0, 17, 18, 19, 20],
+          ];
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = "rgba(0,200,120,0.75)";
+          for (const c of chains) {
+            ctx.beginPath();
+            for (let i = 0; i < c.length; i++) {
+              const idx = c[i];
+              const lm = landmarks[idx] || [0, 0, 0];
+              const x = lm[0] * canvas.width;
+              const y = lm[1] * canvas.height;
+              if (i === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+          }
+          ctx.fillStyle = "rgba(0,122,255,0.95)";
+          for (let i = 0; i < landmarks.length; i++) {
+            const p = landmarks[i];
+            const x = p[0] * canvas.width;
+            const y = p[1] * canvas.height;
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        // Consume canonical landmark:raw events from EventBus
+        EventBus.addEventListener("landmark:raw", (envelope) => {
+          const payload =
+            envelope && envelope.detail ? envelope.detail : envelope;
+          frameCounter = payload.frameId || (frameCounter || 0) + 1;
+          const lm = payload.landmarks || [];
+          if (!lm || lm.length === 0) {
+            setStatus("No hand detected");
+            updateTableFromArray([]);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            return;
+          }
+          setStatus("Hand(s) detected — landmarks updated");
+          updateTableFromArray(lm);
+          drawLandmarksFromArray(lm);
+
+          // Optionally forward to harness
+          try {
+            const sendEnabled = sendToHarness && sendToHarness.checked;
+            const nth = Math.max(1, Number(sendNthInput?.value) || 5);
+            if (sendEnabled && frameCounter % nth === 0) {
+              const url =
+                (harnessUrlInput && harnessUrlInput.value) ||
+                "http://localhost:4100/landmark";
+              fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              })
+                .then(async (resp) => {
+                  let json = null;
+                  try {
+                    json = await resp.json().catch(() => null);
+                  } catch (e) {}
+                  console.debug("landmark post response", resp.status, json);
+                })
+                .catch((err) => {
+                  console.debug("landmark post error", err);
+                  if (harnessNotice) {
+                    harnessNotice.textContent =
+                      "Send failed: " +
+                      (err && err.message ? err.message : String(err));
+                    harnessNotice.style.display = "block";
+                    setTimeout(() => {
+                      harnessNotice.style.display = "none";
+                      harnessNotice.textContent = "";
+                    }, 3000);
+                  }
+                });
+            }
+          } catch (err) {
+            console.debug("landmark send error", err);
+          }
+        });
+
+        function setStatus(msg, isError = false) {
+          if (isError) {
+            statusEl.innerHTML = `<strong>${msg}</strong><div class="small">Check camera permission, serve over http(s) (not file://), or try another browser.</div>`;
+            statusEl.style.color = "crimson";
+          } else {
+            statusEl.textContent = msg;
+            statusEl.style.color = "inherit";
+          }
+          console.debug("STATUS:", msg);
+        }
+
+        function mapErrorToMessage(err) {
+          if (!err) return "unknown error";
+          if (typeof err === "string") return err;
+          if (err.name) {
+            switch (err.name) {
+              case "NotAllowedError":
+              case "PermissionDeniedError":
+                return "camera permission denied";
+              case "NotFoundError":
+              case "DevicesNotFoundError":
+                return "no camera device found";
+              case "NotReadableError":
+              case "TrackStartError":
+                return "camera is already in use or not readable";
+              case "OverconstrainedError":
+                return "no camera matching constraints";
+              case "TypeError":
+                return "getUserMedia not supported";
+              default:
+                return err.message || err.name;
+            }
+          }
+          return err.message || String(err);
+        }
+
+        async function start() {
+          if (running) return;
+          setStatus("starting");
+          console.debug("start invoked");
+          startBtn.disabled = true;
+
+          try {
+            // create managers and attach video element
+            cameraManager = new CameraManager({
+              eventBus: EventBus,
+              videoElement: video,
+            });
+
+            // Request strict webrtc start — no silent synthetic fallback
+            const result = await cameraManager.start({
+              source: "webrtc",
+              width: WIDTH,
+              height: HEIGHT,
+              fps: FPS,
+              allowFallback: false,
+            });
+            if (!result || result.ok === false) {
+              const msg = (result && result.error) || "camera start failed";
+              setStatus("ERROR: " + msg, true);
+              console.debug("CameraManager.start returned error", result);
+              startBtn.disabled = false;
+              return;
+            }
+
+            // Instantiate landmark manager to process MediaPipe (publishes landmark:raw to EventBus)
+            landmarkManager = new LandmarkRawManager({
+              eventBus: EventBus,
+              useMediaPipe: true,
+              videoElement: video,
+              modelComplexity: DEFAULT_MODEL_COMPLEXITY,
+              maxLandmarks: 21,
+            });
+
+            // Apply pending or current UI config to the newly created manager
+            const currentUiConfig = {
+              modelComplexity: modelComplexitySelect
+                ? Number(modelComplexitySelect.value)
+                : DEFAULT_MODEL_COMPLEXITY,
+              maxNumHands: maxNumHandsInput
+                ? Math.min(4, Math.max(1, Number(maxNumHandsInput.value)))
+                : 2,
+              minDetectionConfidence: minDetectionInput
+                ? Number(minDetectionInput.value)
+                : 0.5,
+              minTrackingConfidence: minTrackingInput
+                ? Number(minTrackingInput.value)
+                : 0.5,
+            };
+            const cfgToApply = pendingLandmarkConfig || currentUiConfig;
+            try {
+              if (cfgToApply) {
+                landmarkManager.setConfig(cfgToApply);
+                pendingLandmarkConfig = null;
+                console.debug(
+                  "Landmark UI: applied initial config",
+                  cfgToApply
+                );
+              }
+            } catch (e) {
+              console.debug("Landmark UI: setConfig error", e);
+            }
+
+            // Ensure UI shows video and overlay
+            video.style.display = "";
+            canvas.style.display = overlayEnabled ? "block" : "none";
+            try {
+              await video.play().catch(() => {});
+            } catch (e) {}
+
+            running = true;
+            setStatus("Using webcam");
+            console.debug(
+              "CameraManager and LandmarkRawManager started; using webcam"
+            );
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+          } catch (err) {
+            console.debug("Start failed:", err);
+            const friendly = mapErrorToMessage(err);
+            setStatus("ERROR: " + friendly, true);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            video.style.display = "none";
+            startBtn.disabled = false;
+          }
+        }
+
+        function stop() {
+          console.debug("Stop invoked");
+          try {
+            if (
+              landmarkManager &&
+              typeof landmarkManager.destroy === "function"
+            )
+              landmarkManager.destroy();
+          } catch (e) {
+            console.debug("landmarkManager.destroy error", e);
+          } finally {
+            landmarkManager = null;
+          }
+
+          try {
+            if (cameraManager && typeof cameraManager.stop === "function")
+              cameraManager.stop();
+          } catch (e) {
+            console.debug("cameraManager.stop error", e);
+          } finally {
+            cameraManager = null;
+          }
+
+          running = false;
+          setStatus("idle");
+          startBtn.disabled = false;
+          stopBtn.disabled = true;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          updateTableFromArray([]);
+          video.style.display = "none";
+        }
+
+        // On load, verify MediaPipe presence (managers will initialize when used)
+        window.addEventListener("load", () => {
+          setTimeout(() => {
+            if (typeof Hands === "undefined") {
+              console.debug("MediaPipe Hands library missing at load");
+              setStatus("ERROR: MediaPipe Hands library failed to load", true);
+            } else {
+              console.debug(
+                "MediaPipe Hands library loaded (managers will use it)"
+              );
+              setStatus("idle");
+            }
+          }, 200);
+        });
+      })();
+    </script>
+  </body>
+</html>
+
+<!-- Export telemetry module (appends export UI and captures canonical landmark:raw for n seconds) -->
+<script type="module">
+  import EventBus from "../../src/EventBusManager.js";
+
+  (() => {
+    // Build export UI and logic dynamically so prototype HTML stays minimal.
+    const controls = document.querySelector(".controls");
+    if (!controls) return;
+
+    // Container for export controls
+    const exportWrap = document.createElement("span");
+    exportWrap.style.display = "inline-flex";
+    exportWrap.style.alignItems = "center";
+    exportWrap.style.gap = "6px";
+    exportWrap.style.marginLeft = "8px";
+
+    // Format selector
+    const fmtSelect = document.createElement("select");
+    fmtSelect.id = "exportFormat";
+    const optJsonl = document.createElement("option");
+    optJsonl.value = "jsonl";
+    optJsonl.textContent = "JSONL";
+    const optCsv = document.createElement("option");
+    optCsv.value = "csv";
+    optCsv.textContent = "CSV";
+    fmtSelect.appendChild(optJsonl);
+    fmtSelect.appendChild(optCsv);
+
+    // Duration input (seconds)
+    const durInput = document.createElement("input");
+    durInput.type = "number";
+    durInput.min = "0.5";
+    durInput.step = "0.5";
+    durInput.value = "2";
+    durInput.style.width = "60px";
+    durInput.id = "exportDuration";
+
+    // Export button
+    const exportBtn = document.createElement("button");
+    exportBtn.id = "exportBtn";
+    exportBtn.type = "button";
+    exportBtn.textContent = "Export 2s";
+
+    // Export status
+    const exportStatus = document.createElement("div");
+    exportStatus.id = "exportStatus";
+    exportStatus.className = "small";
+    exportStatus.style.marginLeft = "8px";
+
+    // Assemble exportWrap
+    const label = document.createElement("label");
+    label.className = "small";
+    label.style.display = "inline-flex";
+    label.style.alignItems = "center";
+    label.style.gap = "6px";
+    label.textContent = "Export:";
+    exportWrap.appendChild(label);
+    exportWrap.appendChild(fmtSelect);
+    exportWrap.appendChild(durInput);
+    exportWrap.appendChild(exportBtn);
+    exportWrap.appendChild(exportStatus);
+
+    // Insert export UI near the controls (append at end)
+    controls.appendChild(exportWrap);
+
+    // Export buffer + state
+    let exportBuffer = [];
+    let exportActive = false;
+    let exportTimeout = null;
+
+    // CSV escape helper
+    function csvEscape(field) {
+      if (field === null || field === undefined) return '""';
+      const s = String(field);
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+
+    function triggerDownload(filename, content, mime) {
+      const blob = new Blob([content], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    function finishExport(format = "jsonl") {
+      if (exportTimeout) {
+        clearTimeout(exportTimeout);
+        exportTimeout = null;
+      }
+      exportActive = false;
+      if (!exportBuffer || exportBuffer.length === 0) {
+        exportStatus.textContent = "No telemetry captured";
+        console.debug("export: no data captured");
+        return;
+      }
+
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(
+        now.getDate()
+      )}T${pad(now.getHours())}${pad(now.getMinutes())}${pad(
+        now.getSeconds()
+      )}`;
+      const ext = format === "csv" ? "csv" : "jsonl";
+      const filename = `landmark-raw-${ts}.${ext}`;
+
+      if (format === "csv") {
+        // CSV: one row per frame; landmarks as JSON in last column
+        const header = ["frameId", "timestamp", "width", "height", "landmarks"];
+        const lines = [header.join(",")];
+        for (const p of exportBuffer) {
+          const row = [
+            csvEscape(p.frameId),
+            csvEscape(p.timestamp),
+            csvEscape(p.width),
+            csvEscape(p.height),
+            csvEscape(JSON.stringify(p.landmarks)),
+          ];
+          lines.push(row.join(","));
+        }
+        triggerDownload(filename, lines.join("\r\n"), "text/csv;charset=utf-8");
+      } else {
+        // JSONL (newline-delimited JSON) — one payload per line
+        const content = exportBuffer.map((p) => JSON.stringify(p)).join("\n");
+        triggerDownload(filename, content, "application/json;charset=utf-8");
+      }
+
+      exportStatus.textContent = `Exported ${exportBuffer.length} rows → ${filename}`;
+      console.debug("export finished", { rows: exportBuffer.length, filename });
+      // clear buffer after export
+      exportBuffer = [];
+    }
+
+    function startExport(durationSec = 2, format = "jsonl") {
+      if (exportActive) {
+        exportStatus.textContent = "Export already in progress";
+        return;
+      }
+      exportBuffer = [];
+      exportActive = true;
+      exportStatus.textContent = `Recording ${durationSec}s...`;
+      console.debug("export start", { durationSec, format });
+      exportTimeout = setTimeout(
+        () => finishExport(format),
+        Math.max(100, durationSec * 1000)
+      );
+    }
+
+    // Wire export button
+    exportBtn.addEventListener("click", () => {
+      const dur = Math.max(0.1, Number(durInput.value) || 2);
+      const fmt = fmtSelect.value || "jsonl";
+      startExport(dur, fmt);
+    });
+
+    // Subscribe to EventBus landmark:raw to capture payloads while exportActive
+    EventBus.addEventListener("landmark:raw", (envelope) => {
+      try {
+        const payload =
+          envelope && envelope.detail ? envelope.detail : envelope;
+        if (exportActive) {
+          exportBuffer.push(payload);
+          exportStatus.textContent = `Recording... ${exportBuffer.length} rows`;
+        }
+      } catch (e) {
+        console.debug("export capture error", e);
+      }
+    });
+  })();
+</script>

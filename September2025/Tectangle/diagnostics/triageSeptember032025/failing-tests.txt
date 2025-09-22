@@ -1,0 +1,27 @@
+Mocha failing tests / error summary
+Date: 2025-09-03T23:56Z
+
+Summary:
+- The Mocha run aborted before tests executed due to an exception during module loading.
+
+Error (excerpt):
+ReferenceError: module is not defined in ES module scope
+    at file:///c:/Dev/Spatial%20Input%20Mobile/archive-stale/archive-2025-09-01T19-13-05Z/root_contents/August%20Tectangle%20Sprint/foundation/src/PinchRecognitionManager.js:260:1
+    at ModuleJobSync.runSync (node:internal/modules/esm/module_job:395:35)
+    at ModuleLoader.importSyncForRequire (node:internal/modules/esm/loader:329:47)
+    ...
+    at file:///c:/Dev/Spatial%20Input%20Mobile/archive-stale/archive-2025-09-01T19-13-05Z/root_contents/August%20Tectangle%20Sprint/foundation/tests/unit/pinch_recognition.test.mjs:11:33
+
+Immediate impact:
+- Test runner (Mocha) aborted on import; no unit tests executed after this point.
+
+Files implicated:
+- Failing module: [`archive-stale/archive-2025-09-01T19-13-05Z/root_contents/August Tectangle Sprint/foundation/src/PinchRecognitionManager.js`](archive-stale/archive-2025-09-01T19-13-05Z/root_contents/August Tectangle Sprint/foundation/src/PinchRecognitionManager.js:260)
+- Test that imported it: [`archive-stale/archive-2025-09-01T19-13-05Z/root_contents/August Tectangle Sprint/foundation/tests/unit/pinch_recognition.test.mjs`](archive-stale/archive-2025-09-01T19-13-05Z/root_contents/August Tectangle Sprint/foundation/tests/unit/pinch_recognition.test.mjs:11)
+
+Suggested next steps (short):
+- Exclude or fix archived legacy CJS modules referenced by tests (convert to ESM or adjust test globs) so the test runner can proceed.
+- Re-run `npm test` after addressing the module compatibility issue and capture full output.
+
+Full mocha run log (saved to):
+- [`September2025/Tectangle/diagnostics/triage/mocha-output.txt`](September2025/Tectangle/diagnostics/triage/mocha-output.txt:1)

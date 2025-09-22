@@ -1,0 +1,9 @@
+{
+  "id": "mffs5s61_fj2kp8",
+  "ts": "2025-09-11T19:07:16.825Z",
+  "type": "risk",
+  "topic": "docs_orphans",
+  "signal": "top-list size ~= 40",
+  "decay_after_minutes": 720,
+  "meta": {}
+}

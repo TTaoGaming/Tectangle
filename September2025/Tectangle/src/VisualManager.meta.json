@@ -1,0 +1,11 @@
+{
+  "acceptance": [],
+  "emits": [],
+  "generatedFrom": "src/VisualManager.js",
+  "name": "VisualManager",
+  "tests": [
+    "tests/archive/visual_manager.test.mjs"
+  ],
+  "timestamp": "2025-09-01T16:40:33.421Z",
+  "version": "0.1.0"
+}

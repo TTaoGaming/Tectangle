@@ -1,0 +1,215 @@
+{
+  "generatedAt": "2025-09-08T02:33:15.970Z",
+  "roster": [
+    {
+      "id": "silk_scribe",
+      "pascal": "SilkScribe",
+      "name": "Silk Scribe",
+      "role": "Scribe / Archive",
+      "intent": "Capture decisions and lessons as JSONL memories.",
+      "ports": [
+        "AppendHistory",
+        "ReadHistory",
+        "SummarizeHistory"
+      ],
+      "routeTests": [
+        {}
+      ]
+    },
+    {
+      "id": "honeycomb_smith",
+      "pascal": "HoneycombSmith",
+      "name": "Honeycomb Smith",
+      "role": "Creator / Scaffold",
+      "intent": "Index and scaffold knowledge; build hexes.",
+      "ports": [
+        "IndexDocs",
+        "Categorize",
+        "WriteIndices"
+      ],
+      "routeTests": [
+        {}
+      ]
+    },
+    {
+      "id": "web_cartographer",
+      "pascal": "WebCartographer",
+      "name": "Web Cartographer",
+      "role": "Sage / Reorient",
+      "intent": "Map local entrypoints and links for navigation.",
+      "ports": [
+        "ScanPages",
+        "ExtractLinks",
+        "RenderMap"
+      ],
+      "routeTests": [
+        {}
+      ]
+    },
+    {
+      "id": "thread_sovereign",
+      "pascal": "ThreadSovereign",
+      "name": "Thread Sovereign",
+      "role": "Ruler / Exploit",
+      "intent": "Execute one reversible step to move the metric today.",
+      "ports": [
+        "DecideExploit",
+        "ExecuteStep",
+        "RecordOutcome"
+      ],
+      "routeTests": [
+        {}
+      ]
+    },
+    {
+      "id": "faultline_seeker",
+      "pascal": "FaultlineSeeker",
+      "name": "Faultline Seeker",
+      "role": "Explorer / Explore",
+      "intent": "Design 1-3 micro-tests to reduce risk fast.",
+      "ports": [
+        "DesignTests",
+        "RunReplay",
+        "ReportSignals"
+      ],
+      "routeTests": [
+        {}
+      ]
+    },
+    {
+      "id": "prism_magus",
+      "pascal": "PrismMagus",
+      "name": "Prism Magus",
+      "role": "Magician / Pivot",
+      "intent": "Run tiny A/B behind a flag; keep the winner.",
+      "ports": [
+        "PlanAB",
+        "RunAB",
+        "Compare"
+      ],
+      "routeTests": [
+        {}
+      ]
+    },
+    {
+      "id": "lattice_steward",
+      "pascal": "LatticeSteward",
+      "name": "Lattice Steward",
+      "role": "Caregiver / Stability",
+      "intent": "Add guardrails and frozen expectations.",
+      "ports": [
+        "FreezeExpectations",
+        "ApplyGuardrails",
+        "ReportHealth"
+      ],
+      "routeTests": [
+        {}
+      ]
+    },
+    {
+      "id": "window_hunter",
+      "pascal": "WindowHunter",
+      "name": "Window Hunter",
+      "role": "Warrior / Finisher",
+      "intent": "Package and ready artifacts for handoff.",
+      "ports": [
+        "Pack",
+        "VerifyPortable",
+        "Publish"
+      ],
+      "routeTests": [
+        {}
+      ]
+    },
+    {
+      "id": "safebreaker",
+      "pascal": "Safebreaker",
+      "name": "Safebreaker",
+      "role": "Outlaw / Rule-Unlock",
+      "intent": "Temporarily bypass constraints behind flags to unblock.",
+      "ports": [
+        "ListConstraints",
+        "ProposeBypass",
+        "EnableFlag"
+      ],
+      "routeTests": [
+        {}
+      ]
+    },
+    {
+      "id": "first_principles",
+      "pascal": "FirstPrinciples",
+      "name": "First Principles",
+      "role": "Everyman / Clarity",
+      "intent": "Reduce to plain-language core and necessary parts.",
+      "ports": [
+        "Summarize",
+        "ExtractConstraints",
+        "DefineKnobs"
+      ],
+      "routeTests": [
+        {}
+      ]
+    },
+    {
+      "id": "swarm_jester",
+      "pascal": "SwarmJester",
+      "name": "Swarm Jester",
+      "role": "Jester / Creative Breaker",
+      "intent": "Generate alternative probes to escape local maxima.",
+      "ports": [
+        "IdeaBurst",
+        "SelectProbe",
+        "ArchiveIdeas"
+      ],
+      "routeTests": [
+        {}
+      ]
+    },
+    {
+      "id": "concord_weaver",
+      "pascal": "ConcordWeaver",
+      "name": "Concord Weaver",
+      "role": "Lover / Adoption & Fit",
+      "intent": "Produce adoption checklists and UX entrypoints.",
+      "ports": [
+        "AdoptionChecklist",
+        "ReadmeDraft",
+        "FitAssessment"
+      ],
+      "routeTests": [
+        {}
+      ]
+    },
+    {
+      "id": "signal_warden",
+      "pascal": "SignalWarden",
+      "name": "Signal Warden",
+      "role": "Innocent / Safety & Integrity",
+      "intent": "Audit safety defaults, telemetry, and consent.",
+      "ports": [
+        "AuditSafety",
+        "CheckTelemetry",
+        "ReportFindings"
+      ],
+      "routeTests": [
+        {}
+      ]
+    },
+    {
+      "id": "shadow_auditor",
+      "pascal": "ShadowAuditor",
+      "name": "Shadow Auditor",
+      "role": "Shadow / Red-Team",
+      "intent": "Red-team critical flows; surface worst-cases.",
+      "ports": [
+        "ThreatList",
+        "Probe",
+        "MitigationChecklist"
+      ],
+      "routeTests": [
+        {}
+      ]
+    }
+  ]
+}

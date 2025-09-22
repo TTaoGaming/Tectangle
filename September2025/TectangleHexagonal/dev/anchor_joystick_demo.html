@@ -1,0 +1,165 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/unit/controllerRouterCore.reservation.test.mjs
+  - [ ] tests/unit/seatConcurrencyCore.test.mjs
+  - [ ] tests/smoke/run_video_check_seats.mjs
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Anchor Joystick Demo</title>
+  <style>
+    :root { --bg:#0b0d10; --fg:#e8edf5; --muted:#9fb3c8; --accent:#4af0c3; --bad:#ff6b6b; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--fg); font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; height:100vh; display:grid; grid-template-columns:minmax(0,2fr) minmax(320px,1fr); }
+    #left { position:relative; }
+    video { width:100%; height:100%; object-fit:cover; background:#000; }
+    #overlayGrid { position:absolute; inset:16px; pointer-events:none; border:1px solid rgba(255,255,255,0.08); border-radius:12px; background:rgba(17,23,34,0.45); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
+    #status { font-size:13px; color:var(--muted); text-align:center; }
+    #joystickCanvas { width:240px; height:240px; border-radius:50%; background:rgba(28,36,48,0.65); box-shadow:inset 0 0 18px rgba(0,0,0,0.45); }
+    #right { padding:18px 20px; overflow:auto; border-left:1px solid rgba(255,255,255,0.06); display:flex; flex-direction:column; gap:16px; }
+    button { background:var(--accent); border:none; color:#051018; padding:10px 18px; border-radius:8px; font-weight:600; cursor:pointer; box-shadow:0 4px 18px rgba(74,240,195,0.25); }
+    button:disabled { opacity:0.55; cursor:not-allowed; box-shadow:none; }
+    h1 { margin:0; font-size:20px; }
+    .mono { font-family:"JetBrains Mono","Fira Code",ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; font-size:12px; background:rgba(14,20,30,0.82); padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.05); white-space:pre-wrap; line-height:1.45; min-height:180px; }
+    .badge { display:inline-block; padding:2px 6px; border-radius:6px; font-size:11px; margin-right:6px; background:rgba(74,240,195,0.18); color:var(--accent); transition:background 0.2s ease; }
+  </style>
+</head>
+<body>
+  <div id="left">
+    <video id="cam" playsinline muted></video>
+    <div id="overlayGrid">
+      <div id="status">waiting for anchor�</div>
+      <canvas id="joystickCanvas" width="240" height="240"></canvas>
+    </div>
+  </div>
+  <div id="right">
+    <div>
+      <h1>Anchor Joystick Demo</h1>
+      <p style="color:var(--muted); font-size:13px;">Pinch &amp; hold to spawn a spatial anchor, then drag your fingertips to steer the vector.</p>
+      <button id="startBtn">Start Camera</button>
+    </div>
+    <div>
+      <span class="badge" id="anchorState">idle</span>
+      <span class="badge" id="seatState">seat: -</span>
+    </div>
+    <div class="mono" id="debugLog">(no events yet)</div>
+  </div>
+  <script type="module">
+    import { createAppShell } from '../src/app/appShell.js';
+
+    window.__flags = Object.assign({}, window.__flags || {}, { FEATURE_ANCHOR_JOYSTICK: true });
+
+    const video = document.getElementById('cam');
+    const startBtn = document.getElementById('startBtn');
+    const statusEl = document.getElementById('status');
+    const seatEl = document.getElementById('seatState');
+    const stateBadge = document.getElementById('anchorState');
+    const debugLog = document.getElementById('debugLog');
+    const canvas = document.getElementById('joystickCanvas');
+    const ctx = canvas.getContext('2d');
+    const shell = createAppShell();
+
+    const params = new URLSearchParams(location.search);
+    const clipParam = params.get('clip');
+    const FALLBACK_CLIP = 'September2025/TectangleHexagonal/videos/two_hands_stationary_right_then_left_index_pinch_hold_1s_v1.mp4';
+    const logBuffer = [];
+
+    function pushLog(line){
+      logBuffer.push(line);
+      while(logBuffer.length > 32) logBuffer.shift();
+      debugLog.textContent = logBuffer.join('\n');
+    }
+
+    function drawJoystick(vector = [0,0,0]){
+      const width = canvas.width; const height = canvas.height;
+      const cx = width / 2; const cy = height / 2;
+      const radius = Math.min(width, height) / 2 - 12;
+      ctx.clearRect(0,0,width,height);
+      ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(10,18,28,0.75)'; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI*2); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill();
+      const scale = radius;
+      const vx = Math.max(-1, Math.min(1, vector[0] || 0));
+      const vy = Math.max(-1, Math.min(1, -(vector[1] || 0)));
+      const px = cx + vx * scale;
+      const py = cy + vy * scale;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(px, py);
+      ctx.strokeStyle = 'rgba(74, 240, 195, 0.8)'; ctx.lineWidth = 4; ctx.stroke();
+      ctx.beginPath(); ctx.arc(px, py, 10, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(74, 240, 195, 0.9)'; ctx.fill();
+    }
+
+    function setAnchorState(text, color){
+      stateBadge.textContent = text;
+      stateBadge.style.background = color;
+    }
+
+    function handleAnchorEvent(evt){
+      if(!window.__anchorEvents) window.__anchorEvents = [];
+      window.__anchorEvents.push({ type: evt.type, vector: evt.vector ? [...evt.vector] : null, t: evt.t, handKey: evt.handKey || evt.handId || evt.hand || null });
+      const seatGuess = shell.router?.getControllerForHand?.(evt.handKey || evt.handId || evt.hand || null) || '-';
+      seatEl.textContent = `seat: ${seatGuess}`;
+      statusEl.textContent = `anchor ${evt.type.replace('anchor:','')} @ ${typeof evt.t === 'number' ? Math.round(evt.t) : evt.t}`;
+      const vector = evt.vector || [0,0,0];
+      drawJoystick(vector);
+      pushLog(`${evt.type.padEnd(13)} hand=${evt.handKey || evt.hand || '?'} vec=[${vector.map(v=>v?.toFixed?.(3) ?? '0.000').join(', ')}]`);
+      if(evt.type === 'anchor:start') setAnchorState('anchored', 'rgba(74, 240, 195, 0.3)');
+      if(evt.type === 'anchor:update') setAnchorState('dragging', 'rgba(74, 171, 240, 0.3)');
+      if(evt.type === 'anchor:end') setAnchorState('released', 'rgba(64, 84, 120, 0.35)');
+      if(evt.type === 'anchor:cancel' || evt.type === 'anchor:timeout') setAnchorState(evt.type.replace('anchor:',''), 'rgba(255, 107, 107, 0.25)');
+    }
+
+    shell.onEvent(evt => {
+      if(evt.type?.startsWith('anchor:')) handleAnchorEvent(evt);
+    });
+
+    window.__anchorDemo = {
+      emit(evt){ handleAnchorEvent(evt); },
+      playClip(url){ return shell.startVideoUrl(video, url || clipParam || FALLBACK_CLIP); }
+    };
+
+    async function startCamera(){
+      startBtn.disabled = true;
+      setAnchorState('arming�', 'rgba(74, 171, 240, 0.35)');
+      statusEl.textContent = 'requesting camera access�';
+      try {
+        await shell.startCamera(video);
+        statusEl.textContent = 'camera running � pinch & hold to anchor';
+      } catch (err) {
+        console.warn('camera failed, falling back to clip', err);
+        statusEl.textContent = 'camera unavailable; playing fallback clip';
+        await shell.startVideoUrl(video, clipParam || FALLBACK_CLIP);
+      }
+    }
+
+    startBtn.addEventListener('click', ()=> startCamera());
+
+    if(clipParam){
+      startBtn.disabled = true;
+      statusEl.textContent = 'auto-playing clip�';
+      shell.startVideoUrl(video, clipParam).then(()=>{
+        statusEl.textContent = 'clip playing � anchors respond to recorded pinch';
+      }).catch(err=>{
+        statusEl.textContent = 'failed to load clip: ' + (err?.message || err);
+        startBtn.disabled = false;
+      });
+    }
+
+    drawJoystick([0,0,0]);
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,118 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/unit/fingerGeometryCore.test.mjs
+  - [ ] tests/unit/pinchCore.test.mjs
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Tectangle • Fingertip Sphere (scale by palm width)</title>
+  <style>
+    :root { --bg:#0b0d10; --fg:#e7edf3; --muted:#9fb3c8; }
+    *{ box-sizing:border-box; }
+    body{ margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif; }
+    header{ padding:12px 16px; border-bottom:1px solid #1a222c; background:#0f141a; position:sticky; top:0; z-index:5; }
+    .row{ display:flex; gap:12px; padding:12px 16px; flex-wrap:wrap; }
+    video, canvas{ width:100%; max-width:960px; border:1px solid #1a222c; border-radius:12px; background:#0c1117; display:block; }
+    .hint{ color:var(--muted); font-size:12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>Fingertip Sphere <small class="hint">radius ∝ palm width (Index MCP↔Pinky MCP)</small></h2>
+  </header>
+  <div class="row">
+    <video id="cam" playsinline muted autoplay></video>
+    <canvas id="overlay" width="960" height="540"></canvas>
+  </div>
+
+  <script type="module">
+    import { createMediaPipeSource } from '../src/ports/mediapipe.js';
+
+    const video = document.getElementById('cam');
+    const canvas = document.getElementById('overlay');
+    const ctx = canvas.getContext('2d');
+
+    // Simple EMA smoother for palm width (in px)
+    const EMA = (alpha=0.2)=>{ let y=null; return (x)=>{ y = (y==null? x : (1-alpha)*y + alpha*x); return y; }; };
+    const smoothPalm = EMA(0.2);
+
+    const k = 0.35; // scale factor from palm width px to sphere radius
+    const rMin = 6, rMax = 56;
+
+    let mp=null;
+
+    const stats = { frames:0, draws:0, radii:{ min:Infinity, max:-Infinity }, tip0:null, tipRangePx:0 };
+
+    function drawSphere(tip, palmWidthPx){
+      const x = tip[0]*canvas.width;
+      const y = tip[1]*canvas.height;
+      const palmEma = smoothPalm(palmWidthPx);
+      const r = Math.max(rMin, Math.min(rMax, k * (palmEma||palmWidthPx||0)));
+
+      // background
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      // glow
+      ctx.save();
+      ctx.fillStyle = 'rgba(130,212,255,0.15)';
+      ctx.beginPath(); ctx.arc(x, y, r*1.8, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+      // core sphere
+      const grad = ctx.createRadialGradient(x-r*0.4, y-r*0.4, r*0.2, x, y, r);
+      grad.addColorStop(0, '#bfeaff');
+      grad.addColorStop(1, '#2a87ff');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+
+      // track draws and tip movement range in px
+      stats.draws++;
+      if(!stats.tip0){ stats.tip0 = [x,y]; }
+      else { const dx=x-stats.tip0[0], dy=y-stats.tip0[1]; const d=Math.hypot(dx,dy); if(d>stats.tipRangePx) stats.tipRangePx = d; }
+    }
+
+    // Light automation surface for smoke tests
+    function exposeAutomation(){
+      const api = {
+        async startVideoUrl(fileUrl){
+          try{ video.srcObject=null; video.src = fileUrl; await video.play(); }
+          catch(e){ console.error('Could not play URL', fileUrl, e); throw e; }
+          // reset stats per run
+          stats.frames = 0; stats.draws = 0; stats.radii.min=Infinity; stats.radii.max=-Infinity; stats.tip0=null; stats.tipRangePx=0;
+          mp = createMediaPipeSource(video, f=>{
+            // Require landmarks we need
+            if(!f || !f.indexTip || !f.indexMCP || !f.pinkyMCP) return;
+            stats.frames++;
+            // Compute palm width in pixels using MCPs (normalized→px)
+            const dx = (f.indexMCP[0] - f.pinkyMCP[0]) * canvas.width;
+            const dy = (f.indexMCP[1] - f.pinkyMCP[1]) * canvas.height;
+            const palmWidthPx = Math.hypot(dx, dy);
+            const palmEma = smoothPalm(palmWidthPx);
+            const r = Math.max(rMin, Math.min(rMax, k * (palmEma||palmWidthPx||0)));
+            stats.radii.min = Math.min(stats.radii.min, r);
+            stats.radii.max = Math.max(stats.radii.max, r);
+            drawSphere(f.indexTip, palmWidthPx);
+          });
+          await mp.start();
+          return new Promise((resolve)=>{ video.onended = ()=>{ try{ mp.stop(); }catch{} const range=(isFinite(stats.radii.max)&&isFinite(stats.radii.min))? (stats.radii.max - stats.radii.min) : 0; resolve({ telemetry:{ frames:stats.frames, draws:stats.draws, minR:stats.radii.min, maxR:stats.radii.max, range, tipRangePx:stats.tipRangePx }, golden:[], landmarks:[] }); }; });
+        },
+        async processVideoUrl(u){ return await api.startVideoUrl(u); }
+      };
+      Object.defineProperty(window,'__hex',{ get(){ return api; } });
+      window.__hexReady = true;
+    }
+
+    exposeAutomation();
+  </script>
+</body>
+</html>

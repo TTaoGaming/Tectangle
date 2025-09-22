@@ -1,0 +1,366 @@
+{
+  "generatedAt": "2025-09-06T22:21:13.126Z",
+  "repo": "Spatial Input Mobile",
+  "platform": {
+    "platform": "win32",
+    "osRelease": "10.0.26100",
+    "arch": "x64"
+  },
+  "nodeVersion": "v22.13.0",
+  "npmVersion": "11.2.0",
+  "npxVersion": "11.2.0",
+  "gitVersion": "git version 2.47.1.windows.2",
+  "pythonVersion": "Python 3.13.1",
+  "packageJsonScripts": {
+    "check-headers": "node \"August Tectangle Sprint/tectangle-gesture-keyboard-mobile/scripts/check_headers.js\"",
+    "update-meta": "node \"August Tectangle Sprint/tectangle-gesture-keyboard-mobile/scripts/update_meta_timestamp.js\" --staged",
+    "test-header-meta": "node --test \"August Tectangle Sprint/tectangle-gesture-keyboard-mobile/tests/unit/header.meta.CameraManager.test.mjs\"",
+    "test-camera-dynamic": "node --test \"August Tectangle Sprint/tectangle-gesture-keyboard-mobile/tests/unit/camera.dynamic-resolution.test.mjs\"",
+    "test:mocha": "npx mocha \"**/tests/unit/**/*.mjs\" --exit --reporter spec",
+    "test:tectangle": "npx mocha \"August Tectangle Sprint/tectangle-gesture-keyboard-mobile/tests/unit/**/*.mjs\" --exit --reporter spec",
+    "test:unit": "npm run test:mocha",
+    "test:smoke": "npx mocha \"**/tests/smoke/**/*.mjs\" --exit --reporter spec",
+    "test:golden": "npx mocha \"**/tests/golden-master/**/*.mjs\" --exit --reporter spec",
+    "test": "npm run test:unit",
+    "start-smoke-harness": "node \"August Tectangle Sprint/tectangle-gesture-keyboard-mobile/smoke/camera/smoke-harness.js\"",
+    "smoke:e2e": "node scripts/smoke-e2e.mjs",
+    "mcp:serve": "node scripts/run-mcp.js",
+    "prepare": "husky install",
+    "test:e2e": "cross-env JEST_PUPPETEER_CONFIG=jest-puppeteer.config.cjs jest --config jest.config.cjs",
+    "test:watch:e2e": "cross-env JEST_PUPPETEER_CONFIG=jest-puppeteer.config.cjs jest --config jest.config.cjs --watchAll"
+  },
+  "packageJsonDeps": [
+    "husky",
+    "lint-staged",
+    "mocha",
+    "jest",
+    "jest-environment-puppeteer",
+    "jest-puppeteer",
+    "prettier",
+    "puppeteer",
+    "http-server",
+    "cross-env"
+  ],
+  "detectedPackages": {
+    "puppeteer": {
+      "present": true,
+      "sizeBytes": 363752
+    },
+    "puppeteer-core": {
+      "present": true,
+      "sizeBytes": 8237664
+    },
+    "@playwright/test": {
+      "present": false,
+      "sizeBytes": null
+    },
+    "playwright": {
+      "present": false,
+      "sizeBytes": null
+    },
+    "http-server": {
+      "present": true,
+      "sizeBytes": 166541
+    },
+    "serve": {
+      "present": false,
+      "sizeBytes": null
+    },
+    "mocha": {
+      "present": true,
+      "sizeBytes": 2128443
+    },
+    "jest": {
+      "present": true,
+      "sizeBytes": 5006
+    },
+    "@testing-library/react": {
+      "present": false,
+      "sizeBytes": null
+    }
+  },
+  "presenceOfSmokeHarness": true,
+  "smokePaths": [
+    "September2025/Tectangle/tests/smoke",
+    "September2025/Tectangle/tests/smoke/index-src-3.puppeteer.test.mjs",
+    "September2025/Tectangle/tests/smoke/kinematic.plausibility.smoke.test.mjs",
+    "September2025/Tectangle/tests/smoke/output",
+    "September2025/Tectangle/tests/smoke/output/test-run.log",
+    "September2025/Tectangle/tests/smoke/pinch.baseline.smoke.test.mjs",
+    "September2025/Tectangle/tests/smoke/server.js"
+  ],
+  "activeListeners": [
+    {
+      "port": "135",
+      "pid": "1800",
+      "raw": "TCP    0.0.0.0:135            0.0.0.0:0              LISTENING       1800"
+    },
+    {
+      "port": "445",
+      "pid": "4",
+      "raw": "TCP    0.0.0.0:445            0.0.0.0:0              LISTENING       4"
+    },
+    {
+      "port": "4067",
+      "pid": "33340",
+      "raw": "TCP    0.0.0.0:4067           0.0.0.0:0              LISTENING       33340"
+    },
+    {
+      "port": "5040",
+      "pid": "10388",
+      "raw": "TCP    0.0.0.0:5040           0.0.0.0:0              LISTENING       10388"
+    },
+    {
+      "port": "5500",
+      "pid": "40348",
+      "raw": "TCP    0.0.0.0:5500           0.0.0.0:0              LISTENING       40348"
+    },
+    {
+      "port": "7680",
+      "pid": "9784",
+      "raw": "TCP    0.0.0.0:7680           0.0.0.0:0              LISTENING       9784"
+    },
+    {
+      "port": "8000",
+      "pid": "12660",
+      "raw": "TCP    0.0.0.0:8000           0.0.0.0:0              LISTENING       12660"
+    },
+    {
+      "port": "27036",
+      "pid": "18420",
+      "raw": "TCP    0.0.0.0:27036          0.0.0.0:0              LISTENING       18420"
+    },
+    {
+      "port": "49664",
+      "pid": "1504",
+      "raw": "TCP    0.0.0.0:49664          0.0.0.0:0              LISTENING       1504"
+    },
+    {
+      "port": "49665",
+      "pid": "1364",
+      "raw": "TCP    0.0.0.0:49665          0.0.0.0:0              LISTENING       1364"
+    },
+    {
+      "port": "49666",
+      "pid": "2092",
+      "raw": "TCP    0.0.0.0:49666          0.0.0.0:0              LISTENING       2092"
+    },
+    {
+      "port": "49667",
+      "pid": "2960",
+      "raw": "TCP    0.0.0.0:49667          0.0.0.0:0              LISTENING       2960"
+    },
+    {
+      "port": "49668",
+      "pid": "4872",
+      "raw": "TCP    0.0.0.0:49668          0.0.0.0:0              LISTENING       4872"
+    },
+    {
+      "port": "49671",
+      "pid": "1452",
+      "raw": "TCP    0.0.0.0:49671          0.0.0.0:0              LISTENING       1452"
+    },
+    {
+      "port": "54235",
+      "pid": "4",
+      "raw": "TCP    0.0.0.0:54235          0.0.0.0:0              LISTENING       4"
+    },
+    {
+      "port": "139",
+      "pid": "4",
+      "raw": "TCP    10.0.0.35:139          0.0.0.0:0              LISTENING       4"
+    },
+    {
+      "port": "1337",
+      "pid": "5612",
+      "raw": "TCP    127.0.0.1:1337         0.0.0.0:0              LISTENING       5612"
+    },
+    {
+      "port": "2015",
+      "pid": "6196",
+      "raw": "TCP    127.0.0.1:2015         0.0.0.0:0              LISTENING       6196"
+    },
+    {
+      "port": "5939",
+      "pid": "5680",
+      "raw": "TCP    127.0.0.1:5939         0.0.0.0:0              LISTENING       5680"
+    },
+    {
+      "port": "13331",
+      "pid": "7536",
+      "raw": "TCP    127.0.0.1:13331        0.0.0.0:0              LISTENING       7536"
+    },
+    {
+      "port": "13344",
+      "pid": "29392",
+      "raw": "TCP    127.0.0.1:13344        0.0.0.0:0              LISTENING       29392"
+    },
+    {
+      "port": "18003",
+      "pid": "6648",
+      "raw": "TCP    127.0.0.1:18003        0.0.0.0:0              LISTENING       6648"
+    },
+    {
+      "port": "27060",
+      "pid": "18420",
+      "raw": "TCP    127.0.0.1:27060        0.0.0.0:0              LISTENING       18420"
+    },
+    {
+      "port": "49670",
+      "pid": "5620",
+      "raw": "TCP    127.0.0.1:49670        0.0.0.0:0              LISTENING       5620"
+    },
+    {
+      "port": "50693",
+      "pid": "40348",
+      "raw": "TCP    127.0.0.1:50693        0.0.0.0:0              LISTENING       40348"
+    },
+    {
+      "port": "54277",
+      "pid": "28192",
+      "raw": "TCP    127.0.0.1:54277        0.0.0.0:0              LISTENING       28192"
+    },
+    {
+      "port": "54304",
+      "pid": "18420",
+      "raw": "TCP    127.0.0.1:54304        0.0.0.0:0              LISTENING       18420"
+    },
+    {
+      "port": "54305",
+      "pid": "18420",
+      "raw": "TCP    127.0.0.1:54305        0.0.0.0:0              LISTENING       18420"
+    },
+    {
+      "port": "55599",
+      "pid": "5424",
+      "raw": "TCP    127.0.0.1:55599        0.0.0.0:0              LISTENING       5424"
+    },
+    {
+      "port": "56495",
+      "pid": "40348",
+      "raw": "TCP    127.0.0.1:56495        0.0.0.0:0              LISTENING       40348"
+    },
+    {
+      "port": "65001",
+      "pid": "5476",
+      "raw": "TCP    127.0.0.1:65001        0.0.0.0:0              LISTENING       5476"
+    },
+    {
+      "port": "65444",
+      "pid": "7776",
+      "raw": "TCP    127.0.0.1:65444        0.0.0.0:0              LISTENING       7776"
+    },
+    {
+      "port": "139",
+      "pid": "4",
+      "raw": "TCP    169.254.168.145:139    0.0.0.0:0              LISTENING       4"
+    },
+    {
+      "port": "135",
+      "pid": "1800",
+      "raw": "TCP    [::]:135               [::]:0                 LISTENING       1800"
+    },
+    {
+      "port": "445",
+      "pid": "4",
+      "raw": "TCP    [::]:445               [::]:0                 LISTENING       4"
+    },
+    {
+      "port": "4067",
+      "pid": "33340",
+      "raw": "TCP    [::]:4067              [::]:0                 LISTENING       33340"
+    },
+    {
+      "port": "7680",
+      "pid": "9784",
+      "raw": "TCP    [::]:7680              [::]:0                 LISTENING       9784"
+    },
+    {
+      "port": "49664",
+      "pid": "1504",
+      "raw": "TCP    [::]:49664             [::]:0                 LISTENING       1504"
+    },
+    {
+      "port": "49665",
+      "pid": "1364",
+      "raw": "TCP    [::]:49665             [::]:0                 LISTENING       1364"
+    },
+    {
+      "port": "49666",
+      "pid": "2092",
+      "raw": "TCP    [::]:49666             [::]:0                 LISTENING       2092"
+    },
+    {
+      "port": "49667",
+      "pid": "2960",
+      "raw": "TCP    [::]:49667             [::]:0                 LISTENING       2960"
+    },
+    {
+      "port": "49668",
+      "pid": "4872",
+      "raw": "TCP    [::]:49668             [::]:0                 LISTENING       4872"
+    },
+    {
+      "port": "49671",
+      "pid": "1452",
+      "raw": "TCP    [::]:49671             [::]:0                 LISTENING       1452"
+    },
+    {
+      "port": "54235",
+      "pid": "4",
+      "raw": "TCP    [::]:54235             [::]:0                 LISTENING       4"
+    },
+    {
+      "port": "13337",
+      "pid": "5612",
+      "raw": "TCP    [::1]:13337            [::]:0                 LISTENING       5612"
+    },
+    {
+      "port": "42050",
+      "pid": "15908",
+      "raw": "TCP    [::1]:42050            [::]:0                 LISTENING       15908"
+    },
+    {
+      "port": "49669",
+      "pid": "5588",
+      "raw": "TCP    [::1]:49669            [::]:0                 LISTENING       5588"
+    }
+  ],
+  "runningProcessesSnapshot": [
+    "\"Image Name\",\"PID\",\"Session Name\",\"Session#\",\"Mem Usage\"",
+    "\"System Idle Process\",\"0\",\"Services\",\"0\",\"8 K\"",
+    "\"System\",\"4\",\"Services\",\"0\",\"1,296 K\"",
+    "\"Registry\",\"320\",\"Services\",\"0\",\"8,224 K\"",
+    "\"smss.exe\",\"916\",\"Services\",\"0\",\"4 K\"",
+    "\"csrss.exe\",\"1260\",\"Services\",\"0\",\"1,024 K\"",
+    "\"wininit.exe\",\"1364\",\"Services\",\"0\",\"444 K\"",
+    "\"services.exe\",\"1452\",\"Services\",\"0\",\"6,248 K\"",
+    "\"lsass.exe\",\"1504\",\"Services\",\"0\",\"12,912 K\"",
+    "\"svchost.exe\",\"1672\",\"Services\",\"0\",\"33,416 K\"",
+    "\"fontdrvhost.exe\",\"1704\",\"Services\",\"0\",\"20 K\"",
+    "\"svchost.exe\",\"1800\",\"Services\",\"0\",\"15,064 K\"",
+    "\"svchost.exe\",\"1856\",\"Services\",\"0\",\"3,728 K\"",
+    "\"svchost.exe\",\"1264\",\"Services\",\"0\",\"6,396 K\"",
+    "\"svchost.exe\",\"1440\",\"Services\",\"0\",\"1,680 K\"",
+    "\"svchost.exe\",\"1376\",\"Services\",\"0\",\"1,388 K\"",
+    "\"svchost.exe\",\"2068\",\"Services\",\"0\",\"2,300 K\"",
+    "\"svchost.exe\",\"2076\",\"Services\",\"0\",\"1,348 K\"",
+    "\"svchost.exe\",\"2084\",\"Services\",\"0\",\"3,288 K\"",
+    "\"svchost.exe\",\"2092\",\"Services\",\"0\",\"5,296 K\"",
+    "\"svchost.exe\",\"2224\",\"Services\",\"0\",\"1,012 K\"",
+    "\"svchost.exe\",\"2232\",\"Services\",\"0\",\"5,820 K\"",
+    "\"svchost.exe\",\"2416\",\"Services\",\"0\",\"6,468 K\"",
+    "\"svchost.exe\",\"2560\",\"Services\",\"0\",\"11,276 K\"",
+    "\"svchost.exe\",\"2768\",\"Services\",\"0\",\"1,376 K\"",
+    "\"OmenCap.exe\",\"2788\",\"Services\",\"0\",\"12,832 K\"",
+    "\"svchost.exe\",\"2884\",\"Services\",\"0\",\"6,808 K\"",
+    "\"svchost.exe\",\"2916\",\"Services\",\"0\",\"1,276 K\"",
+    "\"NVDisplay.Container.exe\",\"2944\",\"Services\",\"0\",\"4,952 K\"",
+    "\"svchost.exe\",\"2316\",\"Services\",\"0\",\"4,032 K\""
+  ],
+  "suggestions": [
+    "http-server available — can serve demos with npx http-server",
+    "headless browser available — can run browser-based smoke tests (puppeteer/playwright)",
+    "git present — repository commands available"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2025-09-10T03:29:30.306Z",
+  "scanRoot": "HiveFleetObsidian/",
+  "matches": [
+    "HiveFleetObsidian/history/hive_history.jsonl",
+    "HiveFleetObsidian/tools/append_history.mjs",
+    "HiveFleetObsidian/tools/append_history.ps1",
+    "HiveFleetObsidian/tools/silk_scribe_intake.mjs",
+    "HiveFleetObsidian/tools/silk_apply_candidates.mjs",
+    "HiveFleetObsidian/tools/scribe_review.mjs",
+    "HiveFleetObsidian/tools/status.mjs",
+    "HiveFleetObsidian/tools/chat_stream_ingest.mjs",
+    "HiveFleetObsidian/tools/hive_daily.mjs",
+    "HiveFleetObsidian/tools/orchestrator_turn.mjs",
+    "HiveFleetObsidian/tools/moe_chat.mjs",
+    "HiveFleetObsidian/tools/goals_tick.mjs",
+    "HiveFleetObsidian/tools/heartbeat.mjs",
+    "HiveFleetObsidian/honeycomb/champions/ThreadSovereign/docs/kilo_mode.ThreadSovereign.2025-09-09.md",
+    "HiveFleetObsidian/docs/OnePagers/FaultlineSeekerOnePager.2025-09-10T03-18-38Z.md",
+    "HiveFleetObsidian/README.md",
+    "HiveFleetObsidian/reports/turns/",
+    "HiveFleetObsidian/reports/chats/",
+    "HiveFleetObsidian/reports/daily/"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "id": "mffqapcd_ja0afw",
+  "ts": "2025-09-11T18:15:07.213Z",
+  "type": "risk",
+  "topic": "docs_orphans",
+  "signal": "top-list size ~= 40",
+  "decay_after_minutes": 720,
+  "meta": {}
+}

@@ -1,0 +1,146 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SDK Facade Smoke</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 12px; }
+      video { max-width: 480px; width: 100%; background:#000; }
+      pre { white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <h1>SDK Facade Smoke</h1>
+    <video id="v" muted playsinline></video>
+    <pre id="log"></pre>
+    <script type="module">
+      import { HexInput } from '../src/sdk/hexInputFacade.js';
+      import { createAppShell } from '../src/app/appShell.js';
+
+      // Allow the facade to work without direct import by providing a global factory
+      window.HexAppShell = { create: createAppShell };
+      // Capture errors for smoke debug
+      window.__sdkErrors = [];
+      window.addEventListener('error', (e)=>{ try { window.__sdkErrors.push({ msg: String(e?.error||e?.message||e), src: e?.filename, line: e?.lineno }); } catch {} });
+      const origConsoleError = console.error.bind(console);
+      console.error = (...args) => { try { window.__sdkErrors.push({ console:true, args: args.map(a=>String(a)) }); } catch {} return origConsoleError(...args); };
+
+  let api;
+  try { api = HexInput.create({}); }
+  catch(err){ window.__sdkErrors.push({ kind:'create-failed', err: String(err && err.message || err) }); }
+      const video = document.getElementById('v');
+      const logEl = document.getElementById('log');
+
+      const params = new URLSearchParams(location.search);
+  const clip = params.get('clip');
+  const useJsonl = params.get('useJsonl') === '1' || (clip && clip.endsWith('.jsonl'));
+      const autostart = params.get('autostart') === '1' || params.get('autostart') === 'true';
+
+      const buf = [];
+      function log(o){ buf.push(o); if(buf.length>50) buf.shift(); logEl.textContent = JSON.stringify(o, null, 2); }
+
+      // Simple aggregator built from getRichSnapshot and getState
+      const state = { frame: 0, seats: {}, enrichedBySeat: {} };
+      function poll(){
+        try {
+          const s = api.getState();
+          state.seats = s.seats || {};
+          const snap = api.getRichSnapshot();
+          const bySeat = {};
+          for(const h of snap){ if(h && h.seat){ bySeat[h.seat] = {
+            norm: h.norm ?? null,
+            rawNorm: h.rawNorm ?? null,
+            velocity: h.velocity ?? null,
+            acceleration: h.acceleration ?? null,
+            palmAngleDeg: h.palmAngleDeg ?? null,
+            jointAngles: { index: h.indexAngles || null, thumb: h.thumbAngles || null },
+          }; } }
+          state.enrichedBySeat = bySeat;
+          state.frame++;
+        } catch {}
+      }
+      const pollId = setInterval(poll, 50);
+
+  if(api){ api.on(evt => { /* keep channel hot */ }); }
+
+      async function start(){
+        if(!api) return;
+        if(useJsonl){
+          await replayJsonl(clip);
+          return;
+        }
+        try {
+          if(clip){ await api.startVideoUrl(video, clip); }
+          else { await api.startCamera(video); }
+        } catch(err){
+          // Fallback: try derived JSONL from clip path
+          try {
+            const guess = (clip || '').replace('/videos/','/out/').replace(/\.mp4$/i, '.landmarks.jsonl');
+            await replayJsonl(guess);
+          } catch(err2){ window.__sdkErrors.push({ kind:'fallback-jsonl-failed', err:String(err2) }); }
+        }
+      }
+
+      async function replayJsonl(url){
+        if(!url) throw new Error('jsonl url required');
+        const resp = await fetch(url, { cache:'no-store' });
+        if(!resp.ok) throw new Error('fetch failed '+resp.status);
+        const text = await resp.text();
+        const lines = text.split(/\r?\n/).filter(Boolean);
+        const frames = lines.map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+        const shell = api && api._unsafe && api._unsafe.shell;
+        if(!shell || !shell.router || !shell.hsm) throw new Error('shell unavailable');
+        let i=0;
+        async function tick(){
+          if(i>=frames.length) return;
+          const f = frames[i++];
+          const frame = {
+            t: f.t || performance.now(),
+            hand: f.hand || 'Right',
+            handId: f.handId || null,
+            indexTip: f.indexTip, thumbTip: f.thumbTip, wrist: f.wrist,
+            indexMCP: f.indexMCP, pinkyMCP: f.pinkyMCP,
+            // optional fields may be missing in older traces
+            indexPIP: f.indexPIP || null,
+            indexDIP: f.indexDIP || null,
+            landmarks: f.landmarks || null,
+          };
+          try { shell.router.onFrame(frame); shell.hsm.onFrame(frame); } catch(e){ window.__sdkErrors.push({ kind:'emit-failed', err:String(e) }); }
+          setTimeout(tick, 33); // ~30fps
+        }
+        tick();
+      }
+
+      window.__sdk = {
+        api,
+        start,
+        state(){ return JSON.parse(JSON.stringify(state)); },
+        errors(){ return (window.__sdkErrors||[]).slice(); },
+        async sample(ms=1500){
+          const samples = { P1: [], P2: [] };
+          const startT = performance.now();
+          while(performance.now() - startT < ms){
+            const s = window.__sdk.state();
+            for(const sid of ['P1','P2']){
+              const e = s.enrichedBySeat[sid] || null;
+              samples[sid].push(e);
+            }
+            await new Promise(r=>setTimeout(r,50));
+          }
+          function analyze(arr){
+            const present = arr.filter(Boolean);
+            const any = present.some(s => s.norm!=null || s.rawNorm!=null || s.velocity!=null || s.acceleration!=null || s.palmAngleDeg!=null);
+            const anglePresence = present.filter(s => s.jointAngles && s.jointAngles.index && (
+              s.jointAngles.index.mcpDeg!=null || s.jointAngles.index.pipDeg!=null || s.jointAngles.index.dipDeg!=null
+            )).length;
+            return { count: arr.length, present: present.length, anyMetrics: any, anglePresence };
+          }
+          return { P1: analyze(samples.P1), P2: analyze(samples.P2) };
+        }
+      };
+
+      if(autostart){ start().then(()=>log({ started:true, clip, mode: useJsonl ? 'jsonl' : 'video' })).catch(err=>log({ started:false, error:String(err), mode: useJsonl ? 'jsonl' : 'video' })); }
+    </script>
+  </body>
+  </html>

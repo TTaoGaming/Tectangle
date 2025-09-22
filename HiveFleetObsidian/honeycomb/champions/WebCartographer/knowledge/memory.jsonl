@@ -1,0 +1,5 @@
+{"topic":"Entrypoint scan","principle":"seed from README/index/H1","when_to_use":"first pass over docs","tradeoffs":"misses older pages","coding_analogy":"bootstrap routes from seeds","source":"pattern"}
+{"topic":"Link graph","principle":"find orphans/dangling/hubs","when_to_use":"map health & seams","tradeoffs":"false positives from stale links","coding_analogy":"dependency graph for docs","source":"pattern"}
+{"topic":"Freshness window","principle":"recent files only","when_to_use":"fast daily runs","tradeoffs":"older rot can hide","coding_analogy":"incremental build window","source":"pattern"}
+{"topic":"Guardrail flag","principle":"fail only when asked","when_to_use":"release validation","tradeoffs":"quiet drift if never enabled","coding_analogy":"treat warnings as errors in CI","source":"pattern"}
+{"topic":"Seam selection","principle":"pick the smallest adapter path","when_to_use":"integration planning","tradeoffs":"may defer larger consolidation","coding_analogy":"ports/adapters at the boundary","source":"pattern"}

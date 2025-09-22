@@ -1,0 +1,247 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/e2e/hand_id_lab.test.js
+  - [ ] tests/e2e/hand_id_no_pinch_crossover.test.js
+  - [ ] tests/unit/handSessionManager.test.mjs
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Tectangle • Hand ID Lab</title>
+  <style>
+    :root { --bg:#0b0d10; --fg:#e7edf3; --muted:#9fb3c8; --right:#82d4ff; --left:#93d977; --h1:#ff7ab6; --h2:#ffd479; }
+    *{ box-sizing:border-box; } body{ margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif; }
+    header{ padding:12px 16px; border-bottom:1px solid #1a222c; background:#0f141a; position:sticky; top:0; z-index:5; }
+    .row{ display:flex; gap:12px; padding:12px 16px; flex-wrap:wrap; }
+    .col{ flex:1 1 480px; min-width:320px; }
+    video, canvas{ width:100%; border:1px solid #1a222c; border-radius:12px; background:#0c1117; display:block; }
+    .panel{ border:1px solid #1a222c; border-radius:10px; padding:10px; background:#0c1117; }
+    .kv{ display:grid; grid-template-columns: 1fr auto; gap:6px 10px; align-items:center; }
+    .stat{ color:var(--muted); font-size:12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>Hand ID Lab <small class="stat">Nearest-wrist tracker (upgrade: biomech hash)</small></h2>
+  </header>
+  <div class="row">
+    <div class="col"><video id="cam" playsinline muted autoplay></video></div>
+    <div class="col"><canvas id="overlay" width="960" height="540"></canvas></div>
+  </div>
+  <div class="row">
+    <div class="col panel">
+      <div class="kv">
+        <div>Controls</div><div></div>
+        <div><button id="startCam">Start camera</button></div><div></div>
+        <div><button id="loadVideo">Load MP4</button><input type="file" id="videoFile" accept="video/*" style="display:none"></div><div></div>
+          <!-- WEBWAY:ww-2025-002: calibration UI -->
+          <div><label><input type="checkbox" id="flagCal"/> Calibrate IDs (pinch-hold)</label></div><div></div>
+          <div><button id="resetCal">Reset calibration</button></div><div></div>
+      </div>
+    </div>
+    <div class="col panel">
+      <div class="kv">
+        <div>Frames</div><div id="frames">0</div>
+        <div>Teleports</div><div id="teleports">0</div>
+        <div>Reassigns</div><div id="reassigns">0</div>
+        <div>Alive</div><div id="alive">0</div>
+        <div>U1 (assigned)</div><div id="u1">-</div>
+        <div>U2 (assigned)</div><div id="u2">-</div>
+        <div>Downs</div><div id="downs">0</div>
+        <div>Ups</div><div id="ups">0</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+  import { createMediaPipeSource } from '../src/ports/mediapipe.js';
+  import { createHandIdTracker } from '../src/adapters/hand_id_tracker.mjs';
+  import { createHandCalibration } from '../src/adapters/hand_calibration.mjs';
+
+    const video = document.getElementById('cam');
+    const canvas = document.getElementById('overlay');
+    const ctx = canvas.getContext('2d');
+  const ui = { frames:byId('frames'), teleports:byId('teleports'), reassigns:byId('reassigns'), alive:byId('alive'), downs:byId('downs'), ups:byId('ups'), u1:byId('u1'), u2:byId('u2'), flagCal:byId('flagCal') };
+    function byId(id){ return document.getElementById(id); }
+
+  const tracker = createHandIdTracker();
+  // WEBWAY:ww-2025-002: feature flag and calibrator
+  const FEATURE_HEX_CALIBRATE_HAND_ID = (new URLSearchParams(location.search)).get('cal')==='1' || (window.FEATURE_HEX_CALIBRATE_HAND_ID === true);
+  const calibrator = createHandCalibration();
+  const st = { mp:null, downs:0, ups:0, deadlineTimer:null, calFlag: FEATURE_HEX_CALIBRATE_HAND_ID };
+
+    function markDone(){
+      try{ if(st.mp){ st.mp.stop(); } }catch{}
+      try{ if(!video.paused) video.pause(); }catch{}
+      window.__processingDone = true;
+    }
+
+    function drawHands(assign){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const W=canvas.width, H=canvas.height;
+      for(const a of assign){
+        const color = a.id==='H1' ? '#ff7ab6' : '#ffd479';
+        // draw all landmarks
+        ctx.fillStyle = color; ctx.strokeStyle = color;
+        for(const lm of a.landmarks){ const x = lm[0]*W, y = lm[1]*H; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); }
+        // wrist label
+        const x = a.wrist[0]*W, y = a.wrist[1]*H;
+        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x-4,y-18,40,16);
+        ctx.fillStyle = color; ctx.font = '12px system-ui'; ctx.fillText(a.id, x, y-6);
+      }
+    }
+
+    function updateStats(){
+      const s = tracker.getSummary();
+      ui.frames.textContent=String(s.frames);
+      ui.teleports.textContent=String(s.teleports);
+      ui.reassigns.textContent=String(s.reassigns);
+      ui.alive.textContent=String(s.alive);
+      ui.downs.textContent=String(st.downs);
+      ui.ups.textContent=String(st.ups);
+      const m = calibrator.getSummary().mapping;
+      const u1 = Object.entries(m).find(([,v])=>v==='U1');
+      const u2 = Object.entries(m).find(([,v])=>v==='U2');
+      ui.u1.textContent = u1 ? `${u1[0]}→U1` : '-';
+      ui.u2.textContent = u2 ? `${u2[0]}→U2` : '-';
+      if(ui.flagCal) ui.flagCal.checked = !!st.calFlag;
+    }
+
+    function onFrame(frame){
+      // frame: {t, hand:'Left'|'Right', wrist:[x,y,z], landmarks:number[][], ...}
+      const t = frame.t || performance.now();
+      const dets = (window.__lastHands || []).map(h=> ({ wrist:[h[0][0], h[0][1]], landmarks:h }));
+      // Prefer lastHands from port; if not exposed, reconstruct from individual frames
+      if(!dets.length && frame.landmarks){ dets.push({ wrist:[frame.wrist[0], frame.wrist[1]], landmarks: frame.landmarks }); }
+  const assigned = tracker.update(dets, t);
+  if(st.calFlag){ calibrator.update(assigned, t); }
+      drawHands(assigned);
+      updateStats();
+      // No pinch counting expected here (0/0), but keep hooks for future
+    }
+
+    // Deterministic simulator (no MediaPipe). Generates two wrists entering, exiting, crossing.
+    function startSimulate({ stepMs=60, durMs=12000 }={}){
+      tracker.reset(); updateStats(); window.__processingDone = false;
+      const W=1, H=1; // normalized
+      const mkHand = (x,y)=> ({ wrist:[x,y], landmarks: Array.from({length:21},()=>[x,y,0]) });
+      const startT = performance.now();
+      function tick(){
+        const now = performance.now();
+        const t = now; const el = now - startT; const s = el/1000;
+        let dets=[];
+        // Script:
+        // 0-1s: both spawn from bottom and move in
+        // 1-5s: move horizontally to center and cross
+        // 5-7s: move out to sides
+        // 7-9s: out of frame (none)
+        // 9-12s: re-enter and park
+        if(s>=0 && s<1){
+          const y = 1.1 - 0.4*s;
+          dets = [ mkHand(0.3,y), mkHand(0.7,y) ];
+        } else if(s>=1 && s<5){
+          const p = (s-1)/(4);
+          const x1 = 0.2 + 0.6*p; const x2 = 0.8 - 0.6*p; const y=0.7;
+          dets = [ mkHand(x1,y), mkHand(x2,y) ];
+        } else if(s>=5 && s<7){
+          const p = (s-5)/2;
+          const x1 = 0.8 + 0.4*p; const x2 = 0.2 - 0.4*p; const y=0.75;
+          dets = [ mkHand(x1,y), mkHand(x2,y) ];
+        } else if(s>=9 && s<12){
+          const p = (s-9)/3; const y = 1.05 - 0.5*p;
+          dets = [ mkHand(0.25,y), mkHand(0.75,y) ];
+        }
+        const assigned = tracker.update(dets, t);
+        drawHands(assigned);
+        updateStats();
+        if(el < durMs){ setTimeout(tick, stepMs); } else { markDone(); }
+      }
+      setTimeout(tick, stepMs);
+    }
+
+    function exposeHooks(api){ Object.defineProperty(window,'__hex',{ get(){ return api; } }); window.__hexReady = true; }
+
+    async function startCam(){
+      tracker.reset(); updateStats(); window.__processingDone = false;
+      try{
+        const mp = createMediaPipeSource(video, (f)=>{ onFrame(f); });
+        st.mp = mp;
+        await mp.start();
+      }catch(e){ console.error('cam failed', e); }
+    }
+    async function startVideoFile(file){
+      tracker.reset(); updateStats(); window.__processingDone = false;
+      if(st.mp){ try{ st.mp.stop(); }catch{} }
+      const url = URL.createObjectURL(file);
+      await startVideoUrl(url);
+    }
+    async function startVideoUrl(src, maxMs){
+      try{
+        if(st.mp){ try{ st.mp.stop(); }catch{} }
+  const u = new URL(String(src||''), location.origin);
+        const url = u.toString();
+        video.srcObject=null; video.crossOrigin='anonymous'; video.src=url;
+        window.__processingDone = false;
+        await new Promise(res=> video.addEventListener('loadedmetadata', res, { once:true }));
+        if(video.readyState<2){ await new Promise(res=> video.addEventListener('canplay', res, { once:true })); }
+        // End/timeout hooks
+        video.addEventListener('ended', ()=> markDone(), { once:true });
+        if(st.deadlineTimer){ clearTimeout(st.deadlineTimer); st.deadlineTimer=null; }
+        if(typeof maxMs === 'number' && isFinite(maxMs) && maxMs>0){ st.deadlineTimer = setTimeout(()=> markDone(), maxMs); }
+        await video.play();
+        const mp = createMediaPipeSource(video, (f)=>{ window.__lastFrame=f; onFrame(f); });
+        st.mp = mp; await mp.start();
+      }catch(e){ console.error('video failed', e); }
+    }
+
+    // wire ui
+    byId('startCam').addEventListener('click', startCam);
+    const btn = byId('loadVideo'); const input = byId('videoFile');
+    btn.addEventListener('click', ()=> input.click());
+    input.addEventListener('change', e=>{ const f = e.target.files?.[0]; if(f) startVideoFile(f); });
+  // WEBWAY:ww-2025-002: calibration controls
+  byId('resetCal').addEventListener('click', ()=>{ calibrator.reset(); updateStats(); });
+  if(ui.flagCal){ ui.flagCal.addEventListener('change', ()=>{ st.calFlag = ui.flagCal.checked; updateStats(); }); }
+
+    // auto-start via query
+    (function auto(){
+      try{
+        const q=new URLSearchParams(location.search);
+  if(q.get('noauto') === '1') return;
+        const src=q.get('src')||q.get('video');
+        const maxMs = q.has('maxMs') ? Number(q.get('maxMs')) : (src ? 30000 : undefined);
+        if(q.get('process')==='frame' || q.get('mock')==='1'){
+          const stepMs = q.has('stepMs') ? Number(q.get('stepMs')) : 60;
+          const durMs = q.has('durMs') ? Number(q.get('durMs')) : 12000;
+          startSimulate({ stepMs, durMs });
+        }
+        else if(src) startVideoUrl(src, maxMs);
+        else startCam();
+      }catch(e){}
+    })();
+
+    // expose for tests
+  exposeHooks({
+    startCam,
+    startVideoUrl: (u, maxMs)=> startVideoUrl(u, maxMs),
+    startSimulate,
+    stop: ()=> markDone(),
+    getStats: ()=> ({ ...tracker.getSummary(), calibration: calibrator.getSummary() }),
+    getCalibration: ()=> calibrator.getSummary(),
+    resetCalibration: ()=> calibrator.reset(),
+    setCalibrating:(v)=>{ st.calFlag=!!v; }
+  });
+  </script>
+</body>
+</html>

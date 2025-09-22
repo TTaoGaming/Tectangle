@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Tectangle — Spatial SDK Demo</title>
+    <!-- Tailwind (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      html, body { height: 100%; }
+      canvas { image-rendering: crisp-edges; }
+    </style>
+  </head>
+  <body class="h-full bg-slate-900 text-slate-100">
+    <div class="flex h-full">
+      <!-- Main video/overlay -->
+      <div class="relative flex-1 min-w-0">
+  <video id="cam" playsinline muted preload="metadata" class="absolute inset-0 w-full h-full object-cover bg-black"></video>
+        <canvas id="overlay" class="absolute inset-0 w-full h-full"></canvas>
+        <div class="absolute top-3 left-3 flex flex-wrap items-center gap-2 bg-slate-950/70 backdrop-blur px-2 py-2 rounded">
+          <button id="btnStart" class="px-3 py-1 rounded bg-emerald-500 hover:bg-emerald-600 text-xs">Start Camera</button>
+          <button id="btnStop" class="px-3 py-1 rounded bg-rose-500 hover:bg-rose-600 text-xs">Stop</button>
+          <button id="btnPlayPinch" class="px-3 py-1 rounded bg-blue-500 hover:bg-blue-600 text-xs">Play Golden: Pinch</button>
+          <button id="btnPlayIdle" class="px-3 py-1 rounded bg-amber-500 hover:bg-amber-600 text-xs">Play Golden: Idle</button>
+          <label class="text-[11px] opacity-80 ml-2">MP4: <input id="fileInput" type="file" accept="video/mp4" class="text-xs" /></label>
+          <label class="text-[11px] opacity-80 ml-2 inline-flex items-center gap-1">
+            Fit:
+            <select id="fitMode" class="bg-slate-800 text-xs rounded px-1 py-0.5">
+              <option value="cover" selected>cover</option>
+              <option value="contain">contain</option>
+            </select>
+          </label>
+          <label class="text-[11px] opacity-80 ml-2 inline-flex items-center gap-1">
+            <input id="mirrorToggle" type="checkbox" class="accent-slate-300"> Mirror
+          </label>
+        </div>
+      </div>
+
+      <!-- Side panel -->
+      <aside id="panel" class="w-[380px] max-w-full border-l border-slate-800 bg-slate-950/80 backdrop-blur-md overflow-auto transition-all">
+        <div class="p-3 flex items-center justify-between sticky top-0 bg-slate-950/95 border-b border-slate-800">
+          <h2 class="font-semibold">Side Panel</h2>
+          <button id="btnToggle" class="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700">Collapse</button>
+        </div>
+        <div class="p-3 space-y-3">
+          <div>
+            <h3 class="text-sm font-semibold mb-1">State</h3>
+            <pre id="state" class="text-xs whitespace-pre-wrap bg-slate-900 p-2 rounded border border-slate-800"></pre>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold mb-1">Last Frame (rich)</h3>
+            <pre id="rich" class="text-xs whitespace-pre-wrap bg-slate-900 p-2 rounded border border-slate-800"></pre>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold mb-1">Event Log</h3>
+            <div id="log" class="text-xs space-y-1 max-h-[40vh] overflow-auto"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <script type="module">
+      import { createSpatialInput } from '../../../src/index.js'; // WEBWAY:ww-2025-001 demo via SDK
+      import { createAppShell } from '../src/app/appShell.js';
+
+      // Colors per seat
+      const seatColor = {
+        P1: '#10b981', // emerald-500
+        P2: '#60a5fa', // blue-400
+        P3: '#f59e0b', // amber-500
+        P4: '#ef4444', // red-500
+        NONE: '#94a3b8'
+      };
+
+      const video = document.getElementById('cam');
+      const canvas = document.getElementById('overlay');
+      const ctx = canvas.getContext('2d');
+      const btnStart = document.getElementById('btnStart');
+      const btnStop = document.getElementById('btnStop');
+  const btnToggle = document.getElementById('btnToggle');
+  const btnPlayPinch = document.getElementById('btnPlayPinch');
+  const btnPlayIdle = document.getElementById('btnPlayIdle');
+  const fileInput = document.getElementById('fileInput');
+  const panel = document.getElementById('panel');
+      const elState = document.getElementById('state');
+      const elRich = document.getElementById('rich');
+      const elLog = document.getElementById('log');
+  const fitMode = document.getElementById('fitMode');
+  const mirrorToggle = document.getElementById('mirrorToggle');
+
+      let collapsed = false;
+      btnToggle.addEventListener('click', ()=>{
+        collapsed = !collapsed;
+        panel.style.width = collapsed ? '48px' : '380px';
+        btnToggle.textContent = collapsed ? 'Expand' : 'Collapse';
+      });
+
+      const sdk = createSpatialInput({ factories: { createAppShell } });
+      window.__sdk = sdk; // for quick dev
+
+      function fitCanvas(){
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = Math.max(2, Math.floor(rect.width));
+        canvas.height = Math.max(2, Math.floor(rect.height));
+      }
+  const ro = new ResizeObserver(fitCanvas); ro.observe(canvas);
+      fitCanvas();
+
+      // UI: Fit and Mirror controls
+      fitMode.addEventListener('change', ()=>{
+        video.style.objectFit = fitMode.value;
+      });
+      mirrorToggle.addEventListener('change', ()=>{
+        const on = !!mirrorToggle.checked;
+        video.style.transform = on ? 'scaleX(-1)' : 'none';
+      });
+
+      function drawLandmarks(points, color, filled=false){
+        if(!points || !points.length) return;
+        const W = canvas.width, H = canvas.height;
+        // Map 0..1 video coords to displayed pixels accounting for object-fit
+        const vw = video.videoWidth || 1;
+        const vh = video.videoHeight || 1;
+        const fit = (getComputedStyle(video).objectFit || 'cover').toLowerCase();
+        const scale = (fit === 'contain') ? Math.min(W/vw, H/vh) : Math.max(W/vw, H/vh);
+        const dispW = vw * scale;
+        const dispH = vh * scale;
+        const offX = (W - dispW) / 2;
+        const offY = (H - dispH) / 2;
+        const mirrored = getComputedStyle(video).transform !== 'none';
+        ctx.save();
+        ctx.lineWidth = 2; ctx.strokeStyle = color; ctx.fillStyle = color;
+        for(const p of points){
+          const px = mirrored ? (1 - p[0]) : p[0];
+          const x = offX + px * dispW; const y = offY + p[1] * dispH;
+          ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2);
+          filled ? ctx.fill() : ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function draw(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        // Show smoothed landmarks until seat claim; then seat-colored landmarks
+        const dets = (window.__hexLastHands || []).map(h=>h); // raw hands (0..1)
+        const state = sdk.getState?.() || {};
+        const seatMap = new Map();
+        try{ const seats = state.seats?.seats || state.seats; if(seats){ for(const s of Object.values(seats)){ if(s.handId){ seatMap.set(s.handId, s.seat); } } } }catch{}
+
+        // Fallback: if we have rich snapshot entries with seat, use those
+        let rich = sdk.getRichSnapshot?.() || [];
+        const bySeat = new Map();
+        for(const r of rich){ if(r.seat != null && r.handId != null){ bySeat.set(r.handId, r.seat); } }
+
+        const lastHands = window.__hexLastHands || null;
+        if(lastHands && lastHands.length){
+          for(let i=0;i<lastHands.length;i++){
+            const lm = lastHands[i];
+            const handId = i; // unknown: fallback index
+            const seat = seatMap.get(handId) || bySeat.get(handId) || 'NONE';
+            const color = seatColor[seat] || seatColor.NONE;
+            const filled = seat !== 'NONE';
+            drawLandmarks(lm, color, filled);
+          }
+        }
+      }
+
+      function scheduleDraw(){
+        if('requestVideoFrameCallback' in video){
+          const cb = ()=>{ try{ draw(); }catch(e){}; try{ video.requestVideoFrameCallback(cb); } catch { requestAnimationFrame(scheduleDraw); } };
+          try{ video.requestVideoFrameCallback(cb); } catch { requestAnimationFrame(scheduleDraw); }
+        } else {
+          requestAnimationFrame(function loop(){ draw(); requestAnimationFrame(loop); });
+        }
+      }
+      scheduleDraw();
+
+      function log(evt){
+        const item = document.createElement('div');
+        item.textContent = `[${(evt.t||performance.now()).toFixed(0)}] ${evt.type} ${evt.seat?('['+evt.seat+']'):''}`;
+        elLog.prepend(item);
+        while(elLog.children.length>200){ elLog.removeChild(elLog.lastChild); }
+      }
+
+      sdk.on(evt => {
+        if(evt.type && (evt.type.startsWith('pinch:') || evt.type.startsWith('wrist:') || evt.type.startsWith('finger:'))){ log(evt); }
+        try { elState.textContent = JSON.stringify(sdk.getState(), null, 2); } catch {}
+        try { elRich.textContent = JSON.stringify(sdk.getRichSnapshot?.()||[], null, 2); } catch {}
+      });
+
+      btnStart.addEventListener('click', async ()=>{ try { await sdk.startCamera(video); } catch(e){ console.error(e); } });
+      btnStop.addEventListener('click', ()=>{ sdk.stop(video); });
+
+      async function playUrl(url){
+        try {
+          try { video.crossOrigin = 'anonymous'; } catch {}
+          await sdk.startVideoUrl(video, url);
+        } catch(e){
+          console.error('Failed to play url', url, e);
+        }
+      }
+
+      const PINCH_URL = '/September2025/TectangleHexagonal/videos/golden/golden.two_hands_pinch_seq.v1.mp4';
+      const IDLE_URL = '/September2025/TectangleHexagonal/videos/golden/golden.two_hands_idle.v1.mp4';
+      btnPlayPinch.addEventListener('click', ()=> playUrl(PINCH_URL));
+      btnPlayIdle.addEventListener('click', ()=> playUrl(IDLE_URL));
+      fileInput.addEventListener('change', async (e)=>{
+        const f = e.target.files && e.target.files[0];
+        if(!f) return;
+        const blobUrl = URL.createObjectURL(f);
+        await playUrl(blobUrl);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,41 @@
+{
+  "name": "CameraManager",
+  "generatedFrom": "src/CameraManager.js",
+  "version": "0.1.0",
+  "timestamp": "2025-09-02T00:59:04.562Z",
+  "description": "Meta header for CameraManager unit tests",
+  "emits": [
+    {
+      "event": "camera:params",
+      "detailSchema": {
+        "width": "number",
+        "height": "number",
+        "fps": "number"
+      },
+      "testHint": "Assert camera:start emits camera:params with width/height/fps"
+    },
+    {
+      "event": "camera:frame",
+      "detailSchema": {
+        "frameId": "number",
+        "timestamp": "number",
+        "width": "number",
+        "height": "number",
+        "data": "object"
+      },
+      "testHint": "Assert camera frames are emitted and contain normalized frame meta"
+    }
+  ],
+  "tests": [
+    "tests/unit/camera.frame.test.mjs",
+    "tests/unit/camera.device-selection.test.mjs",
+    "tests/unit/camera.dynamic-resolution.test.mjs",
+    "tests/unit/camera.mirror.test.mjs",
+    "tests/unit/header.meta.CameraManager.test.mjs"
+  ],
+  "acceptance": [
+    "TREQ-010: camera:start emits camera:params before first camera:frame",
+    "TREQ-011: camera frames include width,height,fps and deterministic frameId",
+    "TREQ-012: camera.meta header must conform to meta schema and include timestamp"
+  ]
+}

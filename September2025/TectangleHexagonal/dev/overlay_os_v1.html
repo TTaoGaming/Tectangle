@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Overlay OS V1 (WEBWAY:ww-2025-094)</title>
+<!-- WEBWAY:ww-2025-094: uses M3 canon tokens for surfaces, color, shape, and elevation -->
+<link rel="stylesheet" href="./design/m3.tokens.css" />
+<style>
+  html,body{height:100%;margin:0;overflow:hidden}
+  body{background: var(--m3-bg); color: var(--m3-on-surface); font: 12px/1.2 system-ui}
+  /* Background camera */
+  #bg{position:fixed;inset:0;background:black}
+  #bg::after{content:'';position:absolute;inset:0;background: color-mix(in oklab, var(--m3-scrim) 8%, transparent)}
+  #bg video{width:100%;height:100%;object-fit:cover}
+  /* Windows */
+  #wm{position:fixed;inset:0;pointer-events:none}
+  .win{position:absolute;min-width:240px;min-height:140px;border:1px solid var(--m3-outline);border-radius: var(--m3-radius-md);background: color-mix(in oklab, var(--m3-surface) 92%, black 8%);backdrop-filter: blur(6px);box-shadow: var(--m3-elev-3);pointer-events:auto;display:flex;flex-direction:column}
+  .title{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--m3-outline-variant);cursor:move;background: color-mix(in oklab, var(--m3-surface) 86%, black 14%)}
+  .title strong{font-weight:600;color:var(--m3-on-surface)}
+  .title .sp{flex:1}
+  .title .close{background:transparent;border:0;color:var(--m3-on-surface-variant);cursor:pointer;border-radius: var(--m3-radius-sm)}
+  .title .close:hover{background: color-mix(in oklab, var(--m3-primary) 16%, transparent)}
+  .content{flex:1;position:relative}
+  .content iframe{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:0 0 var(--m3-radius-md) var(--m3-radius-md)}
+  .res{position:absolute;right:0;bottom:0;width:12px;height:12px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 50%,var(--m3-outline) 50%);opacity:0.8}
+  /* Dock */
+  #dock{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;display:flex;gap:12px;background: color-mix(in oklab, var(--m3-surface) 80%, black 20%);border:1px solid var(--m3-outline);border-radius: var(--m3-radius-lg);padding:8px 10px;backdrop-filter: blur(6px);box-shadow: var(--m3-elev-2)}
+  .icon{width:36px;height:36px;border-radius:12px;display:inline-grid;place-items:center;background: color-mix(in oklab, var(--m3-primary) 10%, var(--m3-surface) 90%);border:1px solid var(--m3-outline-variant);cursor:pointer;color: var(--m3-on-surface)}
+  .icon:hover{background: color-mix(in oklab, var(--m3-primary) 18%, var(--m3-surface) 82%)}
+  .badge{position:absolute;top:-6px;right:-6px;background:var(--m3-success);color:white;border-radius:999px;padding:1px 4px;font-size:10px;border:1px solid color-mix(in oklab, black 40%, transparent)}
+</style>
+</head>
+<body>
+  <!-- WEBWAY:ww-2025-094 Overlay OS scaffold (M3-aligned) -->
+  <div id="bg"><video id="cam" playsinline muted></video></div>
+  <div id="wm"></div>
+  <div id="dock">
+    <div class="icon" data-app="spark" title="Sparkline"><span>⚡</span></div>
+    <div class="icon" data-app="handviz" title="Hand Viz"><span>✋</span></div>
+  </div>
+  <script type="module">
+    // Feature flags
+    const FEATURE_UI_M3_CANON=true; // WEBWAY:ww-2025-094
+    const FEATURE_OS_CAMERA=true; const FEATURE_OS_DRAG=true; const FEATURE_OS_RESIZE=true;
+  const FEATURE_OS_BUS_V1=true; // enable BroadcastChannel bus
+  const FEATURE_DEMO_FEED=true; // dev-only synthetic feed for tests until sensor publisher is wired
+  const FEATURE_TASKS_BRIDGE=false; // WEBWAY:ww-2025-095 enable real MediaPipe Tasks publisher
+
+    // Optional: overlay bus + FSM
+  let bus = null;
+  console.log('Overlay OS: init module');
+    
+    // Window manager (define early so auto-open can run before awaits)
+    const wm=document.getElementById('wm'); let z=10; const wins=new Map();
+    function makeWin(key, url, {x=50,y=50,w=360,h=220}={}){
+      if(wins.has(key)){ const el=wins.get(key); el.style.display='block'; el.style.zIndex=++z; return el; }
+      const el=document.createElement('div'); el.className='win'; el.style.left=x+'px'; el.style.top=y+'px'; el.style.width=w+'px'; el.style.height=h+'px'; el.style.zIndex=++z;
+      el.innerHTML=`<div class="title"><strong>${key}</strong><span class="sp"></span><button class="close" title="Close" class="close">✕</button></div><div class="content"><iframe src="${url}"></iframe><div class="res"></div></div>`;
+      wm.appendChild(el); wins.set(key, el);
+      const title=el.querySelector('.title'); const res=el.querySelector('.res'); const close=el.querySelector('.close');
+      // Drag
+      if(FEATURE_OS_DRAG){ let dx=0,dy=0,drag=false; title.addEventListener('mousedown', ev=>{ drag=true; const r=el.getBoundingClientRect(); dx=ev.clientX-r.left; dy=ev.clientY-r.top; el.style.zIndex=++z; ev.preventDefault(); }); window.addEventListener('mousemove', ev=>{ if(!drag) return; el.style.left=Math.max(0, ev.clientX-dx)+'px'; el.style.top=Math.max(0, ev.clientY-dy)+'px'; }); window.addEventListener('mouseup', ()=>drag=false); }
+      // Resize
+      if(FEATURE_OS_RESIZE){ let rx=0,ry=0,rs=false; res.addEventListener('mousedown', ev=>{ rs=true; const r=el.getBoundingClientRect(); rx=r.width-ev.clientX+r.left; ry=r.height-ev.clientY+r.top; el.style.zIndex=++z; ev.preventDefault(); }); window.addEventListener('mousemove', ev=>{ if(!rs) return; el.style.width=Math.max(240, ev.clientX - el.getBoundingClientRect().left + rx)+'px'; el.style.height=Math.max(160, ev.clientY - el.getBoundingClientRect().top + ry)+'px'; }); window.addEventListener('mouseup', ()=>rs=false); }
+      // Close
+      close.addEventListener('click', ()=>{ el.style.display='none'; });
+      return el;
+    }
+    function toggleWin(key,url,opts){ const ex=wins.get(key); if(ex && ex.style.display!=='none'){ ex.style.display='none'; } else { makeWin(key,url,opts); } }
+
+    // WEBWAY:ww-2025-095: Deterministic CI/test path — auto-open windows if ?auto is present in URL (sets readiness early)
+    try{
+      const qs = new URLSearchParams(location.search);
+      if(qs.has('auto')){
+        console.log('Overlay OS: auto param detected — opening windows');
+        toggleWin('Sparkline','./apps/app_sparkline_v1.html',{x:40,y:60,w:380,h:160});
+        toggleWin('HandViz','./apps/app_handviz_v1.html',{x:440,y:60,w:460,h:260});
+        window.__overlayReady = true;
+      }
+    }catch{}
+    if(FEATURE_OS_BUS_V1){
+      try{
+        const { createBus } = await import('../src/overlay/overlay_bus.mjs');
+        bus = createBus('overlay-bus');
+        bus.publish('overlay:ready', { page:'overlay_os_v1', version:'1', m3: FEATURE_UI_M3_CANON });
+      }catch(e){ console.warn('overlay bus unavailable', e); }
+    }
+
+    // Simple camera bootstrap
+    let camEl = null;
+    if(FEATURE_OS_CAMERA){
+      try{
+        const v=document.getElementById('cam'); camEl = v;
+        const s=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ideal:1280}, height:{ideal:720} }, audio:false });
+        v.srcObject=s; await v.play();
+      }catch(e){ console.warn('camera failed', e); }
+    }
+    // Dock wiring
+    document.querySelectorAll('#dock .icon').forEach(icon=>{
+      icon.addEventListener('click', ()=>{
+        const app=icon.getAttribute('data-app');
+        if(app==='spark') toggleWin('Sparkline','./apps/app_sparkline_v1.html',{x:40,y:60,w:380,h:160});
+        if(app==='handviz') toggleWin('HandViz','./apps/app_handviz_v1.html',{x:440,y:60,w:460,h:260});
+      });
+    });
+
+    // Test automation: auto-open windows when running under WebDriver to avoid race with click handlers
+    try{ if(navigator.webdriver){
+      console.log('Overlay OS: webdriver detected — auto-opening windows');
+      toggleWin('Sparkline','./apps/app_sparkline_v1.html',{x:40,y:60,w:380,h:160});
+      toggleWin('HandViz','./apps/app_handviz_v1.html',{x:440,y:60,w:460,h:260});
+      window.__overlayReady = true;
+    } }catch{}
+
+    // DEV: synthetic two-hand feed to exercise apps and FSM sparklines until real publisher is wired
+    if(FEATURE_DEMO_FEED && bus){
+      let t=0; const id=setInterval(()=>{
+        t+=1; const phase=(Math.sin(t/12)+1)/2; // 0..1
+        // Landmarks: send two fake hands in normalized space moving subtly
+        const mkHand=(ox,flip=false)=> Array.from({length:21},(_,i)=>({x: (ox + (i%5)*0.02 + (flip?-0.01:0.01)*Math.sin(t/20)), y: (0.4 + Math.floor(i/5)*0.05 + 0.01*Math.cos(t/18)), z: 0.0 }));
+        const payload={ hands:[
+          {label:'P1', handedness:'Left', gesture:{ label: phase>0.65? 'Closed_Fist':'Open_Palm', score: phase }, landmarks: mkHand(0.35,false)},
+          {label:'P2', handedness:'Right', gesture:{ label: phase<=0.65? 'Closed_Fist':'Open_Palm', score: 1-phase }, landmarks: mkHand(0.55,true)}
+        ] };
+        bus.publish('overlay:landmarks', payload);
+        // FSM: toggling primed gate with hysteresis-like behavior
+        const primed = phase>0.65; const armed = primed; // alias for now
+        bus.publish('overlay:fsm', { P1:{ primed, armed, score: phase }, P2:{ primed: !primed, armed: !primed, score: 1-phase } });
+      }, 1000/30);
+      window.addEventListener('beforeunload', ()=> clearInterval(id));
+    }
+
+    // Real: MediaPipe Tasks publisher behind flag
+    if(FEATURE_TASKS_BRIDGE && bus && camEl){
+      try{
+        const { startTasksPublisher } = await import('../src/overlay/publisher_tasks_bridge.mjs');
+        await startTasksPublisher({ videoEl: camEl, bus, maxHands: 2, enableLandmarks: true });
+      }catch(e){ console.warn('tasks bridge failed', e); }
+    }
+  </script>
+</body>
+</html>

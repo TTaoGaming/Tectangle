@@ -1,0 +1,35 @@
+{
+  "generatedAt": "2025-09-08T01:16:49.674Z",
+  "items": [
+    {
+      "path": "September2025/PinchFSM/docs/TwoPager_Checklist_2025-09-05T00-00-20Z.md",
+      "title": "Two‑Pager Checklist — Tech + Next Actions",
+      "snippet": "# Two‑Pager Checklist — Tech + Next Actions"
+    },
+    {
+      "path": "September2025/PinchFSM/docs/archive/TwoPager_Checklist_2025-09-05T00-00-20Z.md",
+      "title": "TwoPager Checklist 2025 09 05T00 00 20Z",
+      "snippet": "Two‑Pager Checklist — Tech + Next Actions"
+    },
+    {
+      "path": "docs/aichat/aiChatTectangleOnePage20250906.md",
+      "title": "One-pager: DDD plan for near-zero-latency gesture→MIDI/Game",
+      "snippet": "Awesome—DDD is a great fit for what you’re building. Here’s how I’d reshape your plan for **near-zero perceived latency** (piano + gaming), what to copy from proven systems, and the traps to dodge."
+    },
+    {
+      "path": "September2025/PinchFSM/docs/README-vendor-mediapipe.md",
+      "title": "Vendoring MediaPipe assets",
+      "snippet": "# Vendoring MediaPipe assets"
+    },
+    {
+      "path": "September2025/PinchFSM/docs/archive/TechLandscape_Index_2025-09-04T23-59-59Z.md",
+      "title": "Tech Landscape — Executive Two‑Pager Series (Index + Checklist)",
+      "snippet": "# Tech Landscape — Executive Two‑Pager Series (Index + Checklist)"
+    },
+    {
+      "path": "September2025/Tectangle/docs/DevReadme.md",
+      "title": "DEV_README — September Tectangle (canonical)",
+      "snippet": "Clear 5-step non-coder workflow, an AI playbook, and three standardization options."
+    }
+  ]
+}

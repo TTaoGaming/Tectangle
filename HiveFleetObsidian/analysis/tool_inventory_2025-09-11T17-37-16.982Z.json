@@ -1,0 +1,167 @@
+{
+  "meta": {
+    "generated": "2025-09-11T17:37:16.977Z",
+    "toolCount": 60,
+    "seedCount": 6
+  },
+  "center_of_gravity": {
+    "seeds": 6,
+    "toolCoreCount": 13,
+    "boardExists": true,
+    "historyExists": true
+  },
+  "pareto_focus": [
+    {
+      "file": "moe_chat.mjs",
+      "lines": 355,
+      "referenced": true
+    },
+    {
+      "file": "scribe_rollups.mjs",
+      "lines": 232,
+      "referenced": false
+    },
+    {
+      "file": "motif_validator.mjs",
+      "lines": 193,
+      "referenced": true
+    },
+    {
+      "file": "response_facade.mjs",
+      "lines": 183,
+      "referenced": false
+    },
+    {
+      "file": "honeycomb_smith.mjs",
+      "lines": 178,
+      "referenced": true
+    },
+    {
+      "file": "orchestrator_turn.mjs",
+      "lines": 146,
+      "referenced": true
+    },
+    {
+      "file": "web_cartographer.mjs",
+      "lines": 139,
+      "referenced": true
+    },
+    {
+      "file": "goals_tick.mjs",
+      "lines": 133,
+      "referenced": true
+    },
+    {
+      "file": "honeycomb_consolidate.mjs",
+      "lines": 133,
+      "referenced": true
+    },
+    {
+      "file": "validate_seeds.mjs",
+      "lines": 124,
+      "referenced": true
+    },
+    {
+      "file": "heartbeat.mjs",
+      "lines": 117,
+      "referenced": true
+    },
+    {
+      "file": "silk_scribe_intake.mjs",
+      "lines": 117,
+      "referenced": true
+    }
+  ],
+  "archive_candidates": [
+    {
+      "file": "cards_index.mjs",
+      "lines": 55
+    },
+    {
+      "file": "champions_status.mjs",
+      "lines": 90
+    },
+    {
+      "file": "champion_registry.mjs",
+      "lines": 66
+    },
+    {
+      "file": "concord_weaver_checklist.mjs",
+      "lines": 16
+    },
+    {
+      "file": "first_principles_summarize.mjs",
+      "lines": 24
+    },
+    {
+      "file": "generate_champions_overview.mjs",
+      "lines": 85
+    },
+    {
+      "file": "hfo.mjs",
+      "lines": 38
+    },
+    {
+      "file": "nest_paths.mjs",
+      "lines": 10
+    },
+    {
+      "file": "normalize_ascii.mjs",
+      "lines": 53
+    },
+    {
+      "file": "pinch_core_portable.mjs",
+      "lines": 54
+    },
+    {
+      "file": "prism_plan_pivot.mjs",
+      "lines": 8
+    },
+    {
+      "file": "prism_reframe.mjs",
+      "lines": 29
+    },
+    {
+      "file": "safebreaker_pivot.mjs",
+      "lines": 20
+    },
+    {
+      "file": "shadow_auditor_probes.mjs",
+      "lines": 15
+    },
+    {
+      "file": "signal_warden_audit.mjs",
+      "lines": 20
+    },
+    {
+      "file": "smith_enforce_arch.mjs",
+      "lines": 47
+    },
+    {
+      "file": "swarm_jester_ideas.mjs",
+      "lines": 21
+    },
+    {
+      "file": "thread_sovereign_decide.mjs",
+      "lines": 9
+    },
+    {
+      "file": "voice_renderer.mjs",
+      "lines": 54
+    }
+  ],
+  "stats": {
+    "referenced": 39,
+    "core": 13,
+    "proposedArchive": 19
+  },
+  "guidance": {
+    "action_order": [
+      "1. Keep seeds validated (run hive:seeds:suite).",
+      "2. Ensure board freshness before orchestrator_turn.",
+      "3. Stabilize core generation paths (orchestrator_turn -> moe_chat -> append_history).",
+      "4. Roll up history weekly (hive:history:rollup:week) and create weekly summary.",
+      "5. Review archive candidates; move to archive/ after 7 days of no references."
+    ]
+  }
+}

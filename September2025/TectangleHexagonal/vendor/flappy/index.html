@@ -1,0 +1,80 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:48-06:00
+Expires: 2025-09-23T19:48-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Re-evaluate this artifact against current Hexagonal goals
+- [ ] Log decisions in TODO_2025-09-16.md
+-->
+
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Flappy Harness (Vendor Slot)</title>
+  <style>
+    body{ margin:0; background:#0c1117; color:#e7edf3; font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,sans-serif; }
+    header{ padding:10px 12px; border-bottom:1px solid #1a222c; background:#0f141a; }
+    .wrap{ padding:12px; display:flex; gap:12px; flex-wrap:wrap; }
+    .box{ border:1px solid #1a222c; border-radius:10px; padding:10px; background:#0b1016; }
+    pre{ background:#0d151e; padding:8px; border-radius:8px; overflow:auto; max-height:180px; }
+    canvas{ border:1px solid #1a222c; border-radius:12px; background:#081018; width:360px; height:240px; image-rendering: pixelated; }
+  </style>
+</head>
+<body tabindex="0">
+  <header>
+    <h3>Flappy Vendor Harness <small style="color:#9fb3c8">Press Space/ArrowUp or Z/X</small></h3>
+  </header>
+  <div class="wrap">
+    <div class="box">
+      <div>Downs: <span id="downs">0</span> Ups: <span id="ups">0</span> LastKey: <span id="last">-</span></div>
+      <pre id="log"></pre>
+    </div>
+    <div class="box">
+      <canvas id="game" width="360" height="240"></canvas>
+    </div>
+  </div>
+  <script>
+    const st = { downs:0, ups:0, lastKey:'', seq:[] };
+    const byId = id=>document.getElementById(id);
+    function upd(){ byId('downs').textContent = st.downs; byId('ups').textContent = st.ups; byId('last').textContent = st.lastKey; byId('log').textContent = JSON.stringify(st.seq.slice(-20), null, 2); }
+    function normKey(k){ return (k===' ')?'Space':k; }
+    function onKD(e){ st.downs++; st.lastKey = normKey(e.key); st.seq.push({ t: Date.now(), type:'down', key: st.lastKey }); jump(); upd(); }
+    function onKU(e){ st.ups++; st.lastKey = normKey(e.key); st.seq.push({ t: Date.now(), type:'up', key: st.lastKey }); upd(); }
+    window.addEventListener('keydown', onKD);
+    window.addEventListener('keyup', onKU);
+    // expose for tests
+    window.__counts = st;
+    // autofocus to receive keys
+    window.addEventListener('load', ()=>{ try{ window.focus(); document.body.focus(); }catch{} });
+
+    // Minimal 1-button game (Flappy-like): jump on Space/Z/X
+    const cvs = document.getElementById('game');
+    const ctx = cvs.getContext('2d');
+    const W = cvs.width, H = cvs.height;
+    let y = H*0.5, vy = 0, g = 1200, jumpVy = -350, x = 50, r = 8;
+    let pipes = []; let pipeGap = 70, pipeW = 24, speed = 120, lastAdd = 0;
+    let alive = true, score = 0;
+    function addPipe(){ const top = 20 + Math.random()*(H-40-pipeGap); pipes.push({ x: W+10, top: top, bot: top+pipeGap, passed:false }); }
+    function jump(){ if(!alive){ reset(); } vy = jumpVy; }
+    function reset(){ y=H*0.5; vy=0; pipes.length=0; score=0; alive=true; lastAdd=0; addPipe(); }
+    reset();
+    let last = performance.now();
+    function step(now){ const dt = Math.min(0.033, (now-last)/1000); last=now; if(alive){ vy += g*dt; y += vy*dt; for(const p of pipes){ p.x -= speed*dt; if(!p.passed && p.x+pipeW<x){ p.passed=true; score++; } }
+      if(now - lastAdd > 1600){ addPipe(); lastAdd = now; }
+      while(pipes.length && pipes[0].x+pipeW<0) pipes.shift();
+      if(y<r || y>H-r) alive=false; for(const p of pipes){ const inX = (x+r>p.x)&&(x-r<p.x+pipeW); if(inX && (y-r<p.top || y+r>p.bot)) alive=false; }
+    }
+      ctx.clearRect(0,0,W,H); ctx.fillStyle='#0b1622'; ctx.fillRect(0,0,W,H);
+      for(const p of pipes){ ctx.fillStyle='#2a3a4d'; ctx.fillRect(p.x,0,pipeW,p.top); ctx.fillRect(p.x,p.bot,pipeW,H-p.bot); }
+      ctx.beginPath(); ctx.fillStyle = alive?'#82d4ff':'#ff6b6b'; ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#e7edf3'; ctx.font='12px system-ui'; ctx.fillText('Score '+score, 8, 16); if(!alive){ ctx.fillStyle='#9fb3c8'; ctx.fillText('Press Z/X/Space', W-110, 16); }
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  </script>
+</body>
+</html>

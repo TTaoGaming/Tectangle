@@ -1,0 +1,38 @@
+name: Design Audit
+
+on:
+  push:
+    branches: [ main, hex-boundary-scan ]
+  pull_request:
+  schedule:
+    - cron: '5 6 * * *'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        run: npm ci
+      - name: Start static server
+        run: npx http-server . -p 8080 &
+      - name: Wait for server
+        run: npx wait-on http://127.0.0.1:8080
+      - name: Run design token validation
+        run: npm run -s hex:design:tokens
+      - name: Run UI canon canary (M3)
+        run: npm run -s hex:design:canary
+      - name: Run design audit tests
+        run: |
+          export HEADLESS=1
+          npm run -s hex:design:audit
+      - name: Upload v4 visuals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v4-visuals
+          path: |
+            September2025/TectangleHexagonal/out/visual/*.png

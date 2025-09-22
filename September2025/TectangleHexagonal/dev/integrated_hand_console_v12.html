@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hand Console V12 (Hex)</title>
+  <link rel="stylesheet" href="./styles.css?v12" />
+</head>
+<body>
+  <!-- WEBWAY:ww-2025-026 V12 SPAWN banner -->
+  <div style="position:fixed;top:6px;left:6px;z-index:9999;background:#7c3aed;color:white;padding:4px 8px;border-radius:6px;opacity:.9;font-weight:600;">V12 • FROZEN</div>
+  <!-- Clone of V11 content with same structure; reuse scripts -->
+  <div id="appRoot"></div>
+  <script type="module">
+    import { createAppShell } from '../src/app/appShell.js?v12'; // cache-bust
+    import { createOverlayOpsPort } from '../src/ports/overlayOpsPort.js?v12';
+    import { createCanvasOverlayRenderer } from '../src/ui/canvasOverlayRenderer.js?v12';
+    import { createHandConsoleViewModel } from '../src/ui/createHandConsoleViewModel.js?v12';
+    import { createSeatLockRichAdapter } from '../src/ui/seatLockRichAdapter.js?v12';
+
+    // Flags: move toward hex UI in V12 work stream
+    globalThis.__flags = Object.assign({}, globalThis.__flags||{}, {
+      FEATURE_HAND_CONSOLE_V11:true,
+      FEATURE_HAND_CONSOLE_VM:true,
+      FEATURE_OVERLAY_REDO:true,
+      FEATURE_OVERLAY_DEBUG:true,
+      FEATURE_CAMERA_CONSTRAINTS:true,
+      FEATURE_RICH_SEAT_LOCK_V10:true,
+      FEATURE_WRIST_ORIENT_V1:true,
+      FEATURE_FINGER_GEOMETRY_V1:true,
+      FEATURE_HEX_DASHBOARD:false
+    });
+
+    // Reuse V11 UI by importing its HTML into this page for now (minimal clone). We attach same globals for tests.
+    // For portability, load the existing V11 HTML via fetch and inject. Keeps single source of markup.
+    const html = await (await fetch('./integrated_hand_console_v11.html')).text();
+    // Strip the <html> wrapper and reuse inner body content to avoid nested documents.
+    const body = html.split('<body>')[1]?.split('</body>')[0] || '';
+    document.body.insertAdjacentHTML('beforeend', body);
+    document.title = 'Hand Console V12 (Hex)';
+    const stamp = document.createElement('div');
+    stamp.style.cssText = 'position:fixed;top:6px;right:6px;z-index:9999;background:#111827;color:#fff;padding:4px 8px;border-radius:6px;opacity:.9;font-weight:600;';
+    stamp.textContent = 'V12';
+    document.body.appendChild(stamp);
+  </script>
+</body>
+</html>

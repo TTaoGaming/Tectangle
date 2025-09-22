@@ -1,0 +1,91 @@
+{
+  "champions": [
+    {
+      "id": "FIRE_INNOCENT_REORIENT",
+      "displayName": "Fire Innocent Reorient",
+      "origin": "mythic",
+      "archetypes": [
+        "Innocent",
+        "Warrior"
+      ],
+      "elements": [
+        "Fire"
+      ],
+      "keywords": [
+        "reorient",
+        "ignite",
+        "clarify"
+      ],
+      "intent": {
+        "goals": [
+          "reframe quickly"
+        ],
+        "constraints": [
+          "stay safe"
+        ]
+      },
+      "notes": "Seed example; evolves via feedback."
+    },
+    {
+      "id": "FIRE_INNOCENT_REORIENT_v99",
+      "displayName": "Fire Innocent Reorient Variant",
+      "origin": "algorithm",
+      "archetypes": [
+        "Innocent",
+        "Warrior"
+      ],
+      "elements": [
+        "Fire"
+      ],
+      "keywords": [
+        "reorient",
+        "ignite",
+        "clarify",
+        "variant",
+        "explore"
+      ],
+      "intent": {
+        "goals": [
+          "reframe quickly"
+        ],
+        "constraints": [
+          "stay safe"
+        ]
+      },
+      "notes": "Seed example; evolves via feedback. | auto-variant"
+    }
+  ],
+  "ratings": {},
+  "evidence": [],
+  "timeHorizons": {
+    "immediate": {
+      "objective": "fast feedback",
+      "plan": "heuristics",
+      "metrics": [
+        "latency",
+        "stability"
+      ]
+    },
+    "short": {
+      "objective": "robustness",
+      "plan": "MPC",
+      "metrics": [
+        "accuracy"
+      ]
+    },
+    "mid": {
+      "objective": "coverage",
+      "plan": "HTN",
+      "metrics": [
+        "tasks_done"
+      ]
+    },
+    "long": {
+      "objective": "purpose alignment",
+      "plan": "roadmap",
+      "metrics": [
+        "purpose_fit"
+      ]
+    }
+  }
+}

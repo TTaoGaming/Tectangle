@@ -1,0 +1,27 @@
+# agent.me — Tectangle Hexagonal
+
+WEBWAY:ww-2025-049 — UI Canon (Material Design 3)
+
+- Canon page: `dev/demo_fullscreen_sdk_v4_material.html` (imports `dev/design/m3.tokens.css`, uses `--m3-*` vars).
+- Guards you must run before shipping changes:
+  - `npm run -s hex:design:tokens` — validates token JSON + required CSS vars.
+  - `npm run -s hex:design:canary` — ensures v4 demo carries Webway marker and tokens.
+  - `npm run -s hex:design:audit` — puppeteer smoke for v4, uploads visuals in CI.
+- Legacy marking: add `<!-- LEGACY_UI: to migrate to M3 tokens -->` at the top of any dev page not yet migrated.
+- Feature flag: `FEATURE_UI_M3_CANON` — keep new UI behind this where practical; prefer CSS tokens.
+- Revert: remove WEBWAY markers, delete `dev/design/*tokens*` and `scan_ui_m3_canon.mjs`, drop CI step.
+
+Other canon/quality gates
+
+- Visual snapshots: `npm run -s hex:visual:snapshot` plus P1/P2 seat screenshots via `npm run -s hex:visual:screenshots`.
+- Golden smokes: `npm run -s hex:goldens` (headed preferred locally).
+- Architecture lint + unit tests: `npm run -s hex:verify:full`.
+
+How to work in this repo (quick)
+
+- Serve: `npx http-server . -p 8080` (PowerShell). Open demos at `http://127.0.0.1:8080/...`.
+- Prefer editing under `src/*` and wire via the AppShell/SDK facade. Keep UI-only changes tokenized.
+- When adding a new demo page:
+  1) Import `./design/m3.tokens.css`.
+  2) Add comment `<!-- WEBWAY:ww-2025-049: uses M3 canon -->`.
+  3) If not ready, add `<!-- LEGACY_UI: to migrate to M3 tokens -->` and remove it once migrated.

@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Modular Index — Landmark smoothing demo</title>
+    <style>
+      :root {
+        --w: 640px;
+        --h: 480px;
+        --bg: #f6f7f8;
+        --muted: #666;
+      }
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+          Arial;
+        margin: 12px;
+        background: var(--bg);
+        color: #111;
+      }
+      h1 {
+        font-size: 16px;
+        margin: 0 0 8px 0;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background: white;
+        cursor: pointer;
+      }
+      .wrap {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+      .view {
+        width: var(--w);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .canvas-stack {
+        position: relative;
+        width: var(--w);
+        height: var(--h);
+        background: transparent; /* show underlying video immediately */
+        border-radius: 6px;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+      }
+      video {
+        display: block;
+      }
+      .canvas-stack video {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 1;
+      }
+      canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        background: transparent;
+        z-index: 2;
+      }
+      .status {
+        font-size: 13px;
+        color: var(--muted);
+        margin-left: auto;
+      }
+      .key {
+        width: 64px;
+        height: 64px;
+        border-radius: 8px;
+        border: 1px solid #bbb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        background: white;
+        transition: transform 0.08s ease, box-shadow 0.08s ease;
+      }
+      .key.active {
+        background: #0b84ff;
+        color: white;
+        box-shadow: 0 4px 10px rgba(11, 132, 255, 0.35);
+        transform: translateY(-2px);
+      }
+      .key-label {
+        font-size: 18px;
+      }
+      .status-small {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+    </style>
+
+    <!-- Ensure locateFile exists for Emscripten asset loader before MediaPipe scripts load -->
+    <script>
+      window.Module = window.Module || {};
+      window.Module.locateFile = function (path) {
+        // Route MediaPipe assets to CDN (matching hands@0.4)
+        return 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/' + path;
+      };
+    </script>
+
+    <!-- MediaPipe CDN (hands, drawing utils, camera utils) -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.4/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  </head>
+
+  <body>
+    <h1>Modular Landmark Smooth — index-finger press (A)</h1>
+
+    <div class="controls">
+      <button id="startBtn" class="btn">Start</button>
+      <button id="stopBtn" class="btn" disabled>Stop</button>
+
+      <div style="width:12px"></div>
+
+      <!-- Visible in-page "A" key that highlights on virtual keydown -->
+<button id="videoOnlyBtn" class="btn">Video Only</button>
+<span id="debug" class="status-small" style="margin-left:12px"></span>
+      <div id="keyA" class="key" title="Virtual A key"><span class="key-label">A</span></div>
+
+      <div style="flex:1"></div>
+
+      <div id="status" class="status">idle</div>
+    </div>
+
+    <div class="wrap">
+      <div class="view">
+        <div class="title">Raw landmarks</div>
+        <div class="canvas-stack">
+          <video id="video" autoplay playsinline muted style="position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover; z-index:1;"></video>
+          <canvas id="canvasRaw" width="640" height="480"></canvas>
+        </div>
+      </div>
+
+      <div class="view">
+        <div class="title">Smoothed landmarks</div>
+        <div class="canvas-stack">
+          <canvas id="canvasSmooth" width="640" height="480"></canvas>
+        </div>
+      </div>
+    </div>
+
+
+    <script type="module">
+      import { CameraManager } from './src/camera-manager.js';
+      import { MediaPipeline } from './src/media-pipeline.js';
+      import { SmoothingManager } from './src/smoothing-manager.js';
+      import { KinematicClamp } from './src/kinematic-clamp.js';
+      import { computePalmFacing } from './src/palm-gating.js';
+      import { FingertipFilter } from './src/fingertip-filter.js';
+      import { GestureMapper } from './src/gesture-mapper.js';
+
+      const WIDTH = 640,
+        HEIGHT = 480;
+      const video = document.getElementById('video');
+      const canvasRaw = document.getElementById('canvasRaw');
+      const canvasSmooth = document.getElementById('canvasSmooth');
+      const ctxRaw = canvasRaw.getContext('2d');
+      const ctxSmooth = canvasSmooth.getContext('2d');
+      const startBtn = document.getElementById('startBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const statusEl = document.getElementById('status');
+      const keyAEl = document.getElementById('keyA');
+
+      // drawing helpers (simple)
+      const chains = [
+        [0, 1, 2, 3, 4],
+        [0, 5, 6, 7, 8],
+        [0, 9, 10, 11, 12],
+        [0, 13, 14, 15, 16],
+        [0, 17, 18, 19, 20],
+      ];
+      const fingertipIdx = new Set([4, 8, 12, 16, 20]);
+      const handColors = [
+        { line: '#00b894', fill: '#00d28a' },
+        { line: '#0984e3', fill: '#74b9ff' },
+      ];
+      function clearCanvas(ctx) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      }
+      function drawBackground(ctx) {
+        try {
+          ctx.drawImage(video, 0, 0, ctx.canvas.width, ctx.canvas.height);
+        } catch (e) {
+          /* ignore if video not ready */
+        }
+      }
+      function drawLandmarks(ctx, landmarks, color) {
+        if (!landmarks || landmarks.length === 0) return;
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = color.line;
+        // chains
+        for (const c of chains) {
+          ctx.beginPath();
+          let moved = false;
+          for (const idx of c) {
+            const p = landmarks[idx];
+            if (!p) continue;
+            const x = p.x * ctx.canvas.width;
+            const y = p.y * ctx.canvas.height;
+            if (!moved) {
+              ctx.moveTo(x, y);
+              moved = true;
+            } else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+        // points
+        for (let i = 0; i < landmarks.length; i++) {
+          const p = landmarks[i];
+          if (!p) continue;
+          const x = p.x * ctx.canvas.width;
+          const y = p.y * ctx.canvas.height;
+          ctx.beginPath();
+          ctx.fillStyle = color.fill;
+          const r = fingertipIdx.has(i) ? 6 : 4;
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Pipeline components
+      const cameraMgr = new CameraManager(video, { width: WIDTH, height: HEIGHT });
+      const pipeline = new MediaPipeline(video, { onResults: handleResults });
+      const smoother = new SmoothingManager({ minCutoff: 1.0, beta: 0.007, dCutoff: 1.0 });
+      const clamp = new KinematicClamp({ expiryFrames: 30, maxDist: 0.20 });
+      const fingertipFilter = new FingertipFilter();
+      const gestureMapper = new GestureMapper({
+        key: 'A',
+        onKeyDown: handleKeyDown,
+        onKeyUp: handleKeyUp,
+        params: { pressOnDistance: 0.045, pressOffDistance: 0.07, requirePalmFacing: true },
+      });
+
+      // Expose a test hook for automated tests (init only, no camera start)
+      window.__TEST_PIPELINE = {
+        initOnly: async () => {
+          try {
+            await pipeline.start();
+            return { ok: true };
+          } catch (e) {
+            return { ok: false, err: String(e) };
+          }
+        },
+        // startFull: start camera preview first, then pipeline
+        startFull: async () => {
+          try {
+            await cameraMgr.start();
+            // wait briefly for the video to become ready
+            await new Promise((resolve) => {
+              if (video.readyState >= 2) return resolve();
+              const onReady = () => { video.removeEventListener('loadeddata', onReady); resolve(); };
+              video.addEventListener('loadeddata', onReady);
+              setTimeout(() => { try { video.removeEventListener('loadeddata', onReady); } catch (e) {} ; resolve(); }, 1500);
+            });
+            startPreview();
+            try {
+              await pipeline.start();
+            } catch (e) {
+              // pipeline may fail to initialize in some environments; keep preview running
+              console.warn('pipeline.start() failed in startFull (continuing with preview):', e);
+            }
+            return { ok: true };
+          } catch (e) {
+            return { ok: false, err: String(e) };
+          }
+        },
+        stop: () => {
+          try { stopPreview(); } catch (e) {}
+          try { cameraMgr.stop(); } catch(e) {}
+          try { pipeline.stop(); } catch(e) {}
+        },
+        isRunning: () => (typeof running !== 'undefined' ? running : false),
+      };
+
+      // Camera -> MediaPipeline wiring
+      cameraMgr.registerOnFrame(async (vid) => {
+        try {
+          // Only send frames to MediaPipeline once it has been started to avoid "sendFrame before start" noise.
+          if (pipeline && pipeline.running) {
+            await pipeline.sendFrame(vid);
+          }
+        } catch (e) {
+          // Non-fatal: pipeline send may fail - log for debugging
+          console.debug('pipeline.sendFrame error (non-fatal)', e);
+        }
+      });
+
+      let running = false;
+      let _previewActive = false;
+
+      function setStatus(s) {
+        statusEl.textContent = s;
+      }
+
+      function startPreview() {
+        if (_previewActive) return;
+        _previewActive = true;
+        (async function previewLoop() {
+          while (_previewActive) {
+            try {
+              // Prefer createImageBitmap for robust frame extraction where available
+              if (video.readyState >= 2 && typeof createImageBitmap === 'function') {
+                try {
+                  const bmp = await createImageBitmap(video);
+                  clearCanvas(ctxRaw);
+                  clearCanvas(ctxSmooth);
+                  ctxRaw.drawImage(bmp, 0, 0, ctxRaw.canvas.width, ctxRaw.canvas.height);
+                  ctxSmooth.drawImage(bmp, 0, 0, ctxSmooth.canvas.width, ctxSmooth.canvas.height);
+                  try { bmp.close(); } catch (e) {}
+                } catch (e) {
+                  // fallback to direct drawImage if createImageBitmap fails
+                  try {
+                    clearCanvas(ctxRaw);
+                    clearCanvas(ctxSmooth);
+                    ctxRaw.drawImage(video, 0, 0, ctxRaw.canvas.width, ctxRaw.canvas.height);
+                    ctxSmooth.drawImage(video, 0, 0, ctxSmooth.canvas.width, ctxSmooth.canvas.height);
+                  } catch (e2) {
+                    // ignore
+                  }
+                }
+              } else {
+                try {
+                  clearCanvas(ctxRaw);
+                  clearCanvas(ctxSmooth);
+                  ctxRaw.drawImage(video, 0, 0, ctxRaw.canvas.width, ctxRaw.canvas.height);
+                  ctxSmooth.drawImage(video, 0, 0, ctxSmooth.canvas.width, ctxSmooth.canvas.height);
+                } catch (e) {
+                  // ignore if not ready
+                }
+              }
+            } catch (err) {
+              console.debug('preview loop error', err);
+            }
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+          }
+        })();
+      }
+
+      function stopPreview() {
+        _previewActive = false;
+      }
+      // UI helpers to prioritize showing the raw video to the user while
+      // MediaPipe initialization completes. These intentionally avoid layout
+      // thrash by toggling canvas opacity rather than removing elements.
+      function showVideoOnly() {
+        try {
+          canvasRaw.style.opacity = '0';
+          canvasSmooth.style.opacity = '0';
+          video.style.opacity = '1';
+          video.style.zIndex = '999';
+        } catch (e) {
+          // ignore
+        }
+      }
+      function showCanvases() {
+        try {
+          canvasRaw.style.opacity = '1';
+          canvasSmooth.style.opacity = '1';
+          // Ensure canvases sit above the video for overlays
+          canvasRaw.style.zIndex = '100';
+          canvasSmooth.style.zIndex = '101';
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      async function waitForVideoReady(timeoutMs = 5000) {
+        if (video.readyState >= 2) return;
+        return new Promise((resolve) => {
+          const onReady = () => {
+            video.removeEventListener('loadeddata', onReady);
+            resolve();
+          };
+          video.addEventListener('loadeddata', onReady);
+          setTimeout(() => {
+            try { video.removeEventListener('loadeddata', onReady); } catch (e) {}
+            resolve();
+          }, timeoutMs);
+        });
+      }
+
+      async function start() {
+        if (running) return;
+        try {
+          // set canvas sizes up-front
+          canvasRaw.width = WIDTH;
+          canvasRaw.height = HEIGHT;
+          canvasSmooth.width = WIDTH;
+          canvasSmooth.height = HEIGHT;
+
+          // start camera first so user sees preview immediately
+          await cameraMgr.start();
+          await waitForVideoReady(2000);
+          startPreview();
+
+          // then start MediaPipe pipeline (best-effort)
+          try {
+            await pipeline.start();
+          } catch (e) {
+            console.warn('pipeline.start() failed (continuing with preview):', e);
+          }
+
+          running = true;
+          setStatus('running');
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
+        } catch (e) {
+          console.error('start failed', e);
+          setStatus('start failed');
+        }
+      }
+
+      function stop() {
+        if (!running) return;
+        stopPreview();
+        cameraMgr.stop();
+        try { pipeline.stop(); } catch (e) {}
+        smoother.reset();
+        clamp.reset();
+        fingertipFilter.reset();
+        gestureMapper.reset();
+        clearCanvas(ctxRaw);
+        clearCanvas(ctxSmooth);
+        running = false;
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        setStatus('idle');
+        keyAEl.classList.remove('active');
+      }
+
+      startBtn.addEventListener('click', start);
+      stopBtn.addEventListener('click', stop);
+
+      // Results handler for MediaPipeline
+      function handleResults(results) {
+        const t = Date.now();
+        clearCanvas(ctxRaw);
+        clearCanvas(ctxSmooth);
+        drawBackground(ctxRaw);
+        drawBackground(ctxSmooth);
+
+        const rawMulti = (results.multiHandLandmarks || []).map((lm) =>
+          lm.map((p) => ({ x: p.x, y: p.y, z: p.z ?? 0 }))
+        );
+        const handednessArr = (results.multiHandedness || []).map((h) =>
+          h && h.label ? h.label : null
+        );
+        setStatus(rawMulti.length === 0 ? 'No hands detected' : `Hands detected: ${rawMulti.length}`);
+
+        // smoothing
+        const smoothedMulti = smoother.apply(rawMulti, t);
+
+        // draw raw + smoothed
+        for (let h = 0; h < rawMulti.length; h++) {
+          const col = handColors[h % handColors.length];
+          drawLandmarks(ctxRaw, rawMulti[h], col);
+          drawLandmarks(ctxSmooth, smoothedMulti[h], col);
+        }
+
+        // clamp -> stable controller ids
+        const assigned = clamp.assign(smoothedMulti, handednessArr);
+
+        // palm gating
+        for (const a of assigned) {
+          try {
+            const res = computePalmFacing(a.landmarks);
+            a.palmFacing = res.facing;
+            a.palmAngleDeg = res.angleDeg;
+          } catch (e) {
+            a.palmFacing = false;
+            a.palmAngleDeg = null;
+          }
+        }
+
+        // fingertip kinematics
+        const fingertipResults = fingertipFilter.compute(assigned, t);
+
+        // gesture mapping
+        gestureMapper.processFrame(assigned, fingertipResults, t);
+
+        // debug overlay: controller ids + palm-facing on smoothed canvas
+        ctxSmooth.font = '12px system-ui';
+        ctxSmooth.fillStyle = '#fff';
+        ctxSmooth.strokeStyle = '#000';
+        for (const a of assigned) {
+          const w = a.landmarks && a.landmarks[0];
+          if (!w) continue;
+          const x = w.x * ctxSmooth.canvas.width;
+          const y = w.y * ctxSmooth.canvas.height;
+          const txt = `id:${a.controllerId} ${a.palmFacing ? 'palm-facing' : ''} ${a.handedness || ''}`;
+          ctxSmooth.lineWidth = 3;
+          ctxSmooth.strokeText(txt, x + 6, y - 6);
+          ctxSmooth.fillText(txt, x + 6, y - 6);
+        }
+      }
+
+      // Gesture handlers: toggle visual "A" key
+      function handleKeyDown(ev) {
+        keyAEl.classList.add('active');
+        console.log('KeyDown', ev);
+      }
+      function handleKeyUp(ev) {
+        keyAEl.classList.remove('active');
+        console.log('KeyUp', ev);
+      }
+
+      // Quick check on load
+      window.addEventListener('load', () => {
+        if (typeof Hands === 'undefined') {
+          setStatus('WARNING: MediaPipe Hands not loaded');
+        } else {
+          setStatus('idle');
+        }
+      });
+    </script>
+  </body>
+</html>

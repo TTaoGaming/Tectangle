@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hand Console V14 (Hex • Research Head)</title>
+  <!-- Tailwind CDN for prototype; can be replaced with local build if needed -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>:root{ color-scheme:dark }</style>
+</head>
+<body class="bg-slate-950 text-slate-100">
+  <!-- WEBWAY:ww-2025-029 V14 ACTIVE -->
+  <!-- WEBWAY:ww-2025-094 Master Stigmergy Blackboard: see /ObsidianBlackboard.md -->
+  <div class="fixed top-2 left-2 z-50 rounded-md px-2.5 py-1 text-sm font-semibold bg-emerald-600">V14 • ACTIVE</div>
+
+  <div class="grid md:grid-cols-[2fr_420px] grid-cols-1 h-screen">
+    <div id="left" class="relative">
+      <video id="cam" class="w-full h-full object-cover bg-black" playsinline muted></video>
+      <canvas id="ov" class="absolute inset-0 pointer-events-none"></canvas>
+      <div id="boot" class="absolute top-3 left-3 bg-black/60 rounded-md px-2.5 py-1 text-xs">Booting V14… <span class="opacity-70">research head</span></div>
+    </div>
+    <aside id="right" class="p-3 space-y-3 overflow-auto bg-slate-900/40 border-l border-slate-800">
+      <section class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+        <h3 class="uppercase tracking-wide text-xs opacity-80 mb-2">Capture</h3>
+        <div class="flex flex-wrap items-center gap-2 text-sm">
+          <button id="startCam" class="px-3 py-1 rounded-md border border-slate-800 bg-slate-900">Camera</button>
+          <button id="runClip" class="px-3 py-1 rounded-md border border-slate-800 bg-slate-900">Clip</button>
+          <button id="openSidecar" class="px-3 py-1 rounded-md border border-slate-800 bg-slate-900">Sidecar</button>
+          <select id="clipSel" class="px-2 py-1 rounded-md bg-slate-900 border border-slate-800">
+            <option value="../videos/two_hands_baseline_idle_v1.mp4">Idle</option>
+            <option value="../videos/two_hands_stationary_right_then_left_index_pinch_hold_1s_v1.mp4">Pinch Seq</option>
+          </select>
+          <label class="flex items-center gap-1 text-xs"><input id="mirrorToggle" type="checkbox"/> mirror</label>
+          <span id="capStatus" class="text-xs opacity-70 font-mono">idle</span>
+          <label class="flex items-center gap-1 text-xs"><input id="heavyToggle" type="checkbox" checked/> heavy viz</label>
+          <label class="flex items-center gap-1 text-xs">UI Hz
+            <select id="richHz" class="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800">
+              <option value="frame">Every frame</option>
+              <option value="30">30 Hz</option>
+              <option value="10" selected>10 Hz</option>
+              <option value="5">5 Hz</option>
+              <option value="1">1 Hz</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+        <h3 class="uppercase tracking-wide text-xs opacity-80 mb-2">Seats</h3>
+        <div id="seatSummary" class="font-mono text-sm">P1=- | P2=-</div>
+      </section>
+
+      <section class="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+        <h3 class="uppercase tracking-wide text-xs opacity-80 mb-2">Signals</h3>
+        <div id="signalsGrid" class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs font-mono"></div>
+      </section>
+
+      <section class="rounded-lg border border-slate-800 bg-slate-900/60 p-3" id="richPanel">
+        <h3 class="uppercase tracking-wide text-xs opacity-80 mb-2">Seat-Lock Metrics</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="text-left border-b border-slate-800"><th class="py-1 pr-2">Metric</th><th class="py-1 pr-2">P1</th><th class="py-1 pr-2">P2</th></tr>
+            </thead>
+            <tbody id="richTBody"><tr><td colspan="3" class="opacity-60 py-1">(waiting)</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="rounded-lg border border-slate-800 bg-slate-900/60 p-3" id="historyPanel">
+        <h3 class="uppercase tracking-wide text-xs opacity-80 mb-2">History (Last 30 frames)</h3>
+        <div id="historyDump" class="font-mono text-[10px] leading-tight max-h-32 overflow-auto whitespace-pre">(waiting)</div>
+      </section>
+    </aside>
+  </div>
+
+  <script type="module">
+    // WEBWAY:ww-2025-029 Tailwind-based shell; reuse existing logic; V14 research flags below
+    import { createAppShell } from '../src/app/appShell.js?v14';
+    import { createOverlayOpsPort } from '../src/ports/overlayOpsPort.js?v14';
+    import { createCanvasOverlayRenderer } from '../src/ui/canvasOverlayRenderer.js?v14';
+    import { createHandConsoleViewModel } from '../src/ui/createHandConsoleViewModel.js?v14';
+    import { createSeatLockRichAdapter } from '../src/ui/seatLockRichAdapter.js?v14';
+
+    globalThis.__flags = Object.assign({}, globalThis.__flags||{}, {
+      FEATURE_HAND_CONSOLE_V11:true,
+      FEATURE_HAND_CONSOLE_VM:true,
+      FEATURE_OVERLAY_REDO:true,
+      FEATURE_OVERLAY_DEBUG:true,
+      FEATURE_CAMERA_CONSTRAINTS:true,
+      FEATURE_RICH_SEAT_LOCK_V10:true,
+      FEATURE_WRIST_ORIENT_V1:true,
+      FEATURE_FINGER_GEOMETRY_V1:true,
+      FEATURE_UI_TW_SHELL:true,
+      // V14 research toggles (initially off; enable per-experiment)
+      FEATURE_ANGLE_VELOCITY:false,
+      FEATURE_ANGLE_JERK:false,
+      FEATURE_PREDICTOR_FUSION:false,
+    });
+
+    const video = document.getElementById('cam');
+    const canvas = document.getElementById('ov');
+    const ctx = canvas.getContext('2d');
+
+    const shell = createAppShell({ seats:['P1','P2'] });
+    const vmCore = createHandConsoleViewModel();
+    const seatLockAdapter = createSeatLockRichAdapter({ shell, vmCore });
+    globalThis.__ihcV14 = { shell, vmCore, seatLockAdapter };
+
+    const diag = { frames:0, errors:[], ops:0, lastHandCount:0, pinchLog:[] };
+    shell.onEvent(ev => { vmCore.onEvent(ev); if(ev.type && ev.type.startsWith('pinch:')) { diag.pinchLog.push(`${ev.t} ${ev.type} ${ev.seat||''}`); if(diag.pinchLog.length>140) diag.pinchLog.splice(0,80); } });
+
+    function getFrame(){ try { return shell.getState && shell.getState().lastFrame || null; } catch { return null; } }
+    function getSeats(){ try { return (shell.getState && shell.getState().seats && shell.getState().seats.seats)||{}; } catch { return {}; } }
+    const opsPort = createOverlayOpsPort({ getFrame, getSeats, getVideoDims: ()=>({ width: video.videoWidth||0, height: video.videoHeight||0 }), spanWarn: !!globalThis.__flags?.FEATURE_CAMERA_CONSTRAINTS });
+    const renderer = createCanvasOverlayRenderer({ canvas, video, fit:'cover', mirror:false });
+
+    function resize(){ const container = video.parentElement; const cw = container.clientWidth||window.innerWidth; const ch = container.clientHeight||window.innerHeight; if(canvas.width!==cw||canvas.height!==ch){ canvas.width=cw; canvas.height=ch; } }
+    window.addEventListener('resize', resize);
+
+    function fmt(n,d=2){ return (n==null||!isFinite(n))?'-':(+n).toFixed(d); }
+
+    function fillSignals(){
+      const snap = vmCore.snapshot();
+      const grid = document.getElementById('signalsGrid'); grid.innerHTML='';
+      const hands = Object.keys(snap.hands); diag.lastHandCount = hands.length;
+      if(!hands.length){ grid.innerHTML='<span class="opacity-60">No hands yet</span>'; return; }
+      for(const hk of hands){
+        const h = snap.hands[hk]; const pairs = [ ['Hand', hk] ];
+        if(h.pinch){ pairs.push(['Pinch', h.pinch.type.replace('pinch:','')]); pairs.push(['Gap', fmt(h.pinch.normalizedGap??h.pinch.norm,3)]); }
+        if(h.orient){ pairs.push(['Orient', fmt(h.orient.angleDeg,1)+'°']); pairs.push(['Bucket', h.orient.bucket]); }
+        if(h.vel){ pairs.push(['Vel', fmt(h.vel.velDegPerSec,0)+'°/s']); }
+        if(h.flex){ pairs.push(['Index MCP/PIP/DIP', `${fmt(h.flex.mcpDeg,0)}/${fmt(h.flex.pipDeg,0)}/${fmt(h.flex.dipDeg,0)}`]); }
+        for(const [k,v] of pairs){ const kd=document.createElement('div'); kd.textContent=k; const vd=document.createElement('div'); vd.textContent=v; grid.appendChild(kd); grid.appendChild(vd); }
+      }
+    }
+
+    function renderRich(){
+      const heavy = document.getElementById('heavyToggle')?.checked;
+      const tbody = document.getElementById('richTBody'); if(!tbody) return;
+      if(!seatLockAdapter){ tbody.innerHTML = '<tr><td colspan="12" class="opacity-60">(adapter off)</td></tr>'; return; }
+      const snap = seatLockAdapter.snapshot(); const seats = Object.keys(snap.enriched).sort();
+      try {
+        window.__lastRichSnapshot = snap;
+        if(window.__sidecarWin && !window.__sidecarWin.closed){
+          window.__sidecarWin.postMessage({ type:'rich:enriched', at: performance.now(), enriched: snap.enriched }, '*');
+        }
+      } catch {}
+      if(!seats.length){ tbody.innerHTML='<tr><td colspan="3" class="opacity-60">(no seats)</td></tr>'; return; }
+      const get = sid => snap.enriched[sid] || null;
+      const fmtAngles = e => { const idx = e?.jointAngles?.index||{}; const a = [idx.mcpDeg, idx.pipDeg, idx.dipDeg].map(x=>x==null?0:Math.round(x)); return `${a[0]}/${a[1]}/${a[2]}`; };
+      const cell = (sid, f) => { const e = get(sid); return e? f(e) : '-'; };
+      const rows=[
+        ['Seat Lock', sid=> (get(sid)?.locked?'LOCK':'...')],
+        ['Hand ID', sid=> (get(sid)?.id||'-')],
+        ['Gap (norm)', sid=> fmt(get(sid)?.norm,3)],
+        ['Gap (raw)', sid=> fmt(get(sid)?.rawNorm,3)],
+        ['Pinch Vel (°/s)', sid=> fmt(get(sid)?.velocity,2)],
+        ['Pinch Accel (°/s²)', sid=> fmt(get(sid)?.acceleration,2)],
+        ['Palm Angle (°)', sid=> fmt(get(sid)?.palmAngleDeg,1)],
+        ['Index MCP/PIP/DIP (°)', sid=> { const e=get(sid); const s=fmtAngles(e); const idx=e?.jointAngles?.index||{}; if((idx.mcpDeg||idx.pipDeg||idx.dipDeg)) { window.__v14AnglePresence = window.__v14AnglePresence||{}; window.__v14AnglePresence[sid]=(window.__v14AnglePresence[sid]||0)+1; } return s; }],
+        ['History Len', sid=> (get(sid)?.historyLen||0)]
+      ];
+      const html = rows.map(([label,f])=>`<tr><td class="py-1 pr-2">${label}</td><td class="py-1 pr-2 font-mono">${cell('P1', f)}</td><td class="py-1 pr-2 font-mono">${cell('P2', f)}</td></tr>`).join('');
+      tbody.innerHTML = html;
+      const hd = document.getElementById('historyDump'); if(hd && heavy){
+        const lines=[]; for(const sid of ['P1','P2']){ const e=get(sid); if(!e) continue; const hv=(e.history||[]).slice(-15).map(h=>fmt(h.norm,3)); lines.push(`${sid}: ${hv.join(',')}`); }
+        hd.textContent = lines.join('\n')||'(empty)';
+      } else if(hd){ hd.textContent='(disabled)'; }
+    }
+
+    let lastRichTs = 0; function richDue(now){ const sel=document.getElementById('richHz'); const v=(sel && sel.value)||'10'; if(v==='frame') return true; const hz = Math.max(1, +v||10); const minDt = 1000/hz; if(now - lastRichTs >= minDt){ lastRichTs = now; return true; } return false; }
+    function render(){
+      try { resize(); const sample=opsPort.sample(); diag.ops = sample.ops.length; const mirrorToggle=document.getElementById('mirrorToggle'); if(mirrorToggle) renderer.mirror=!!mirrorToggle.checked; renderer.render(sample); } catch(err){ if(diag.errors.length<8) console.warn('[v14] overlay error', err); }
+      try { const snap = vmCore.snapshot(); const seats = snap.seats||{}; document.getElementById('seatSummary').textContent=`P1=${seats.P1||'-'} | P2=${seats.P2||'-'}`; fillSignals(); } catch(err){ diag.errors.push('state:'+err.message); }
+      document.getElementById('log')?.textContent !== undefined && (document.getElementById('log').textContent = diag.pinchLog.slice(-80).join('\n') || '(none)');
+      let dLine=`frames=${diag.frames} errors=${diag.errors.length} ops=${diag.ops} hands=${diag.lastHandCount} vm=on`;
+      if(seatLockAdapter){ const sl=seatLockAdapter.snapshot(); const enrich=Object.entries(sl.enriched).map(([k,v])=>`${k}:${v.locked?'L':'-'}`).join(' '); dLine += ` seatLock=${enrich}`; }
+      const now = performance.now(); if(richDue(now)) renderRich();
+      const boot=document.getElementById('boot'); if(boot){ if(diag.frames>30 || video.readyState>=2) boot.style.display='none'; }
+    }
+
+    function loop(){ diag.frames++; vmCore.tick(); seatLockAdapter?.tick(); render(); requestAnimationFrame(loop); }
+    loop();
+
+    window.addEventListener('force:render', ()=>{ try { render(); } catch{} });
+
+    async function startCamera(){ const st=document.getElementById('capStatus'); st.textContent='camera...'; try{ await shell.startCamera(video); st.textContent='camera'; } catch(e){ st.textContent='cam fail'; diag.errors.push('cam:'+e.message); } }
+    async function startClip(url){ const st=document.getElementById('capStatus'); st.textContent='clip...'; try{ await shell.startVideoUrl(video,url); st.textContent='clip'; } catch(e){ st.textContent='clip fail'; diag.errors.push('clip:'+e.message); } }
+    function runClipSel(){ const sel=document.getElementById('clipSel'); if(!sel) return; startClip(sel.value); }
+    document.getElementById('startCam').onclick=()=>startCamera();
+    document.getElementById('runClip').onclick=()=>runClipSel();
+    function openSidecar(){ try { if(!window.__sidecarWin || window.__sidecarWin.closed){ window.__sidecarWin = window.open('rich_sidecar.html', 'rich_sidecar', 'width=480,height=760'); } else { window.__sidecarWin.focus(); } } catch (e) { console.warn('sidecar open failed', e); } }
+    document.getElementById('openSidecar').onclick=()=>openSidecar();
+
+    (function initQP(){ const Q=new URLSearchParams(location.search); const qpClip=Q.get('clip'); const auto=Q.get('autostart')==='1'||Q.get('auto')==='1'; const nocam=Q.get('nocam')==='1'; const sidecar=Q.get('sidecar')==='1'; function normalizeClip(p){ if(!p) return p; let c=p.trim(); if(!c.startsWith('/')){ if(c.startsWith('September2025/')) c='/'+c; else if(!c.startsWith('..')){ if(!c.startsWith('videos/')) c='videos/'+c; c='../'+c; } } return c; } if(qpClip){ const clip=normalizeClip(qpClip); const sel=document.getElementById('clipSel'); let matched=false; for(const o of sel.options){ if(o.value===clip){ matched=true; sel.value=clip; break; } } if(!matched){ const o=document.createElement('option'); o.value=clip; o.textContent='Query Clip'; sel.appendChild(o); sel.value=clip; } if(auto) setTimeout(()=>startClip(clip),160); else if(!nocam) setTimeout(()=>startCamera(),240); } else if(auto){ if(!nocam) setTimeout(()=>startCamera(),160); else setTimeout(()=>runClipSel(),200); } if(sidecar) setTimeout(()=>openSidecar(), 120); })();
+  </script>
+</body>
+</html>

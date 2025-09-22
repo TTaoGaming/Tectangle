@@ -1,0 +1,143 @@
+<!doctype html>
+<!--
+Hand Console V6 (fastOverlay integration)
+Status: EXPERIMENTAL (new architecture)
+Feature Flag: FEATURE_HAND_CONSOLE_V6
+TTL: 2025-10-11 (auto-expire; renew or remove)
+Goal: Use pure op overlay pipeline (fastOverlay) for determinism & testability.
+Revert: delete this file + unset FEATURE_HAND_CONSOLE_V6; prior consoles unaffected.
+-->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Hand Console V6</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin:0; font:12px system-ui, sans-serif; background:#0b1117; color:#e5e7eb; display:grid; grid-template-columns: 2fr 1fr; height:100vh; }
+    #left { position:relative; }
+    video { width:100%; height:100%; object-fit:cover; background:#000; }
+    canvas { position:absolute; inset:0; pointer-events:none; }
+    #boot { position:absolute; top:10px; left:10px; background:rgba(0,0,0,.55); padding:6px 8px; border-radius:8px; font-size:12px; line-height:1.3; }
+    #right { display:flex; flex-direction:column; gap:12px; padding:12px; overflow:auto; }
+    h3 { margin:0 0 6px; font-size:12px; opacity:.8; letter-spacing:.5px; text-transform:uppercase; }
+    .panel { background:#131a23; border:1px solid #1e2833; border-radius:10px; padding:10px 12px; }
+    .mono { font-family:ui-monospace,Menlo,Consolas,monospace; }
+    button { font:inherit; padding:4px 10px; border-radius:6px; background:#0d141c; color:#e5e7eb; border:1px solid #1e2833; cursor:pointer; }
+    #log { font-size:11px; max-height:140px; overflow:auto; background:#0d141c; padding:6px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <div id="left">
+    <video id="cam" playsinline muted></video>
+    <canvas id="ov"></canvas>
+    <div id="boot">Booting V6…<br><span style="opacity:.7">fastOverlay pipeline</span></div>
+  </div>
+  <div id="right">
+    <div class="panel">
+      <h3>Capture</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <button id="startCam">Camera</button>
+        <button id="runClip">Clip</button>
+        <select id="clipSel" style="font:inherit;">
+          <option value="../videos/two_hands_baseline_idle_v1.mp4">Idle</option>
+          <option value="../videos/two_hands_stationary_right_then_left_index_pinch_hold_1s_v1.mp4">Pinch Seq</option>
+        </select>
+        <label style="font-size:11px;display:flex;align-items:center;gap:4px;">
+          <input type="checkbox" id="mirrorToggle" checked /> Mirror
+        </label>
+        <span id="capStatus" class="mono" style="font-size:11px;opacity:.7;">idle</span>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Seats</h3>
+      <div id="seatSummary" class="mono" style="font-size:12px;">P1=- | P2=-</div>
+    </div>
+    <div class="panel">
+      <h3>Overlay Ops</h3>
+      <div id="opsSummary" class="mono" style="font-size:11px;">ops=0</div>
+    </div>
+    <div class="panel">
+      <h3>Recent Pinch</h3>
+      <pre id="log" class="mono">(none)</pre>
+    </div>
+    <div class="panel">
+      <h3>Diag</h3>
+      <div id="diag" class="mono" style="font-size:11px;">frames=0 errors=0 hands=0</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createAppShell } from '../src/app/appShell.js';
+  import { createOverlayOpsPort } from '../src/ports/overlayOpsPort.js';
+  import { createCanvasOverlayRenderer } from '../src/ui/canvasOverlayRenderer.js';
+  import { createHandConsoleViewModel } from '../src/ui/createHandConsoleViewModel.js'; // WEBWAY:ww-2025-008
+    globalThis.__flags = Object.assign({}, globalThis.__flags||{}, { FEATURE_HAND_CONSOLE_V6:true });
+
+    const video = document.getElementById('cam');
+    const canvas = document.getElementById('ov');
+    const ctx = canvas.getContext('2d');
+    const shell = createAppShell({ seats:['P1','P2'] });
+
+  const diag = { frames:0, errors:[], ops:0, lastHandCount:0, pinchLog:[] };
+    globalThis.__fastOverlayDiag = diag; // smoke test target
+
+    function getFrame(){ try { return shell.getState && shell.getState().lastFrame || null; } catch { return null; } }
+    function getSeats(){ try { return (shell.getState && shell.getState().seats && shell.getState().seats.seats)||{}; } catch { return {}; } }
+
+    globalThis.__fastOverlayVideoRef = video; // used by fastOverlay dimension fallback
+  const opsPort = createOverlayOpsPort({ getFrame, getSeats });
+  const renderer = createCanvasOverlayRenderer({ canvas, video, fit:'cover', mirror:true });
+
+    function resize(){
+      // Canvas matches displayed container size (not intrinsic video) for direct draw of transformed ops
+      const container = video.parentElement;
+      const cw = container.clientWidth || window.innerWidth;
+      const ch = container.clientHeight || window.innerHeight;
+      if(canvas.width!==cw || canvas.height!==ch){ canvas.width=cw; canvas.height=ch; }
+    }
+    window.addEventListener('resize', resize);
+
+    // WEBWAY:ww-2025-008: optional unified view model
+    const useVM = (globalThis.__flags.FEATURE_HAND_CONSOLE_VM===true);
+    const vmCore = useVM ? createHandConsoleViewModel() : null;
+    if(useVM && vmCore){
+      shell.onEvent(ev=>{
+        vmCore.onEvent(ev);
+        if(ev.type && ev.type.startsWith('pinch:')){ diag.pinchLog.push(`${ev.t} ${ev.type} ${ev.seat||''}`); if(diag.pinchLog.length>120) diag.pinchLog.splice(0,80); }
+      });
+    } else {
+      shell.onEvent(e=>{ if(e.type && e.type.startsWith('pinch:')){ diag.pinchLog.push(`${e.t} ${e.type} ${e.seat||''}`); if(diag.pinchLog.length>120) diag.pinchLog.splice(0,80); } });
+    }
+
+    function render(){
+      try {
+        resize();
+        const sample = opsPort.sample();
+        diag.ops = sample.ops.length;
+        // mirror toggle binding
+        const mirrorToggle = document.getElementById('mirrorToggle');
+        if(mirrorToggle){ renderer.mirror = !!mirrorToggle.checked; }
+        renderer.render(sample);
+      } catch(err){ if(diag.errors.length<8) console.warn('[v6] overlay error', err); diag.errors.push(String(err?.message||err)); }
+      try { const st = shell.getState(); if(st&&st.seats){ const seats=st.seats.seats||{}; document.getElementById('seatSummary').textContent = `P1=${seats.P1||'-'} | P2=${seats.P2||'-'}`; if(st.lastFrame && st.lastFrame.landmarks){ diag.lastHandCount = Array.isArray(globalThis.__hexLastHands)? globalThis.__hexLastHands.length: (st.lastFrame.landmarks?1:0); } } } catch(err){ diag.errors.push('state:'+ (err?.message||err)); }
+      document.getElementById('opsSummary').textContent = `ops=${diag.ops}`;
+      document.getElementById('log').textContent = diag.pinchLog.slice(-60).join('\n') || '(none)';
+      document.getElementById('diag').textContent = `frames=${diag.frames} errors=${diag.errors.length} hands=${diag.lastHandCount} vm=${useVM?'on':'off'}`;
+      const boot = document.getElementById('boot'); if(boot){ if(diag.frames>30 || video.readyState>=2) boot.style.display='none'; }
+    }
+
+  function loop(){ diag.frames++; if(useVM && vmCore) vmCore.tick(); render(); requestAnimationFrame(loop); }
+    loop();
+
+    async function startCamera(){ const st=document.getElementById('capStatus'); st.textContent='camera...'; try{ await shell.startCamera(video); st.textContent='camera'; } catch(e){ st.textContent='cam fail'; diag.errors.push('cam:'+e.message); } }
+    async function startClip(url){ const st=document.getElementById('capStatus'); st.textContent='clip...'; try{ await shell.startVideoUrl(video,url); st.textContent='clip'; } catch(e){ st.textContent='clip fail'; diag.errors.push('clip:'+e.message); } }
+    function runClipSel(){ const sel=document.getElementById('clipSel'); if(!sel) return; startClip(sel.value); }
+    document.getElementById('startCam').onclick=()=>startCamera();
+    document.getElementById('runClip').onclick=()=>runClipSel();
+
+    (function initQP(){ const Q=new URLSearchParams(location.search); const qpClip=Q.get('clip'); const auto=Q.get('autostart')==='1'||Q.get('auto')==='1'; const nocam=Q.get('nocam')==='1'; function normalizeClip(p){ if(!p) return p; let c=p.trim(); if(!c.startsWith('/')){ if(c.startsWith('September2025/')) c='/'+c; else if(!c.startsWith('..')){ if(!c.startsWith('videos/')) c='videos/'+c; c='../'+c; } } return c; } if(qpClip){ const clip=normalizeClip(qpClip); const sel=document.getElementById('clipSel'); let matched=false; for(const o of sel.options){ if(o.value===clip){ matched=true; sel.value=clip; break; } } if(!matched){ const o=document.createElement('option'); o.value=clip; o.textContent='Query Clip'; sel.appendChild(o); sel.value=clip; } if(auto) setTimeout(()=>startClip(clip),160); else if(!nocam) setTimeout(()=>startCamera(),240); } else if(auto){ if(!nocam) setTimeout(()=>startCamera(),160); else setTimeout(()=>runClipSel(),200); } else { /* no auto */ } })();
+
+    globalThis.__ihcV6 = { shell, startCamera, startClip, diag };
+  </script>
+</body>
+</html>

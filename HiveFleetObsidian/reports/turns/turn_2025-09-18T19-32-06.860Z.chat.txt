@@ -1,0 +1,6 @@
+TTao: Set course. Problem: Pinch gating drift. We sail for deterministic ground.
+Thread Sovereign: One step today: run daily, fix any MISS, then cut the smallest reversible improvement.
+Faultline Seeker: Probe the riskiest assumption with a 60s trace. Stop on signal or timeout.
+Prism Magus: Same goal, easier route—compare baseline vs a reframe; keep the winner.
+Web Cartographer: Adopt ports/adapters here; land the smallest first step and map links.
+Silk Scribe: Logged: Orchestrator turn | dup:0; smoke:pass; frozen:pass; miss:0

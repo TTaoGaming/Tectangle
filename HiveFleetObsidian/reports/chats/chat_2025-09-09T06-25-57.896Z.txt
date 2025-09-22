@@ -1,0 +1,7 @@
+TTao: Problem: (unset). Let's keep it green and simple.
+Thread Sovereign: One reversible step (Win: frozen:pass)
+Faultline Seeker: Try 60s trace on path A (Stop: timeout or signal)
+Prism Magus: Swap method X→Y (Keep when no regressions)
+Web Cartographer: Name seam + smallest adapter
+Silk Scribe: Logged chat | counsel: HiveFleetObsidian/reports/turns/turn_2025-09-09T06-25-57.889Z.json
+Help: Ask anything. Controls - tone=casual|formal, rounds=1|2, --strict, --council, --provider <p>, --counsel-file <path> | --counsel-stdin, seed=<text>. Private: sovereign decide | prism plan. Edit BOARD.current.txt to steer.

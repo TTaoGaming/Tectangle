@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+  <head>
+  <!-- WEBWAY:ww-2025-048: v4 demo adopting Material-esque baseline with cleaner panel bindings -->
+  <!-- WEBWAY:ww-2025-049: UI Canon (M3) applies here; keep tokens/css and audit passing. -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Tectangle — Spatial SDK v4 (Material)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./design/m3.tokens.css" />
+    <style>
+      html, body { height: 100%; }
+      body { background: var(--m3-bg); color: var(--m3-on-surface); }
+      canvas { image-rendering: crisp-edges; }
+      .card { background: color-mix(in oklab, var(--m3-surface) 88%, black 12%); border: 1px solid var(--m3-outline); border-radius: var(--m3-radius-md); }
+      .chip { border-radius: 999px; padding: 2px 8px; border:1px solid var(--m3-outline); font-size: 11px; }
+      .btn { border-radius: var(--m3-radius-sm); padding: 6px 10px; font-size: 12px; background: var(--m3-primary); color: white; }
+      .toolbar { background: color-mix(in oklab, var(--m3-surface) 80%, black 20%); border: 1px solid var(--m3-outline); border-radius: var(--m3-radius-md); }
+    </style>
+  </head>
+  <body class="h-full">
+  <div class="flex h-full">
+      <div class="relative flex-1 min-w-0">
+        <video id="cam" playsinline muted preload="metadata" class="absolute inset-0 w-full h-full object-cover bg-black"></video>
+        <canvas id="overlay" class="absolute inset-0 w-full h-full"></canvas>
+        <div class="absolute top-3 left-3 flex flex-wrap items-center gap-2 toolbar backdrop-blur px-2 py-2">
+          <button id="btnStart" class="btn">Start Camera</button>
+          <button id="btnStop" class="btn" style="background:#ef4444">Stop</button>
+          <button id="btnPlayPinch" class="btn" style="background:#3b82f6">Play Pinch</button>
+          <button id="btnPlayIdle" class="btn" style="background:#f59e0b">Play Idle</button>
+          <label class="text-[11px] opacity-80 ml-2">MP4: <input id="fileInput" type="file" accept="video/mp4" class="text-xs" /></label>
+          <label class="text-[11px] opacity-80 ml-2 inline-flex items-center gap-1">Fit:
+            <select id="fitMode" class="bg-slate-800 text-xs rounded px-1 py-0.5"><option value="cover" selected>cover</option><option value="contain">contain</option></select>
+          </label>
+          <label class="text-[11px] opacity-80 ml-2 inline-flex items-center gap-1"><input id="mirrorToggle" type="checkbox" class="accent-slate-300"> Mirror</label>
+          <button id="btnSeatCfg" class="btn" title="Toggle Seat Config">SeatCfg</button>
+          <span class="chip">Kalman</span>
+        </div>
+        <!-- Seat Config (flagged) -->
+        <div class="absolute right-3 top-3 card p-2 text-[11px] space-y-1" id="seatcfg" style="display:none">
+          <div class="font-semibold">Seat Config</div>
+          <label class="inline-flex items-center gap-1">Seat
+            <select id="cfg_seat" class="bg-slate-800 rounded px-1 py-0.5">
+              <option>P1</option><option>P2</option><option>P3</option><option>P4</option>
+            </select>
+          </label>
+          <label class="inline-flex items-center gap-1">Preset
+            <select id="cfg_preset" class="bg-slate-800 rounded px-1 py-0.5">
+              <option value="responsive">Responsive</option>
+              <option value="balanced" selected>Balanced</option>
+              <option value="smooth">Smooth</option>
+            </select>
+          </label>
+          <label class="inline-flex items-center gap-1">Lookahead ms <input id="cfg_la" type="number" class="w-16 bg-slate-800 rounded px-1 py-0.5" value="100"/></label>
+          <label class="inline-flex items-center gap-1">Enter <input id="cfg_enter" type="number" step="0.01" class="w-16 bg-slate-800 rounded px-1 py-0.5" value="0.50"/></label>
+          <label class="inline-flex items-center gap-1">Exit <input id="cfg_exit" type="number" step="0.01" class="w-16 bg-slate-800 rounded px-1 py-0.5" value="0.80"/></label>
+          <label class="inline-flex items-center gap-1">Anchor ms <input id="cfg_anchor" type="number" class="w-16 bg-slate-800 rounded px-1 py-0.5" value="75"/></label>
+          <label class="inline-flex items-center gap-1">Knuckle cm <input id="cfg_knuckle" type="number" step="0.1" class="w-16 bg-slate-800 rounded px-1 py-0.5" value="8.0"/></label>
+          <button id="cfg_apply" class="btn">Apply</button>
+        </div>
+        <!-- Predictive Lookahead (Kalman) tray -->
+        <div class="absolute left-3 right-3 bottom-3 space-y-2" id="kalman-mount">
+          <div id="kalman" class="card p-2 text-[11px]">
+            <div class="flex items-center justify-between mb-1">
+              <div class="font-semibold">Predictive Lookahead (1D Kalman)</div>
+              <div class="flex items-center gap-2 opacity-80">
+                <label class="inline-flex items-center gap-1">lookahead ms <input id="la" type="number" step="5" value="100" class="w-16 bg-slate-800 rounded px-1 py-0.5"/></label>
+                <label class="inline-flex items-center gap-1">Q <input id="q" type="number" step="0.0001" value="0.01" class="w-20 bg-slate-800 rounded px-1 py-0.5"/></label>
+                <label class="inline-flex items-center gap-1">R <input id="r" type="number" step="0.0001" value="0.001" class="w-20 bg-slate-800 rounded px-1 py-0.5"/></label>
+              </div>
+            </div>
+            <div id="strips" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+          </div>
+        </div>
+      </div>
+      <aside id="panel" class="w-[360px] max-w-full border-l border-slate-800 bg-slate-950/70 backdrop-blur-md overflow-auto">
+        <div class="p-3 flex items-center justify-between sticky top-0 bg-slate-950/90 border-b border-slate-800">
+          <h2 class="font-semibold">Side Panel (v4)</h2>
+          <span class="chip">Live</span>
+        </div>
+        <div class="p-3 space-y-3">
+          <div><h3 class="text-sm font-semibold mb-1">State</h3><pre id="state" class="text-xs whitespace-pre-wrap bg-slate-900 p-2 rounded border border-slate-800"></pre></div>
+          <div><h3 class="text-sm font-semibold mb-1">Last Frame (rich)</h3><pre id="rich" class="text-xs whitespace-pre-wrap bg-slate-900 p-2 rounded border border-slate-800"></pre></div>
+        </div>
+      </aside>
+    </div>
+    <script type="module">
+      // WEBWAY:ww-2025-048: v4 demo script (derived from v3)
+      import { createSpatialInput } from '../../../src/index.js';
+      import { createAppShell } from '../src/app/appShell.js';
+      import { createToiKalmanCV } from '../src/ports/toiKalmanPort.js';
+  import { createGuards } from './src/ui/guards.js';
+  import { createHandOverlay } from './src/overlay/hand_overlay.js';
+  import { createTTIRecorder } from '../../../src/index.js';
+      import { createPinchTelemetry } from './src/telemetry/pinch_telemetry.js';
+      const video=document.getElementById('cam'); const canvas=document.getElementById('overlay'); const ctx=canvas.getContext('2d');
+  const btnStart=document.getElementById('btnStart'); const btnStop=document.getElementById('btnStop');
+      const btnPlayPinch=document.getElementById('btnPlayPinch'); const btnPlayIdle=document.getElementById('btnPlayIdle'); const fileInput=document.getElementById('fileInput');
+      const elState=document.getElementById('state'); const elRich=document.getElementById('rich');
+      const fitMode=document.getElementById('fitMode'); const mirrorToggle=document.getElementById('mirrorToggle');
+  const btnSeatCfg=document.getElementById('btnSeatCfg');
+      const guards = createGuards({ mount: document });
+      guards.apply('#btnStart', 'ready'); guards.apply('#btnStop', 'ready'); guards.apply('#btnPlayPinch', 'ready'); guards.apply('#btnPlayIdle', 'ready');
+      guards.apply('#fitMode', 'ready'); guards.apply('#mirrorToggle', 'ready');
+
+      const sdk=createSpatialInput({ factories:{ createAppShell } }); window.__sdk=sdk;
+      const pinchTelem = createPinchTelemetry(); window.__pinchTelem = pinchTelem;
+  const tti = createTTIRecorder({ getLookaheadMs: ()=> +laEl?.value || 0 }); window.__tti = tti;
+
+      function fitCanvas(){ const rect=canvas.getBoundingClientRect(); canvas.width=Math.max(2,Math.floor(rect.width)); canvas.height=Math.max(2,Math.floor(rect.height)); }
+      const ro=new ResizeObserver(fitCanvas); ro.observe(canvas); fitCanvas();
+      fitMode.addEventListener('change',()=>{ video.style.objectFit=fitMode.value; });
+      mirrorToggle.addEventListener('change',()=>{ const on=!!mirrorToggle.checked; video.style.transform=on?'scaleX(-1)':'none'; });
+  btnSeatCfg?.addEventListener('click',()=>{ try{ const box=document.getElementById('seatcfg'); if(!box) return; const isVisible = box.style.display !== 'none'; const show = !isVisible; box.style.display = show ? 'block' : 'none'; if(show){ window.__flags = window.__flags||{}; window.__flags['FEATURE_SEAT_CONFIG']=true; } }catch{} });
+
+      const kalmanMap = new Map();
+      const laEl = document.getElementById('la'); const qEl = document.getElementById('q'); const rEl = document.getElementById('r');
+      function getKalman(handKey){ let k = kalmanMap.get(handKey); if(!k){ k = createToiKalmanCV({ q:+qEl.value||0.01, r:+rEl.value||0.001 }); kalmanMap.set(handKey,k); } return k; }
+      function resetAllKalman(){ for(const k of kalmanMap.values()) k.reset(); }
+      qEl?.addEventListener('change', ()=>{ for(const k of kalmanMap.values()) k.setParams({ q:+qEl.value||0.01 }); });
+      rEl?.addEventListener('change', ()=>{ for(const k of kalmanMap.values()) k.setParams({ r:+rEl.value||0.001 }); });
+
+      const stripsEl=document.getElementById('strips');
+      const overlay = createHandOverlay({
+        canvas,
+        video,
+        sdk,
+        getFitMode: ()=> fitMode.value,
+        getMirrored: ()=> !!mirrorToggle.checked,
+      });
+      function ensureStrip(handKey,label){ let row=document.querySelector(`[data-strip="${handKey}"]`); if(!row){ row=document.createElement('div'); row.dataset.strip=handKey; row.className='space-y-1'; row.innerHTML=`<div class="flex items-center justify-between"><div class="font-semibold text-[11px]">${label}</div><div class="text-[10px] opacity-70" data-state></div></div><div class="relative h-6 bg-slate-800/60 rounded overflow-hidden" data-bar><div class="absolute top-0 bottom-0 bg-emerald-500/20" data-enter></div><div class="absolute top-0 bottom-0 bg-rose-500/20" data-exit></div><div class="absolute top-0 bottom-0" data-dot style="width:2px;background:#fff"></div><div class="absolute top-0 bottom-0" data-ghost style="width:2px;background:#22d3ee"></div><canvas data-spark class="absolute inset-0"></canvas></div>`; stripsEl.appendChild(row);} return row; }
+      function renderStrip(row, snap, ghost){ const bar=row.querySelector('[data-bar]'); const spark=row.querySelector('[data-spark]'); const dot=row.querySelector('[data-dot]'); const ghostEl=row.querySelector('[data-ghost]'); const st=row.querySelector('[data-state]'); const W=bar.clientWidth||200, H=bar.clientHeight||24; 
+        const enterPct=(snap?.thresholds?.enter ?? 0.5); const exitPct=(snap?.thresholds?.exit ?? 0.8); const enterEl=row.querySelector('[data-enter]'); const exitEl=row.querySelector('[data-exit]'); enterEl.style.left='0%'; enterEl.style.width=(enterPct*100)+'%'; exitEl.style.left='0%'; exitEl.style.width=(exitPct*100)+'%';
+        const norm = (snap?.norm!=null)? snap.norm : null; if(norm!=null){ dot.style.left = (norm*100)+'%'; }
+        if(ghost!=null){ ghostEl.style.left = (Math.max(0,Math.min(1,ghost))*100)+'%'; ghostEl.style.display='block'; } else { ghostEl.style.display='none'; }
+        let fsm = snap?.fsm || (snap?.gate===false?'GATED':(norm!=null? (norm<enterPct?'Armed': (norm<exitPct?'Held':'Released')):'?'));
+        st.textContent = `${fsm}${snap?.palmAngleDeg!=null? ' | palm '+snap.palmAngleDeg.toFixed(0)+'°':''}`;
+        const hist = Array.isArray(snap?.history)? snap.history : []; spark.width=W; spark.height=H; const sctx=spark.getContext('2d'); sctx.clearRect(0,0,W,H);
+        if(hist.length){ sctx.strokeStyle='#94a3b8'; sctx.lineWidth=1; sctx.beginPath(); for(let i=0;i<hist.length;i++){ const x = (i/(hist.length-1))*W; const y = H - (hist[i].norm!=null? hist[i].norm:0)*H; if(i===0) sctx.moveTo(x,y); else sctx.lineTo(x,y); } sctx.stroke(); }
+      }
+
+      function draw(){ ctx.clearRect(0,0,canvas.width,canvas.height); const state=sdk.getState?.()||{}; const rich=sdk.getRichSnapshot?.()||[];
+        // Landmarks overlay first so strips can be on top if overlapping
+        try{ overlay.draw(); }catch{}
+        const now = performance.now();
+        for(const snap of rich){ if(snap?.norm==null) continue; const handKey = snap.hand + ':' + (snap.handId ?? '?'); const row=ensureStrip(handKey, `${snap.hand} ${snap.seat?('['+snap.seat+']'):''}`);
+          const k = getKalman(handKey); const r = k.step({ t: now, norm: snap.norm, enterThresh: (snap?.thresholds?.enter ?? 0.5) });
+          const dtAhead = Math.max(0, (+laEl?.value||0)/1000);
+          const ghost = r.x + r.v * dtAhead;
+          renderStrip(row, snap, ghost);
+          try{ pinchTelem.record({ t: now, handId: snap.handId, norm: snap.norm, fsm: snap.fsm, thresholds: snap.thresholds, palmAngleDeg: snap.palmAngleDeg }); }catch{}
+          try{ tti.update({ now, handKey, snap, kalman: r, enterThresh: (snap?.thresholds?.enter ?? 0.5) }); }catch{}
+        }
+      }
+      function scheduleDraw(){ if('requestVideoFrameCallback' in video){ const cb=()=>{ try{draw();}catch(e){}; try{ video.requestVideoFrameCallback(cb);}catch{ requestAnimationFrame(scheduleDraw);} }; try{ video.requestVideoFrameCallback(cb);}catch{ requestAnimationFrame(scheduleDraw);} } else { requestAnimationFrame(function loop(){ draw(); requestAnimationFrame(loop); }); } }
+      scheduleDraw();
+
+      // Live panel text updates (fix empty panel)
+      setInterval(()=>{ try{ const st=sdk.getState?.(); if(st) elState.textContent = JSON.stringify(st, null, 2); const rich=sdk.getRichSnapshot?.(); if(rich) elRich.textContent = JSON.stringify(rich, null, 2); }catch{} }, 300);
+
+      // Controls
+      btnStart.addEventListener('click', async()=>{ try{ await sdk.startCamera(video);}catch(e){ console.error(e);} });
+      btnStop.addEventListener('click', ()=>{ sdk.stop(video); resetAllKalman(); });
+      async function playUrl(url){ try{ try{ video.crossOrigin='anonymous'; }catch{} await sdk.startVideoUrl(video,url); }catch(e){ console.error('Failed to play url',url,e);} }
+      const PINCH_URL='/September2025/TectangleHexagonal/videos/golden/golden.two_hands_pinch_seq.v1.mp4'; const IDLE_URL='/September2025/TectangleHexagonal/videos/golden/golden.two_hands_idle.v1.mp4';
+      btnPlayPinch.addEventListener('click', ()=> playUrl(PINCH_URL)); btnPlayIdle.addEventListener('click', ()=> playUrl(IDLE_URL));
+      fileInput.addEventListener('change', async (e)=>{ const f=e.target.files && e.target.files[0]; if(!f) return; const blobUrl=URL.createObjectURL(f); await playUrl(blobUrl); });
+
+      // URL params for automation
+      (async function autoStartFromQuery(){
+        try{
+          const p = new URLSearchParams(location.search);
+          if(p.get('seatcfg')==='1'){ window.__flags = window.__flags||{}; window.__flags['FEATURE_SEAT_CONFIG']=true; const box=document.getElementById('seatcfg'); if(box) box.style.display='block'; }
+          const clip = p.get('clip'); const autostart = p.get('autostart')==='1';
+          if(autostart && clip){ await playUrl(clip); }
+        }catch(e){ console.warn('autostart params failed', e); }
+      })();
+
+      // UX: hide seat config after Apply for now
+      try{
+        document.getElementById('cfg_apply')?.addEventListener('click',()=>{
+          const box=document.getElementById('seatcfg'); if(box) box.style.display='none';
+        });
+      }catch{}
+    </script>
+  </body>
+  </html>

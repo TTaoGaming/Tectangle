@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Party Quick Draw</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style> html,body{height:100%} body{background:#0b1020;color:#e5e7eb} .card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px} </style>
+</head>
+<body class="h-full">
+  <div class="max-w-3xl mx-auto p-4 space-y-3">
+    <h1 class="text-xl font-semibold">Party Quick Draw</h1>
+    <p class="opacity-80 text-sm">Wait for “DRAW!” then make a Closed Fist quickly. Win to earn a coin.</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="card p-3 space-y-2">
+        <div class="flex items-center justify-between"><div class="font-semibold">Camera</div><span id="status" class="text-xs opacity-75">idle</span></div>
+        <video id="cam" playsinline muted autoplay class="w-full rounded bg-black"></video>
+        <div class="flex items-center gap-2 text-sm flex-wrap">
+          <span class="px-2 py-1 rounded-full border" id="chipLabel">Label: –</span>
+          <span class="px-2 py-1 rounded-full border" id="chipScore">Score: –</span>
+        </div>
+      </div>
+      <div class="card p-3 space-y-2">
+        <div class="flex items-center justify-between"><div class="font-semibold">Game</div><div class="text-sm" id="coins">Coins: 0</div></div>
+        <div class="h-40 flex items-center justify-center text-4xl font-bold" id="banner">Ready?</div>
+        <div class="flex items-center gap-2">
+          <button id="btnStart" class="px-3 py-1 rounded bg-emerald-600">Start Round</button>
+          <button id="btnStop" class="px-3 py-1 rounded bg-rose-600">Stop</button>
+          <button id="btnReset" class="px-3 py-1 rounded border">Reset Coins</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEBWAY:ww-2025-087: Quick Draw demo using MediaPipe Tasks via CDN -->
+  <script type="module">
+    const video = document.getElementById('cam');
+    const statusEl = document.getElementById('status');
+    const chipLabel = document.getElementById('chipLabel');
+    const chipScore = document.getElementById('chipScore');
+    const btnStart = document.getElementById('btnStart');
+    const btnStop = document.getElementById('btnStop');
+    const btnReset = document.getElementById('btnReset');
+    const banner = document.getElementById('banner');
+    const coinsEl = document.getElementById('coins');
+
+    const store = {
+      get coins(){ return +(localStorage.getItem('pq.coins')||0); },
+      set coins(v){ localStorage.setItem('pq.coins', String(v)); coinsEl.textContent = `Coins: ${v}`; }
+    };
+    store.coins = store.coins; // init view
+
+    let stream; let running=false; let armed=false; let drawTs=0; let windowMs=450; let roundTimer;
+
+    const tasksBase = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3';
+    const visionPkg = await import(`${tasksBase}/vision_bundle.mjs`);
+    const { FilesetResolver, GestureRecognizer } = visionPkg;
+    const filesetResolver = await FilesetResolver.forVisionTasks(`${tasksBase}/wasm`);
+    const recognizer = await GestureRecognizer.createFromOptions(filesetResolver, {
+      baseOptions: { modelAssetPath: `${tasksBase}/gesture_recognizer.task` },
+      runningMode: 'VIDEO'
+    });
+
+    async function startCam(){
+      stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user', width:{ideal:640}, height:{ideal:480} }, audio:false });
+      video.srcObject = stream; await video.play(); statusEl.textContent='camera on';
+    }
+
+    function stopCam(){ try{ video.pause(); stream?.getTracks()?.forEach(t=>t.stop()); statusEl.textContent='stopped'; }catch{} }
+
+    function scheduleRound(){
+      banner.textContent = 'Wait…'; armed=false; drawTs=0;
+      const waitMs = 1000 + Math.floor(Math.random()*2000);
+      clearTimeout(roundTimer);
+      roundTimer = setTimeout(()=>{
+        banner.textContent = 'DRAW!';
+        armed = true; drawTs = performance.now();
+        setTimeout(()=>{ if(armed){ banner.textContent='Miss'; armed=false; } }, windowMs);
+      }, waitMs);
+    }
+
+    function onResults(res){
+      const g = res?.gestures?.[0]?.[0];
+      const label = g?.categoryName || '—';
+      const score = typeof g?.score==='number' ? g.score : NaN;
+      chipLabel.textContent = `Label: ${label}`;
+      chipScore.textContent = `Score: ${isNaN(score)?'–':score.toFixed(2)}`;
+      if(armed && label==='Closed_Fist' && score>=0.70){
+        const dt = performance.now() - drawTs;
+        armed=false;
+        if(dt <= windowMs){
+          banner.textContent = `Win! ${Math.round(dt)} ms`;
+          store.coins = store.coins + 1;
+        } else {
+          banner.textContent = `Too late (${Math.round(dt)} ms)`;
+        }
+      }
+    }
+
+    async function loop(){
+      while(running){
+        const ts = performance.now();
+        const res = await recognizer.recognizeForVideo(video, ts);
+        onResults(res);
+        await new Promise(r=>setTimeout(r,16));
+      }
+    }
+
+    btnStart.addEventListener('click', async()=>{ if(!stream) await startCam(); running=true; scheduleRound(); loop(); });
+    btnStop.addEventListener('click', ()=>{ running=false; clearTimeout(roundTimer); banner.textContent='Ready?'; });
+    btnReset.addEventListener('click', ()=>{ store.coins = 0; });
+
+    // Test hook for smoke
+    window.__pqSim = {
+      triggerDraw(){ clearTimeout(roundTimer); banner.textContent='DRAW!'; armed=true; drawTs=performance.now(); },
+      fireOnce(){ if(armed){ armed=false; banner.textContent='Win! (sim)'; store.coins = store.coins + 1; } }
+    };
+  </script>
+</body>
+</html>

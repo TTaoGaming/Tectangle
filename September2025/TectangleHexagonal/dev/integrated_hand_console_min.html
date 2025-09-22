@@ -1,0 +1,124 @@
+<!doctype html>
+<!--
+Hand Console MIN Prototype
+Purpose: Absolute minimal visualization for hand landmarks.
+Created: 2025-09-16
+Flag: FEATURE_HAND_CONSOLE_MIN
+Revert: Delete this file or unset flag.
+Usage: ?clip=September2025/TectangleHexagonal/videos/two_hands_stationary_right_then_left_index_pinch_hold_1s_v1.mp4&autostart=1
+-->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Hand Console MIN</title>
+  <style>
+    html,body { margin:0; height:100%; background:#000; color:#ddd; font:12px system-ui,sans-serif; }
+    #wrap { position:relative; width:100%; height:100%; }
+    video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; }
+    canvas { position:absolute; inset:0; pointer-events:none; }
+    #hud { position:fixed; top:6px; left:8px; background:rgba(0,0,0,0.45); padding:4px 6px; border-radius:4px; font-size:11px; line-height:1.2; }
+    .seat { font-weight:600; }
+    .dbg { opacity:.7; font-size:10px; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <video id="cam" playsinline muted></video>
+    <canvas id="ov"></canvas>
+  </div>
+  <div id="hud">MIN console<br><span id="seatLine">P1=- P2=-</span><br><span id="clipStatus">idle</span><br><span id="dbg" class="dbg"></span></div>
+  <script type="module">
+    import { createAppShell } from '../src/app/appShell.js';
+    // Feature flags (additive) allow progressive enhancement without breaking tests
+    globalThis.__flags = Object.assign({}, globalThis.__flags||{}, { FEATURE_HAND_CONSOLE_MIN: true, FEATURE_HAND_CONSOLE_MIN_OVERLAY_V2: true });
+
+    const video = document.getElementById('cam');
+    const cvs = document.getElementById('ov');
+    const ctx = cvs.getContext('2d');
+  const seatLineEl = document.getElementById('seatLine');
+  const clipStatus = document.getElementById('clipStatus');
+  const dbgEl = document.getElementById('dbg');
+
+    let shell = null;
+    try {
+      shell = createAppShell({});
+      shell.hsm && shell.hsm.on(()=>{});
+    } catch(err){
+      dbgEl.textContent = 'INIT ERR';
+      console.error('[min console] shell init failed', err);
+      globalThis.__minConsoleDiag = { initError: String(err && err.message || err) };
+    }
+
+    const seats = { P1:null, P2:null };
+    shell.onEvent(e=>{ if(e.seat==='P1' && seats.P1!==e.handKey) seats.P1=e.handKey; if(e.seat==='P2' && seats.P2!==e.handKey) seats.P2=e.handKey; });
+
+    function mapHands(frame){
+      // Prefer multi-hand snapshot if present (mirrors v2 console); fallback to single frame.landmarks
+      let handsRaw=null; try {
+        if(globalThis.__hexLastHands && Array.isArray(globalThis.__hexLastHands)) handsRaw = globalThis.__hexLastHands;
+        else if(frame.landmarks && Array.isArray(frame.landmarks) && frame.landmarks.length && Array.isArray(frame.landmarks[0])) handsRaw=[frame.landmarks];
+      } catch {}
+      const arr = Array.isArray(handsRaw)? handsRaw.filter(h=>Array.isArray(h)&&h.length>=21): [];
+      return arr;
+    }
+
+    function handIsLikelyNormalized(hand){
+      // Mediapipe normalized coords are usually in [0,1] but can drift slightly <0 or >1 when off-frame.
+      // Heuristic: majority of points within [-0.5,1.5] and overall span < 3 -> treat as normalized.
+      let inRange=0; for(const lm of hand){ const x=lm[0], y=lm[1]; if(Math.abs(x)<=1.5 && Math.abs(y)<=1.5) inRange++; }
+      return (inRange / hand.length) >= 0.8; // 80% of landmarks look normalized
+    }
+
+    function projectPoint(lm, norm, vw, vh, drawW, drawH, dx, dy){
+      const x = lm[0], y = lm[1];
+      if(norm){ return [ dx + x*drawW, dy + y*drawH ]; }
+      // pixel-space: scale by cover scale (drawW/drawH already include it)
+      return [ dx + (x / vw) * drawW, dy + (y / vh) * drawH ];
+    }
+
+    function draw(){
+  if(!shell){ return; }
+  const st = shell.getState();
+      const frame = st.lastFrame;
+      const dpr = window.devicePixelRatio||1; const cw = cvs.clientWidth || window.innerWidth; const ch = cvs.clientHeight || window.innerHeight;
+      if(cvs.width!==cw*dpr || cvs.height!==ch*dpr){ cvs.width=cw*dpr; cvs.height=ch*dpr; ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr); }
+      ctx.clearRect(0,0,cw,ch);
+      if(!frame){ seatLineEl.textContent=`P1=${seats.P1||'-'} P2=${seats.P2||'-'}`; return; }
+      const vw = video.videoWidth||cw, vh = video.videoHeight||ch;
+      const coverScale = Math.max(cw/vw, ch/vh); const drawW = vw*coverScale, drawH = vh*coverScale; const dx=(cw-drawW)/2, dy=(ch-drawH)/2;
+      const hands = mapHands(frame);
+      // Pre-compute normalization flags once per hand (avoid per-point branch jitter)
+      const norms = hands.map(handIsLikelyNormalized);
+      hands.forEach((hand,i)=>{
+        // Seat color logic (fixed): previous version compared landmark array to string handKey (always false)
+        // Here we use: seat color if seat assigned & this hand index matches first/second hand; fallback index colors.
+        const seatColor = (i===0 && seats.P1)? '#3b82f6' : (i===1 && seats.P2)? '#8b5cf6' : (i===0?'#10b981':'#f59e0b');
+        const norm = norms[i];
+        hand.forEach((lm,idx)=>{
+          const [sx,sy] = projectPoint(lm, norm, vw, vh, drawW, drawH, dx, dy);
+          ctx.beginPath();
+          const r = (idx===4 || idx===8)? 4: 2.15;
+          ctx.fillStyle = (idx===4||idx===8)? '#ffffff' : seatColor;
+          ctx.arc(sx,sy,r,0,Math.PI*2); ctx.fill();
+        });
+      });
+      seatLineEl.textContent=`P1=${seats.P1||'-'} P2=${seats.P2||'-'}`;
+      if(globalThis.__flags.FEATURE_HAND_CONSOLE_MIN_OVERLAY_V2){ dbgEl.textContent = `${hands.length}h coverScale=${coverScale.toFixed(3)}`; }
+    }
+
+    // Switch from setInterval (fixed 8 FPS) to rAF (~display vsync) for smoother overlay & consistent transform
+  function loop(){ try { draw(); } catch(err){ if(!globalThis.__minConsoleDiag) globalThis.__minConsoleDiag={}; globalThis.__minConsoleDiag.drawError=String(err&&err.message||err); dbgEl.textContent='DRAW ERR'; console.warn('draw error', err);} requestAnimationFrame(loop); }
+    loop();
+
+    async function autostart(){
+      const Q = new URLSearchParams(location.search); const clip = Q.get('clip'); const auto = Q.get('autostart')==='1'||Q.get('auto')==='1';
+      if(clip){ let path=clip.trim(); if(!path.startsWith('/')){ if(path.startsWith('September2025/')) path='/'+path; else if(!path.startsWith('..')){ if(!path.startsWith('videos/')) path='videos/'+path; path='../'+path; } }
+        try { await shell.startVideoUrl(video,path); clipStatus.textContent='clip:'+path; } catch { clipStatus.textContent='ERR clip'; }
+      } else if(auto){ // no clip but autostart -> try idle
+        try { await shell.startVideoUrl(video,'../videos/two_hands_baseline_idle_v1.mp4'); clipStatus.textContent='clip:idle'; } catch {}
+      }
+    }
+    autostart();
+  </script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/unit/lookAheadCore.test.mjs
+  - [ ] tests/unit/pinchCore.test.mjs
+  - [ ] tests/e2e/pinch_to_vendor_bridge.test.mjs
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Tectangle • Ghost Predictive Pinch × T‑Rex Runner</title>
+  <style>
+    :root { --bg:#0b0d10; --fg:#e7edf3; --muted:#9fb3c8; }
+    *{ box-sizing:border-box; }
+    body{ margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif; }
+    header{ padding:12px 16px; border-bottom:1px solid #1a222c; background:#0f141a; position:sticky; top:0; z-index:5; }
+    .row{ display:flex; gap:12px; padding: 12px 16px; flex-wrap:wrap; }
+    .col{ flex: 1 1 560px; min-width:320px; }
+    iframe{ width:100%; height:72vh; border:1px solid #1a222c; border-radius:12px; background:#0c1117; }
+    small{ color:var(--muted); }
+  </style>
+  <meta name="referrer" content="no-referrer"/>
+  <meta http-equiv="Permissions-Policy" content="interest-cohort=()"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob:; img-src 'self' data: blob:;"/>
+  <meta name="robots" content="noindex,nofollow"/>
+  <meta name="color-scheme" content="dark light"/>
+  <meta name="description" content="Ghost lookahead pinch → Space for official BSD-3 T‑Rex Runner."/>
+</head>
+<body>
+  <header>
+    <h2>Ghost Predictive Pinch × Dino Runner <small>(ghost down/up → Space)</small></h2>
+  </header>
+  <div class="row">
+    <div class="col">
+      <h3>Ghost Hysteresis Lab</h3>
+      <iframe id="ghost" src="./ghost_hysteresis.html" title="Ghost Hysteresis"></iframe>
+    </div>
+    <div class="col">
+      <h3>Official Game (t-rex-runner by wayou, BSD‑3)</h3>
+      <iframe id="game" src="../vendor/dino/index.html" title="T‑Rex Runner"></iframe>
+    </div>
+  </div>
+  <script>
+    // Adapter: monitor ghost iframe counters (gdowns/gups) and translate to Space key events in the game.
+    const ghost = document.getElementById('ghost');
+    const game = document.getElementById('game');
+
+    function dispatchGameKey(type){
+      try{
+        const doc = game.contentDocument || game.contentWindow?.document; if(!doc) return;
+        const e = new KeyboardEvent(type, { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true });
+        doc.dispatchEvent(e);
+      }catch{}
+    }
+
+    // Focus the game once it loads to ensure it receives keyboard events
+    game.addEventListener('load', ()=>{ try{ game.contentWindow?.focus(); }catch{} });
+
+    let last = { gdowns: 0, gups: 0, isDown: false };
+
+    function attachObservers(){
+      try{
+        const doc = ghost.contentDocument; if(!doc) return;
+        const elDowns = doc.getElementById('gdowns');
+        const elUps = doc.getElementById('gups');
+        if(!elDowns || !elUps) return;
+
+        // Initialize
+        last.gdowns = parseInt(elDowns.textContent||'0', 10) || 0;
+        last.gups = parseInt(elUps.textContent||'0', 10) || 0;
+        last.isDown = false;
+
+        const applyDelta = ()=>{
+          const curDowns = parseInt(elDowns.textContent||'0', 10) || 0;
+          const curUps = parseInt(elUps.textContent||'0', 10) || 0;
+          // Reset on counter wrap or navigation
+          if(curDowns < last.gdowns || curUps < last.gups){
+            last = { gdowns: curDowns, gups: curUps, isDown: false };
+            // ensure key up to avoid stuck state
+            dispatchGameKey('keyup');
+            return;
+          }
+          if(curDowns > last.gdowns){
+            dispatchGameKey('keydown');
+            last.isDown = true;
+          }
+          if(curUps > last.gups){
+            dispatchGameKey('keyup');
+            last.isDown = false;
+          }
+          last.gdowns = curDowns; last.gups = curUps;
+        };
+
+        const obs = new MutationObserver(applyDelta);
+        obs.observe(elDowns, { childList:true, characterData:true, subtree:true });
+        obs.observe(elUps, { childList:true, characterData:true, subtree:true });
+
+        // Fallback polling in case text updates don't trigger mutations reliably
+        const pollId = setInterval(()=>{
+          if(ghost.contentDocument !== doc){ clearInterval(pollId); obs.disconnect(); setTimeout(attachObservers, 50); return; }
+          applyDelta();
+        }, 100);
+
+        // Re-attach when the ghost iframe navigates/reloads
+        ghost.addEventListener('load', ()=>{ try{ clearInterval(pollId); obs.disconnect(); }catch{}; setTimeout(attachObservers, 50); }, { once:true });
+      }catch{
+        // Retry a few times while iframe initializes
+        setTimeout(attachObservers, 100);
+      }
+    }
+
+    ghost.addEventListener('load', ()=> attachObservers());
+    // If already loaded (fast local), attempt immediately
+    if(ghost.contentDocument?.readyState === 'complete') attachObservers();
+
+    // Propagate outer query (?src or ?mp4) into ghost iframe so it can auto-play that video
+    (function propagateQuery(){
+      try{
+        const qs = new URLSearchParams(location.search);
+        const src = qs.get('src') || qs.get('mp4');
+        if(!src) return;
+        const url = new URL(ghost.getAttribute('src'), location.origin);
+        url.searchParams.set('src', src);
+        ghost.setAttribute('src', url.toString());
+      }catch{}
+    })();
+  </script>
+</body>
+</html>

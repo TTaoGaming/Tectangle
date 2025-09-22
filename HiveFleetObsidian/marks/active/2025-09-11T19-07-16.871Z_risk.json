@@ -1,0 +1,9 @@
+{
+  "id": "mffs5s7b_1iz2ta",
+  "ts": "2025-09-11T19:07:16.871Z",
+  "type": "risk",
+  "topic": "docs_dangling",
+  "signal": "top-list size ~= 20",
+  "decay_after_minutes": 720,
+  "meta": {}
+}

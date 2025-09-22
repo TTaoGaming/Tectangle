@@ -1,0 +1,258 @@
+<!doctype html>
+<!--
+STIGMERGY REVIEW HEADER
+Status: Pending verification
+Review started: 2025-09-16T19:32-06:00
+Expires: 2025-09-23T19:32-06:00 (auto-expire after 7 days)
+
+Checklist:
+- [ ] Launch prototype against current September2025 builds
+- [ ] Run associated tests:
+  - [ ] tests/unit/controllerRouterCore.pairing.test.mjs
+  - [ ] tests/e2e/controller_router_lockin.test.js
+  - [ ] tests/e2e/p1p2_lockin.test.cjs
+- [ ] Capture findings + next steps in docs/TODO_2025-09-16.md
+-->
+
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Pairing Sidecar Demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; display: grid; grid-template-columns: 2fr 1fr; height: 100vh; }
+    #left { position: relative; background: #0b0f14; color:#e5e7eb; }
+    #right { padding: 12px; overflow:auto; background:#131a23; color:#dbe1ea; display:flex; flex-direction:column; gap:12px; }
+    h3 { margin:0; font-size:13px; letter-spacing:0.5px; text-transform:uppercase; opacity:0.8; }
+    section { background:#0d141c; border:1px solid #1f2933; border-radius:10px; padding:10px 12px; }
+    video { width: 100%; height: 100%; object-fit: cover; background:#000; }
+    canvas { position:absolute; inset:0; pointer-events:none; }
+    .seat { display:flex; gap:8px; align-items:center; margin:4px 0; }
+    .badge { display:inline-block; padding:2px 6px; border-radius:4px; background:#374151; color:#fff; font-size:12px; }
+    .badge.active { background:#2563eb; }
+    .badge.lost { background:#92400e; color:#fcd34d; }
+    .badge.p1 { background:#2563eb; }
+    .badge.p2 { background:#10b981; }
+    .badge.p3 { background:#f59e0b; }
+    .badge.p4 { background:#ef4444; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, "Liberation Mono", monospace; font-size:12px; }
+    .error { background:#450a0a; color:#fecaca; padding:6px 8px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <div id="left">
+    <video id="cam" playsinline muted></video>
+    <canvas id="overlay"></canvas>
+  </div>
+  <div id="right">
+    <section>
+      <h3>Hands</h3>
+      <div id="hands"></div>
+    </section>
+    <section>
+      <h3>Seats</h3>
+      <div id="seats"></div>
+    </section>
+    <section>
+      <h3>State</h3>
+      <pre class="mono" id="state" style="margin:0; white-space:pre-wrap;"></pre>
+    </section>
+  </div>
+  <script type="module">
+    import { createControllerRouter } from '../src/app/controllerRouterCore.js';
+    import { createMediaPipeSource } from '../src/ports/mediapipe.js';
+    import { createPinchCore } from '../src/core/pinchCore.js';
+    import { createHandOverlay } from './hex_hand_overlay.js';
+
+    const video = document.getElementById('cam');
+    const overlayCanvas = document.getElementById('overlay');
+    const handsEl = document.getElementById('hands');
+    const seatsEl = document.getElementById('seats');
+    const stateEl = document.getElementById('state');
+
+    const overlayHelper = createHandOverlay({
+      canvas: overlayCanvas,
+      video,
+      getHands: () => vm.lastHands
+    });
+
+    const seats = ['P1','P2','P3','P4'];
+    const router = createControllerRouter({ seats, cfg:{ lostAfterMs:700, reserveTtlMs:60000, snapDist:0.18, pairing:{ enabled:true, seats, strictConcurrent:true } } });
+    const cores = new Map();
+    const seenWindowMs = 700;
+
+    const vm = {
+      frames: 0,
+      now: 0,
+      lastHands: [],
+      lastSeen: new Map(),
+      lastUi: { hands:'', seats:'', state:'' },
+      maxConcurrent: 0,
+      dirty: true,
+      errors: [],
+      status: 'boot',
+      mediaSource: null,
+      mediaStream: null
+    };
+
+    function keyFor(frame){
+      if(frame.handId != null) return `id:${frame.handId}`;
+      if(frame.hand) return `hand:${frame.hand}`;
+      return null;
+    }
+
+    function ensureCore(key){
+      if(cores.has(key)) return cores.get(key);
+      const core = createPinchCore({ enterThresh:0.40, exitThresh:0.70, palmConeDeg:30, palmGate:true });
+      const entry = { core, hand:null, handId:null, controllerId:null };
+      core.on(evt => {
+        try {
+          if(evt.type === 'pinch:down'){
+            const seat = router.onPinchEvent({ type:'pinch:down', t:evt.t, hand: entry.hand, handId: entry.handId });
+            if(seat) entry.controllerId = seat;
+          } else if(evt.type === 'pinch:up'){
+            router.onPinchEvent({ type:'pinch:up', t:evt.t, hand: entry.hand, handId: entry.handId, controllerId: entry.controllerId });
+          }
+          vm.dirty = true;
+        } catch(err) {
+          if(vm.errors.length < 20) vm.errors.push(`pinch:${err && err.message ? err.message : err}`);
+        }
+      });
+      cores.set(key, entry);
+      return entry;
+    }
+
+    function updateHandsCache(source){
+      if(source && typeof source.getLastLandmarks === 'function'){
+        const hands = source.getLastLandmarks();
+        if(Array.isArray(hands)) vm.lastHands = hands;
+      }
+    }
+
+    function handleFrame(frame){
+      vm.frames += 1;
+      vm.now = frame.t;
+      const key = keyFor(frame);
+      if(key){ vm.lastSeen.set(key, frame.t); }
+      try { router.onFrame(frame); } catch(err){ if(vm.errors.length < 20) vm.errors.push(`router:${err && err.message ? err.message : err}`); }
+      if(key){
+        const entry = ensureCore(key);
+        entry.hand = frame.hand || entry.hand;
+        entry.handId = frame.handId != null ? frame.handId : entry.handId;
+        try { entry.core.update(frame); } catch(err){ if(vm.errors.length < 20) vm.errors.push(`core:${err && err.message ? err.message : err}`); }
+      }
+      updateHandsCache(vm.mediaSource);
+      vm.dirty = true;
+    }
+
+    async function start(){
+      vm.status = 'starting';
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' }, audio:false });
+        vm.mediaStream = stream;
+        video.srcObject = stream;
+        await new Promise((resolve, reject) => {
+          video.onloadedmetadata = () => resolve();
+          video.onerror = (e) => reject(e);
+        });
+        const source = createMediaPipeSource(video, handleFrame);
+        vm.mediaSource = source;
+        await source.start();
+        await video.play();
+        vm.status = 'running';
+      } catch(err) {
+        vm.status = 'camera-error';
+        const msg = err && err.message ? err.message : String(err);
+        if(vm.errors.length < 20) vm.errors.push(msg);
+        handsEl.innerHTML = `<div class="error">Camera failed: ${msg}</div>`;
+      }
+    }
+
+    function stop(){
+      try { vm.mediaSource && vm.mediaSource.stop && vm.mediaSource.stop(); } catch {}
+      try {
+        if(vm.mediaStream){
+          vm.mediaStream.getTracks().forEach(track => track.stop());
+          vm.mediaStream = null;
+        }
+      } catch {}
+    }
+
+    function renderUi(){
+      const nowT = vm.now || 0;
+      const keys = Array.from(vm.lastSeen.keys()).sort();
+      let activeCount = 0;
+      const handsRows = keys.map(key => {
+        const lastT = vm.lastSeen.get(key) || 0;
+        const age = Math.max(0, Math.round(nowT - lastT));
+        const active = age <= seenWindowMs;
+        if(active) activeCount += 1;
+        const badgeCls = active ? 'badge active' : 'badge';
+        return `<div class="seat"><span class="${badgeCls}">${key}</span><span class="mono">age:${age}ms</span></div>`;
+      });
+      const handsHtml = handsRows.join('') || '<em>no hands</em>';
+      if(vm.lastUi.hands !== handsHtml){
+        handsEl.innerHTML = handsHtml;
+        vm.lastUi.hands = handsHtml;
+      }
+
+      const state = router.getState();
+      const reservedMap = new Map(state.reserved.map(r => [r.seat, r]));
+      const seatRows = state.seats.map(seat => {
+        const mapping = state.map.find(([key, seatId]) => seatId === seat);
+        if(mapping){
+          return `<div class="seat"><span class="badge ${seat.toLowerCase()}">${seat}</span><span class="mono">${mapping[0]}</span></div>`;
+        }
+        const res = reservedMap.get(seat);
+        if(res){
+          const lostAge = Math.max(0, Math.round((vm.now || 0) - res.tLost));
+          return `<div class="seat"><span class="badge ${seat.toLowerCase()}">${seat}</span><span class="badge lost">tracking lost</span><span class="mono">${lostAge}ms</span></div>`;
+        }
+        return `<div class="seat"><span class="badge ${seat.toLowerCase()}">${seat}</span><span class="mono">(free)</span></div>`;
+      }).join('');
+      if(vm.lastUi.seats !== seatRows){
+        seatsEl.innerHTML = seatRows;
+        vm.lastUi.seats = seatRows;
+      }
+
+      vm.maxConcurrent = Math.max(vm.maxConcurrent, activeCount);
+      const statePayload = {
+        status: vm.status,
+        frames: vm.frames,
+        activeCount,
+        maxConcurrent: vm.maxConcurrent,
+        map: state.map,
+        reserved: state.reserved,
+        errors: vm.errors.slice(0, 6)
+      };
+      const stateJson = JSON.stringify(statePayload, null, 2);
+      if(vm.lastUi.state !== stateJson){
+        stateEl.textContent = stateJson;
+        vm.lastUi.state = stateJson;
+      }
+    }
+
+    function uiLoop(){
+      if(vm.dirty){
+        try { renderUi(); } catch(err){ if(vm.errors.length < 20) vm.errors.push(`ui:${err && err.message ? err.message : err}`); }
+        vm.dirty = false;
+      }
+      setTimeout(uiLoop, 160);
+    }
+
+    function overlayLoop(){
+      try { overlayHelper.draw(); } catch(err){ if(vm.errors.length < 20) vm.errors.push(`overlay:${err && err.message ? err.message : err}`); }
+      requestAnimationFrame(overlayLoop);
+    }
+
+    uiLoop();
+    overlayLoop();
+    start();
+
+    window.addEventListener('beforeunload', stop);
+    globalThis.__pairingSidecar = {
+      stop,
+      diag: () => ({ frames: vm.frames, status: vm.status, activeSeen: Array.from(vm.lastSeen.keys()), errors: vm.errors.slice(0, 6) })
+    };
+  </script>
+</body>
+</html>

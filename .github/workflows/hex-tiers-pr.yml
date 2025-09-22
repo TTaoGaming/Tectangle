@@ -1,0 +1,23 @@
+name: Hex Tiers — PR (commit gate)
+
+on:
+  pull_request:
+    branches: [ main, '**' ]
+
+jobs:
+  commit-tier:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+      - name: Install deps
+        run: npm ci
+      - name: Start http server
+        run: |
+          npx http-server . -p 8080 &
+          ping 127.0.0.1 -n 3 > nul
+      - name: Run commit tier
+        run: npm run -s hex:tier:commit

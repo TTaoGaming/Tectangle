@@ -1,0 +1,245 @@
+<!doctype html>
+<!--
+Hand Console V11 (Research-grade visualization scaffold)
+Feature Flag: FEATURE_HAND_CONSOLE_V11
+Supersedes: V10 (focus: fill remaining UI gaps; keep gating and per-seat separation)
+Goal: Continue exposing enriched seat-lock telemetry live, improve side-panel completeness.
+WEBWAY:ww-2025-024 spawn V11 from frozen V10 (expires 2025-10-08)
+Revert: delete this file + flag FEATURE_HAND_CONSOLE_V11.
+-->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Hand Console V11</title>
+  <link rel="stylesheet" href="./hexui.css" />
+  <style>
+    :root { color-scheme: dark; }
+    body { margin:0; font:12px system-ui,sans-serif; background:#0b1117; color:#e5e7eb; display:grid; grid-template-columns: 2fr 420px; height:100vh; }
+    #left { position:relative; }
+    video { width:100%; height:100%; object-fit:cover; background:#000; }
+    canvas { position:absolute; inset:0; pointer-events:none; }
+    #boot { position:absolute; top:10px; left:10px; background:rgba(0,0,0,.55); padding:6px 8px; border-radius:8px; font-size:12px; line-height:1.3; }
+    #right { display:flex; flex-direction:column; gap:12px; padding:12px; overflow:auto; }
+    h3 { margin:0 0 6px; font-size:11px; opacity:.75; letter-spacing:.5px; text-transform:uppercase; }
+    .panel { background:#131a23; border:1px solid #1e2833; border-radius:10px; padding:10px 12px; }
+    .mono { font-family:ui-monospace,Menlo,Consolas,monospace; }
+    button { font:inherit; padding:4px 10px; border-radius:6px; background:#0d141c; color:#e5e7eb; border:1px solid #1e2833; cursor:pointer; }
+    #log { font-size:11px; max-height:140px; overflow:auto; background:#0d141c; padding:6px; border-radius:8px; }
+    .grid { display:grid; grid-template-columns:auto 1fr; gap:2px 10px; }
+    .badge { padding:2px 6px; border-radius:4px; background:#374151; font-size:11px; }
+    .badge.P1 { background:#2563eb; }
+    .badge.P2 { background:#8b5cf6; }
+    .spark { width:100px; height:22px; display:inline-block; }
+    table.rich { border-collapse:collapse; font-size:11px; width:100%; }
+    table.rich th, table.rich td { padding:2px 4px; text-align:left; border-bottom:1px solid #1e2833; }
+    table.rich th { font-weight:500; opacity:.8; }
+    tr.sep td { padding:0; line-height:0; border:none; }
+  </style>
+</head>
+<body>
+  <!-- WEBWAY:ww-2025-026 V11 FROZEN banner -->
+  <div style="position:fixed;top:6px;left:6px;z-index:9999;background:#7c3aed;color:white;padding:4px 8px;border-radius:6px;opacity:.9;font-weight:600;">V11 • FROZEN</div>
+  <div id="left">
+    <video id="cam" playsinline muted></video>
+    <canvas id="ov"></canvas>
+    <div id="boot">Booting V11…<br><span style="opacity:.7">research telemetry</span></div>
+  </div>
+  <div id="right">
+    <div class="panel">
+      <h3>Capture</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <button id="startCam">Camera</button>
+        <button id="runClip">Clip</button>
+  <!-- WEBWAY:ww-2025-024 sidecar hook button -->
+  <button id="openSidecar">Sidecar</button>
+        <select id="clipSel" style="font:inherit;font-size:12px;">
+          <option value="../videos/two_hands_baseline_idle_v1.mp4">Idle</option>
+          <option value="../videos/two_hands_stationary_right_then_left_index_pinch_hold_1s_v1.mp4">Pinch Seq</option>
+        </select>
+        <label style="font-size:11px;display:flex;align-items:center;gap:4px;">
+          <input id="mirrorToggle" type="checkbox" /> mirror
+        </label>
+        <span id="capStatus" class="mono" style="font-size:11px;opacity:.7;">idle</span>
+        <label style="font-size:10px;display:flex;align-items:center;gap:4px;">
+          <input id="heavyToggle" type="checkbox" checked /> heavy viz
+        </label>
+        <label style="font-size:10px;display:flex;align-items:center;gap:4px;">
+          UI Hz
+          <select id="richHz" style="font:inherit;font-size:11px;">
+            <option value="frame">Every frame</option>
+            <option value="30">30 Hz</option>
+            <option value="10" selected>10 Hz</option>
+            <option value="5">5 Hz</option>
+            <option value="1">1 Hz</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Seats</h3>
+      <div id="seatSummary" class="mono" style="font-size:12px;">P1=- | P2=-</div>
+    </div>
+    <div class="panel">
+      <h3>Signals</h3>
+      <div id="signalsGrid" class="grid mono" style="font-size:11px;"></div>
+    </div>
+    <div class="panel">
+      <h3>Recent Pinch</h3>
+      <pre id="log" class="mono" style="max-height:120px;">(none)</pre>
+    </div>
+    <div class="panel">
+      <h3>Diag</h3>
+      <div id="diag" class="mono" style="font-size:11px;">frames=0 ops=0 hands=0 vm=on</div>
+    </div>
+    <div class="panel" id="richPanel" style="display:block;">
+      <h3>Seat-Lock Metrics</h3>
+      <div style="overflow-x:auto;">
+        <table class="rich" id="richTable">
+          <thead>
+            <tr><th>Metric</th><th>P1</th><th>P2</th></tr>
+          </thead>
+          <tbody id="richTBody"><tr><td colspan="3" style="opacity:.5;">(waiting)</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel" id="historyPanel" style="display:block;">
+      <h3>History (Last 30 frames)</h3>
+      <div id="historyDump" class="mono" style="font-size:10px; line-height:1.25; max-height:120px; overflow:auto; white-space:pre;">(waiting)</div>
+    </div>
+  </div>
+
+  <script type="module">
+  // WEBWAY:ww-2025-024: V11 clone of V10 with new feature flag and global hooks
+  import { createAppShell } from '../src/app/appShell.js';
+  import { createOverlayOpsPort } from '../src/ports/overlayOpsPort.js';
+  import { createCanvasOverlayRenderer } from '../src/ui/canvasOverlayRenderer.js';
+  import { createHandConsoleViewModel } from '../src/ui/createHandConsoleViewModel.js';
+  import { createSeatLockRichAdapter } from '../src/ui/seatLockRichAdapter.js?v11';
+
+  globalThis.__flags = Object.assign({}, globalThis.__flags||{}, { FEATURE_HAND_CONSOLE_V11:true, FEATURE_HAND_CONSOLE_VM:true, FEATURE_OVERLAY_REDO:true, FEATURE_OVERLAY_DEBUG:true, FEATURE_CAMERA_CONSTRAINTS:true, FEATURE_RICH_SEAT_LOCK_V10:true, FEATURE_WRIST_ORIENT_V1:true, FEATURE_FINGER_GEOMETRY_V1:true }); // WEBWAY:ww-2025-024 flags
+
+  const video = document.getElementById('cam');
+  const canvas = document.getElementById('ov');
+  const ctx = canvas.getContext('2d');
+
+  const shell = createAppShell({ seats:['P1','P2'] });
+  const vmCore = createHandConsoleViewModel();
+  const seatLockAdapter = createSeatLockRichAdapter({ shell, vmCore });
+  globalThis.__ihcV11 = { shell, vmCore, seatLockAdapter }; // WEBWAY:ww-2025-024 expose for tests
+
+  const diag = { frames:0, errors:[], ops:0, lastHandCount:0, pinchLog:[] };
+  shell.onEvent(ev => { vmCore.onEvent(ev); if(ev.type && ev.type.startsWith('pinch:')) { diag.pinchLog.push(`${ev.t} ${ev.type} ${ev.seat||''}`); if(diag.pinchLog.length>140) diag.pinchLog.splice(0,80); } });
+
+  function getFrame(){ try { return shell.getState && shell.getState().lastFrame || null; } catch { return null; } }
+  function getSeats(){ try { return (shell.getState && shell.getState().seats && shell.getState().seats.seats)||{}; } catch { return {}; } }
+  const opsPort = createOverlayOpsPort({ getFrame, getSeats, getVideoDims: ()=>({ width: video.videoWidth||0, height: video.videoHeight||0 }), spanWarn: !!globalThis.__flags?.FEATURE_CAMERA_CONSTRAINTS });
+  const renderer = createCanvasOverlayRenderer({ canvas, video, fit:'cover', mirror:false });
+
+  function resize(){ const container = video.parentElement; const cw = container.clientWidth||window.innerWidth; const ch = container.clientHeight||window.innerHeight; if(canvas.width!==cw||canvas.height!==ch){ canvas.width=cw; canvas.height=ch; } }
+  window.addEventListener('resize', resize);
+
+  function fmt(n,d=2){ return (n==null||!isFinite(n))?'-':(+n).toFixed(d); }
+
+  function fillSignals(){
+    const snap = vmCore.snapshot();
+    const grid = document.getElementById('signalsGrid'); grid.innerHTML='';
+    const hands = Object.keys(snap.hands); diag.lastHandCount = hands.length;
+    if(!hands.length){ grid.innerHTML='<span style="opacity:.6">No hands yet</span>'; return; }
+    for(const hk of hands){
+      const h = snap.hands[hk]; const pairs = [ ['Hand', hk] ];
+      if(h.pinch){ pairs.push(['Pinch', h.pinch.type.replace('pinch:','')]); pairs.push(['Gap', fmt(h.pinch.normalizedGap??h.pinch.norm,3)]); }
+      if(h.orient){ pairs.push(['Orient', fmt(h.orient.angleDeg,1)+'°']); pairs.push(['Bucket', h.orient.bucket]); }
+      if(h.vel){ pairs.push(['Vel', fmt(h.vel.velDegPerSec,0)+'°/s']); }
+      if(h.flex){ pairs.push(['Index MCP/PIP/DIP', `${fmt(h.flex.mcpDeg,0)}/${fmt(h.flex.pipDeg,0)}/${fmt(h.flex.dipDeg,0)}`]); }
+      for(const [k,v] of pairs){ const kd=document.createElement('div'); kd.textContent=k; const vd=document.createElement('div'); vd.textContent=v; grid.appendChild(kd); grid.appendChild(vd); }
+    }
+  }
+
+  function drawSpark(canvasEl, series){
+    const ctx = canvasEl.getContext('2d'); const w=canvasEl.width=canvasEl.clientWidth; const h=canvasEl.height=canvasEl.clientHeight;
+    ctx.clearRect(0,0,w,h); if(!series||!series.length) return;
+    let min=Infinity,max=-Infinity; for(const v of series){ if(v<min) min=v; if(v>max) max=v; }
+    if(!isFinite(min)||!isFinite(max)||min===max){ min=0; max=1; }
+    ctx.strokeStyle='#60a5fa'; ctx.lineWidth=1; ctx.beginPath();
+    series.forEach((v,i)=>{ const x = (i/(series.length-1))*w; const y = h - ((v-min)/(max-min))*h; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+    ctx.stroke();
+  }
+
+  globalThis.__v11AnglePresence = globalThis.__v11AnglePresence || { P1:0, P2:0 };
+  function renderRich(){
+    const heavy = document.getElementById('heavyToggle')?.checked;
+    const tbody = document.getElementById('richTBody'); if(!tbody) return;
+    if(!seatLockAdapter){ tbody.innerHTML = '<tr><td colspan="12" style="opacity:.5;">(adapter off)</td></tr>'; return; }
+    const snap = seatLockAdapter.snapshot(); const seats = Object.keys(snap.enriched).sort();
+    // WEBWAY:ww-2025-024 sidecar broadcast
+    try {
+      window.__lastRichSnapshot = snap; // expose for quick inspection/tests
+      if(window.__sidecarWin && !window.__sidecarWin.closed){
+        window.__sidecarWin.postMessage({ type:'rich:enriched', at: performance.now(), enriched: snap.enriched }, '*');
+      }
+    } catch {}
+    const targetSeats = ['P1','P2'];
+    if(!seats.length){ tbody.innerHTML='<tr><td colspan="3" style="opacity:.5;">(no seats)</td></tr>'; return; }
+    const get = sid => snap.enriched[sid] || null;
+    const fmtAngles = e => { const idx = e?.jointAngles?.index||{}; const a = [idx.mcpDeg, idx.pipDeg, idx.dipDeg].map(x=>x==null?0:Math.round(x)); return `${a[0]}/${a[1]}/${a[2]}`; };
+    const cell = (sid, f) => { const e = get(sid); return e? f(e) : '-'; };
+    const rows=[
+      ['Seat Lock', sid=> (get(sid)?.locked?'LOCK':'...')],
+      ['Hand ID', sid=> (get(sid)?.id||'-')],
+      ['Gap (norm)', sid=> fmt(get(sid)?.norm,3)],
+      ['Gap (raw)', sid=> fmt(get(sid)?.rawNorm,3)],
+      ['Pinch Vel (°/s)', sid=> fmt(get(sid)?.velocity,2)],
+      ['Pinch Accel (°/s²)', sid=> fmt(get(sid)?.acceleration,2)],
+      ['Palm Angle (°)', sid=> fmt(get(sid)?.palmAngleDeg,1)],
+      ['Index MCP/PIP/DIP (°)', sid=> { const e=get(sid); const s=fmtAngles(e); const idx=e?.jointAngles?.index||{}; if((idx.mcpDeg||idx.pipDeg||idx.dipDeg)) { globalThis.__v11AnglePresence[sid]=(globalThis.__v11AnglePresence[sid]||0)+1; } return s; }],
+      ['History Len', sid=> (get(sid)?.historyLen||0)]
+    ];
+    const html = rows.map(([label,f])=>`<tr><td>${label}</td><td class="mono">${cell('P1', f)}</td><td class="mono">${cell('P2', f)}</td></tr>`).join('');
+    tbody.innerHTML = html;
+    const hd = document.getElementById('historyDump'); if(hd && heavy){
+      const lines=[]; for(const sid of targetSeats){ const e=get(sid); if(!e) continue; const hv=(e.history||[]).slice(-15).map(h=>fmt(h.norm,3)); lines.push(`${sid}: ${hv.join(',')}`); }
+      hd.textContent = lines.join('\n')||'(empty)';
+    } else if(hd){ hd.textContent='(disabled)'; }
+  }
+
+  let lastRichTs = 0; function richDue(now){ const sel=document.getElementById('richHz'); const v=(sel && sel.value)||'10'; if(v==='frame') return true; const hz = Math.max(1, +v||10); const minDt = 1000/hz; if(now - lastRichTs >= minDt){ lastRichTs = now; return true; } return false; }
+  function render(){
+    try { resize(); const sample=opsPort.sample(); diag.ops = sample.ops.length; const mirrorToggle=document.getElementById('mirrorToggle'); if(mirrorToggle) renderer.mirror=!!mirrorToggle.checked; renderer.render(sample); } catch(err){ if(diag.errors.length<8) console.warn('[v11] overlay error', err); }
+    try { const snap = vmCore.snapshot(); const seats = snap.seats||{}; document.getElementById('seatSummary').textContent=`P1=${seats.P1||'-'} | P2=${seats.P2||'-'}`; fillSignals(); } catch(err){ diag.errors.push('state:'+err.message); }
+    document.getElementById('log').textContent = diag.pinchLog.slice(-80).join('\n') || '(none)';
+    let dLine=`frames=${diag.frames} errors=${diag.errors.length} ops=${diag.ops} hands=${diag.lastHandCount} vm=on`;
+    if(seatLockAdapter){ const sl=seatLockAdapter.snapshot(); const enrich=Object.entries(sl.enriched).map(([k,v])=>`${k}:${v.locked?'L':'-'}`).join(' '); dLine += ` seatLock=${enrich}`; }
+    document.getElementById('diag').textContent=dLine;
+    const now = performance.now(); if(richDue(now)) renderRich();
+    const boot=document.getElementById('boot'); if(boot){ if(diag.frames>30 || video.readyState>=2) boot.style.display='none'; }
+  }
+
+  function loop(){
+    diag.frames++;
+    vmCore.tick(); seatLockAdapter?.tick(); render(); requestAnimationFrame(loop);
+  }
+  loop();
+
+  window.addEventListener('force:render', ()=>{ try { render(); } catch{} });
+
+  async function startCamera(){ const st=document.getElementById('capStatus'); st.textContent='camera...'; try{ await shell.startCamera(video); st.textContent='camera'; } catch(e){ st.textContent='cam fail'; diag.errors.push('cam:'+e.message); } }
+  async function startClip(url){ const st=document.getElementById('capStatus'); st.textContent='clip...'; try{ await shell.startVideoUrl(video,url); st.textContent='clip'; } catch(e){ st.textContent='clip fail'; diag.errors.push('clip:'+e.message); } }
+  function runClipSel(){ const sel=document.getElementById('clipSel'); if(!sel) return; startClip(sel.value); }
+  document.getElementById('startCam').onclick=()=>startCamera();
+  document.getElementById('runClip').onclick=()=>runClipSel();
+  // WEBWAY:ww-2025-024 sidecar open support
+  function openSidecar(){
+    try {
+      if(!window.__sidecarWin || window.__sidecarWin.closed){
+        window.__sidecarWin = window.open('rich_sidecar.html', 'rich_sidecar', 'width=480,height=760');
+      } else {
+        window.__sidecarWin.focus();
+      }
+    } catch (e) { console.warn('sidecar open failed', e); }
+  }
+  document.getElementById('openSidecar').onclick=()=>openSidecar();
+
+  (function initQP(){ const Q=new URLSearchParams(location.search); const qpClip=Q.get('clip'); const auto=Q.get('autostart')==='1'||Q.get('auto')==='1'; const nocam=Q.get('nocam')==='1'; const sidecar=Q.get('sidecar')==='1'; function normalizeClip(p){ if(!p) return p; let c=p.trim(); if(!c.startsWith('/')){ if(c.startsWith('September2025/')) c='/'+c; else if(!c.startsWith('..')){ if(!c.startsWith('videos/')) c='videos/'+c; c='../'+c; } } return c; } if(qpClip){ const clip=normalizeClip(qpClip); const sel=document.getElementById('clipSel'); let matched=false; for(const o of sel.options){ if(o.value===clip){ matched=true; sel.value=clip; break; } } if(!matched){ const o=document.createElement('option'); o.value=clip; o.textContent='Query Clip'; sel.appendChild(o); sel.value=clip; } if(auto) setTimeout(()=>startClip(clip),160); else if(!nocam) setTimeout(()=>startCamera(),240); } else if(auto){ if(!nocam) setTimeout(()=>startCamera(),160); else setTimeout(()=>runClipSel(),200); } if(sidecar) setTimeout(()=>openSidecar(), 120); })();
+  </script>
+</body>
+</html>

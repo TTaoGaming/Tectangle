@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "modes": [
+    {
+      "id": "thread-sovereign",
+      "label": "Thread Sovereign",
+      "description": "Decisive single-seat counsel (Exploit)",
+      "command": "node HiveFleetObsidian/tools/modes/thread_sovereign.mjs --rounds 2 --intro",
+      "cwd": "."
+    }
+  ]
+}
+

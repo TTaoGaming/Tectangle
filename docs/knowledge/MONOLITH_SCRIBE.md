@@ -1,0 +1,1231 @@
+# Modular Monolith — key tags (scraped)
+
+Source: archive-2025-09-01T19-13-05Z/root_contents/offline-dependencies/index-modular-monolithv25.7.26.1730.html
+
+Extracted:
+- 🎯 **STATUS**: ✅ PRODUCTION READY - 5/5 Pipeline Wrappers Complete, Phase 2 Canvas Independence Ready
+- 🔄 **PIPELINE STATUS**: ✅ COMPLETE - All 5 CQRS pipeline wrappers implemented with Strangler Fig pattern
+- � **PHASE 2 PREPARATION** (Canvas Independence):
+- 🚀 **PHASE 2 READY** - Complete Canvas Independence Strategy:
+- 📊 **CURRENT INFRASTRUCTURE STATUS**:
+- ✅ **Event System**: COMPLETE - MusicalGestureMediator ready for canvas events
+- 🎬 **PHASE 2 IMPLEMENTATION STRATEGY**:
+- 🧭 **TAG-BASED NAVIGATION** (USE CTRL+F WITH THESE EXACT TAGS):
+- 🚀 **SYSTEM ARCHITECTURE**:
+- 🎯 **CURRENT FOCUS**: Phase 2 Canvas Independence - VisualizationPipelineWrapper Implementation
+- 📊 **TAGGED MODULE INVENTORY** - **PHASE 2 READY** 🎬 CANVAS INDEPENDENCE:
+- │                                           • Ctrl+F "#CANVAS-INDEPENDENCE" → Phase 2 work
+- 🎬 **CANVAS INDEPENDENCE TAGS** (Phase 2):   • Ctrl+F "#HANDSFREE-CANVAS-DEPENDENCY" → Migration targets
+- ├── #CANVAS-INDEPENDENCE → Phase 2 goal      • Ctrl+F "#PERFORMANCE-RENDERING" → Optimized drawing
+- │           • Zero-allocation event system                  │
+- 🎯 **SYSTEM ARCHITECTURE** (Updated):
+- 📁 **PROJECT STRUCTURE** (Current):
+- ├── AI-FRIENDLY-ARCHITECTURE-PLAN.md - System architecture overview
+- // ✅ EVENT SYSTEM (zero-allocation musical gesture mediation) ⭐ MODERNIZED
+- // ✅ EVENT SYSTEM DIAGNOSTICS (comprehensive analysis) ⭐ NEW
+- window.deepDiveEventSystem() // Complete event system analysis
+- • Outdated TODO comments → ✅ Updated to completion status
+- 🔄 **EVENT SYSTEM DATA FLOW** (Updated Architecture):
+- 📊 Event System Analysis (16/17 active modules - duplicates cleaned up):
+- ✅ TECH DEBT CLEANUP STATUS:
+- 🧭 **TAG-BASED NAVIGATION** (No More Line Numbers!):
+- 🔍 **SYSTEM ARCHITECTURE ANALYSIS** (⭐ COMPREHENSIVE EVENT SYSTEM DEEP DIVE):
+- window.deepDiveEventSystem() - Complete comprehensive event system analysis ⭐ NEW
+- window.runAllDiagnostics() - Complete system health check with module status
+- window.testCameraOptimization() - Test 480p optimization status ⭐ NEW
+- window.showVersionInfo() - Current version info and architecture status
+- window.debugCanvasInterception() - Canvas interception status and diagnostics ⭐ UPDATED
+- 🎬 **CANVAS INDEPENDENCE DIAGNOSTICS** (⭐ PHASE 2 PREPARATION):
+- debugOrchestrator() - Enhanced event system status and listener map ⭐ ENHANCED
+- window.gestureRecognitionReport() - HandID-aware gesture processing status
+- showBridgeFeatures() - Bridge feature flag status
+- debugCameraInput() - Show camera and HandsFree status
+- quickDiagnostic() - Quick bridge status check
+- showBridgeFeatures() - Show current bridge feature flag status
+- debugAudioEngine() - Show audio/MIDI system status
+- window.cssComplianceHelp() - Show all CSS monitoring commands and status
+- 🌟 **QUALITY STANDARDS** (Mandatory for all changes):
+- 📊 Event system tagging audit → Available via window.auditEventSystemTags()
+- ⭐ **TAG-BASED NAVIGATION SYSTEM**: Use Ctrl+F with these exact tags for instant navigation:
+- 📊 **ARCHITECTURE**: Event-driven modular monolith with zero-allocation event system
+- 🚀 **STATUS**: Production-ready with active multi-hand isolation development
+- 🔧 **MAINTENANCE NOTES** - Current Reorganization Status
+- <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+- System Status
+- <div class="status-grid u-section-spacing">
+- <div class="status-item">
+- <div class="status-indicator" id="trackingIndicator"></div>
+- <span class="status-label">Camera Tracking</span>
+- <span class="status-value" id="trackingStatus">Stopped</span>
+- <div class="status-item">
+- <div class="status-indicator" id="audioIndicator"></div>
+- <span class="status-label">Audio System</span>
+- <span class="status-value" id="audioStatus">Not Ready</span>
+- <div class="status-item">
+- <div class="status-indicator" id="instrumentIndicator"></div>
+- <span class="status-label">Active Instrument</span>
+- <span class="status-value" id="currentInstrument">Grand Piano</span>
+- <div class="status-item">
+- <div class="status-indicator" id="anchorIndicator"></div>
+- <span class="status-label">3D Anchors</span>
+- <span class="status-value" id="anchorCount">0</span>
+- <span class="upload-status" id="status-l0">No file</span>
+- <span class="upload-status" id="status-l1">No file</span>
+- <span class="upload-status" id="status-l2">No file</span>
+- <span class="upload-status" id="status-l3">No file</span>
+- <span class="upload-status" id="status-r0">No file</span>
+- <span class="upload-status" id="status-r1">No file</span>
+- <span class="upload-status" id="status-r2">No file</span>
+- <span class="upload-status" id="status-r3">No file</span>
+- <span class="debug-label">Module Status:</span>
+- <span class="debug-value" id="wristModuleStatus">Initializing...</span>
+- Connection Status with Clear Visual Indicators
+- <div class="midi-status-section">
+- <div class="status-cards">
+- <div class="status-card">
+- <div class="status-indicator" id="midiIndicator"></div>
+- <div class="status-content">
+- <span class="status-label">Connection</span>
+- <span class="status-value" id="midiStatus">Disconnected</span>
+- <div class="status-card">
+- <div class="status-indicator" id="midiDeviceIndicator"></div>
+- <div class="status-content">
+- <span class="status-label">Active Device</span>
+- <span class="status-value" id="midiDeviceName">None</span>
+- MPE Enable/Disable Toggle with Visual Status
+- <div class="mpe-status-section">
+- <div class="mpe-status-card">
+- <div class="status-indicator" id="mpeStatusIndicator"></div>
+- <div class="status-content">
+- <span class="status-label">MPE Mode</span>
+- <span class="status-value" id="mpeStatusText">Disabled</span>
+- MPE Status Info
+- Real-Time Status
+- Status</strong></div>
+- Expression Status Display
+- <div class="expression-status"
+- <div id="expressionStatus"
+- Current preset status
+- <div id="visual-preset-status"
+- Anchor Status Display
+- <div id="anchorStatusDisplay"
+- Anchor Status with Visual Feedback
+- <div class="anchor-status-section">
+- <div class="status-cards">
+- <div class="status-card">
+- <div class="status-indicator" id="anchorIndicator"></div>
+- <div class="status-content">
+- <span class="status-label">Active Anchors</span>
+- <span class="status-value" id="anchorCount">0</span>
+- <div class="status-card">
+- <div class="status-indicator" id="anchorModeIndicator"></div>
+- <div class="status-content">
+- <span class="status-label">Mode</span>
+- <span class="status-value" id="anchorMode">Ready</span>
+- Status Indicator
+- <div class="status-indicator" id="pianoModeStatus"
+- <span id="pianoModeStatusText" style="font-size: 11px; color: #8E8E93;">Piano Mode:
+- System Status Section
+- 📊 System Status</h4>
+- Connection status and system health monitoring
+- <div class="status-grid"
+- <div class="status-item" style="display: flex; align-items: center; gap: 8px;">
+- <div class="status-indicator active" id="mainAppStatus"
+- <div class="status-item" style="display: flex; align-items: center; gap: 8px;">
+- <div class="status-indicator" id="handTrackingStatus"
+- <div class="status-item" style="display: flex; align-items: center; gap: 8px;">
+- <div class="status-indicator" id="pianoGenieStatus"
+- <div class="status-item" style="display: flex; align-items: center; gap: 8px;">
+- <div class="status-indicator" id="eventBridgeStatus"
+- <button onclick="FeatureFlags.showStatus ? FeatureFlags.showStatus() : console.log('🎛️ Main FeatureFlags System:', FeatureFlags)" style="padding: 4px 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 4px; cursor: pointer;">
+- Current preset status
+- <div id="hand-preset-status"
+- Status Info
+- - Real-time status display: Shows prediction confidence and velocity
+- - Real-time feedback: Live prediction status updates at 60fps
+- - Real-time status uses monospace font for data
+- Current preset status
+- <div id="velocity-preset-status"
+- Real-time Prediction Status
+- Status</strong></div>
+- <div id="velocity-prediction-status"
+- Current preset status
+- <div id="pinch-preset-status"
+- Performance & Status Overlay
+- <div id="mediaPipeStatus"
+- <div>📊 <strong>MediaPipe Status</strong></div>
+- <div id="statusFPS">FPS: --</div>
+- <div id="statusHands">Hands: --</div>
+- <div id="statusLandmarks">Landmarks: --</div>
+- <div id="statusProcessing">Processing: --ms</div>
+- <div id="calibrationStatus">Ready for calibration</div>
+- ├── Pinch status monitors (UI layer conflicts)
+- // 📦 VERSION INFORMATION - System Architecture Analysis Phase
+- *    → js/ui/StatusDisplays.js - Information panel management
+- * CURRENT STATUS:
+- CONFIG.logging.categories.system = true        // Show system status messages
+- * - 'minimal': Only critical errors and final status (5-8 lines)
+- * 🔄 MIGRATION STATUS: ALL LEGACY CONSTANTS MOVED TO CONFIG OBJECT (Line ~6520)
+- STATUS_INDICATORS: true,
+- defaultStrategy: 'off',          // Options: 'pinch-status-monitor', 'floating-debug-wrist', 'off'
+- strategies: ['pinch-status-monitor', 'floating-debug-wrist', 'off']
+- statusUpdateMs: 100
+- STATUS_UPDATE_MS: CONFIG.uiSystem.animations.statusUpdateMs,
+- STATUS_INDICATORS: true,
+- // 📊 MIGRATION STATUS: Report successful constant consolidation
+- * @returns {boolean} Success status
+- // ===== 🎯 CONFIGURATION MIGRATION STATUS & HELPERS =====
+- * 📊 MIGRATION STATUS REPORTER
+- * Provides comprehensive status of config system consolidation
+- window.getConfigMigrationStatus = function() {
+- const status = {
+- 'Phase 2': '🔄 Integrate DevFeatureFlags with CONFIG.features',
+- 'Check migration': 'window.getConfigMigrationStatus()',
+- 'ConfigManager status': 'window.ConfigManager.getMigrationStatus()'
+- console.group('🔄 CONFIG MIGRATION STATUS')
+- console.log('📊 Current Phase:', status.phase)
+- console.log('🎯 Single Source:', status.singleSourceOfTruth)
+- console.log('🔧 Access Method:', status.accessMethod)
+- console.log('🔗 Legacy Support:', status.legacySupport)
+- Object.entries(status.migratedSystems).forEach(([old, migrated]) => {
+- Object.entries(status.nextSteps).forEach(([phase, description]) => {
+- Object.entries(status.testCommands).forEach(([test, command]) => {
+- return status
+- console.group('🏁 Current Feature Flag Status')
+- // Quick status check
+- status() {
+- console.log('  setStartupLogging("minimal")   - Only errors and final status (5-8 lines)');
+- console.log('  StartupLogger.status()         - Current startup progress');
+- // 📊 Show final system status
+- Logger.system('📊 FAB: Final system status after initialization:')
+- * 📊 Show current system status
+- window.showSystemStatus = function() {
+- Logger.system('📊 SYSTEM STATUS')
+- Logger.system('  showSystemStatus()    - This status')
+- Logger.system('💡 Use: showSystemStatus() to see available commands')
+- console.log('💡 Use: showSystemStatus() to see available commands')
+- // Ultra-high performance event system with object pooling
+- 'ui.realtime.update': [],  // ✅ NEW: Pure UI event consumer for real-time status
+- 'ui.prediction.update': [], // ✅ NEW: Pure UI event consumer for prediction status
+- throw new Error('Direct call blocked! Use event system.')
+- throw new Error('Direct call blocked! Use event system.')
+- throw new Error('Direct call blocked! Use event system.')
+- // 🧪 DEBUG HELPERS - ENHANCED EVENT SYSTEM ANALYSIS
+- console.group('🚀 Musical Gesture Mediator Status - ENHANCED')
+- Logger.system('♻️ Object Pools Status:')
+- else if (fnStr.includes('ui') || fnStr.includes('UI') || fnStr.includes('status') || fnStr.includes('indicator')) {
+- const statusIcon = fn.source === 'Legacy Bridge' ? '⚠️' : fn.source === 'Universal Bridge' ? '✅' : '📄'
+- Logger.system(`    ${statusIcon} ${fn.name} (${fn.source}) - ${fn.details}`)
+- Logger.system('🔧 System Initialization Status:')
+- systemStatus: {
+- Logger.system('🔍 Checking system initialization status...')
+- // Check Event System
+- Logger.system('📡 EVENT SYSTEM:')
+- console.group('🎨 Hand Visualization System Status')
+- const status = strategy.name === currentStrategy?.name ? '✅ ACTIVE' : '⚪ Available'
+- Logger.system(`  ${status} ${strategy.name}: ${strategy.displayName}`)
+- Logger.system('📊 Module Status Report:')
+- const status = isAvailable ? '✅' : '❌'
+- Logger.system(`   ${status} ${description} (${name}): ${typeInfo}`)
+- } else if (instance.getStatus && typeof instance.getStatus === 'function') {
+- const status = instance.getStatus()
+- Logger.system(`      📊 Status: ${JSON.stringify(status)}`)
+- // Use the same detection logic as checkLiveStatus() that works
+- const canvasStatus = window.visualizationPipelineWrapper?.getCanvasInterceptionStatus();
+- Logger.system(`   🎨 Canvas Interception: ${canvasStatus?.isActive ? 'ACTIVE' : 'INACTIVE'}`);
+- if (!canvasStatus?.isActive || !unifiedCanvas || !window.visualizationPipelineWrapper?.canvasInterception?.backgroundVideo) {
+- // 1. CHECK CANVAS INTERCEPTION STATUS
+- Logger.system('📊 1. CANVAS INTERCEPTION STATUS:');
+- const status = window.visualizationPipelineWrapper.getCanvasInterceptionStatus();
+- Logger.system(`   📋 Interception Status: ${JSON.stringify(status)}`);
+- diagnosticResults.canvasInterceptionActive = status.isActive;
+- if (status.isActive) {
+- // 7. RENDERING LOOP STATUS
+- Logger.system('🔄 7. RENDERING LOOP STATUS:');
+- Logger.system('   ❌ Rendering loop status unavailable');
+- // ⭐ NEW DIAGNOSTIC FUNCTIONS - COMPREHENSIVE EVENT SYSTEM ANALYSIS
+- Logger.system('📦 Module Status:')
+- Object.entries(modules).forEach(([name, status]) => {
+- const icon = status === 'CONTAMINATED' ? '🚨' :
+- status === 'OK' || status === 'AVAILABLE' || status === 'ACTIVE' ? '✅' :
+- status === 'INACTIVE' ? '⚠️' : '❌'
+- Logger.system(`   ${icon} ${name}: ${status}`)
+- * 🏷️ DEEP DIVE: Comprehensive tag audit across all event systems
+- Logger.system('🏷️ ═══ EVENT SYSTEM TAG AUDIT ═══')
+- Logger.system(`✅ All event systems properly tagged!`)
+- Logger.system(`📊 Event Bus Status: ${analysis.eventBusHealth}`)
+- * 🎯 MASTER DIAGNOSTIC: Complete Event System Deep Dive
+- Logger.system('🎯 ═══ COMPLETE EVENT SYSTEM DEEP DIVE ═══')
+- Logger.system('Running comprehensive analysis of event system and hand ID contamination...')
+- Logger.system('4️⃣ Event System Tag Audit...')
+- data: { bypass: 'Event system bypassed' },
+- health.issues.push('Legacy multiHandLandmarks usage detected - bypasses event system')
+- * Identifies all places where landmark data bypasses the event system
+- // Check event system usage
+- Logger.system('📊 EVENT SYSTEM USAGE:')
+- const status = info.listenerCount > 0 ? '✅' : '❌'
+- Logger.system(`   ${eventType}: ${status} ${info.listenerCount} listeners`)
+- Logger.system('🎯 DEEP DIVE FUNCTIONS (Event System Analysis):')
+- Logger.system('   • window.gestureRecognitionReport() - Gesture processing status')
+- return { status: 'no_hands', count: 0, source: 'none' };
+- status: 'active',
+- return { status: 'insufficient_hands', count: hands.length };
+- const status = currentFPS >= 55 ? '✅ Good' : '⚠️ Performance Issue';
+- Logger.system(`Status: ${status}`);
+- status: status,
+- Logger.system(`📹 Camera Status: ${api.isReady() ? '✅ Ready' : '❌ Not Ready'}`);
+- const sourceStatus = wrapper.getVideoSourceStatus();
+- return { stats, sourceStatus, availableSources };
+- const status = wrapper.getVideoSourceStatus();
+- Logger.system(`📺 Status: ${status.currentSource.type || 'none'} | Active: ${status.currentSource.isActive}`);
+- return { success: true, status };
+- // Quick status check for HandsFree.js interception
+- const status = wrapper.getVideoSourceStatus();
+- Logger.system('🌉 ═══ HANDSFREE.JS INTERCEPTION STATUS ═══');
+- Logger.system(`🎬 Current Source: ${status.currentSource.type || 'None'} | Active: ${status.currentSource.isActive}`);
+- return { videoElement, status };
+- const status = isMatch ? '✅ MATCH' : '❌ DIFFERENT';
+- Logger.system(`   ${index + 1}. ${item.location}: ${status}`);
+- const integrationStatus = matchingCount > 0 ? 'SUCCESS' : 'NEEDS_CONFIGURATION';
+- Logger.system(`🎯 Integration Status: ${integrationStatus} (${matchingCount}/${handsfreeVideos.length} video references match wrapper)`);
+- success: integrationStatus === 'SUCCESS',
+- integrationStatus: integrationStatus
+- // Now test current integration status
+- Logger.system('🔍 ═══ CURRENT INTEGRATION STATUS ═══');
+- const integrationStatus = verifyHandsFreeIntegration();
+- if (timingResults.conclusion === 'CONFIGURATION_SUCCESS' && integrationStatus.success === false) {
+- integrationStatus,
+- // Phase 2: Validate video element readiness
+- Logger.system('📐 Phase 2: Validating video element readiness...');
+- const integrationStatus = verifyHandsFreeIntegration();
+- integrationStatus: integrationStatus,
+- if (integrationStatus.success) {
+- Logger.system('   • checkHandsFreeInterception() - Check current status');
+- const status = exists ? '✅' : '❌';
+- Logger.system(`   ${status} ${module.name} (${module.tag}): ${exists ? 'EXISTS' : 'MISSING'}`);
+- { name: 'Event System', check: () => window.musicalGestureMediator?.emit },
+- Logger.system(`Performance: ${performanceDebug.status}`);
+- Current Status Section
+- <h4>📊 Current Status</h4>
+- <div id="current-status">
+- <div class="status-item">
+- <span class="status-label">Active Strategy:</span>
+- <span id="active-strategy" class="status-value">Loading...</span>
+- <div class="status-item">
+- <span class="status-label">Manager Available:</span>
+- <span id="manager-status" class="status-value">Loading...</span>
+- <div class="status-item">
+- <span class="status-label">Hands Detected:</span>
+- <span id="hands-detected" class="status-value">Loading...</span>
+- .status-item, .perf-item {
+- .status-label, .perf-label {
+- .status-value, .perf-value {
+- updateStatus: function() {
+- document.getElementById('manager-status').textContent = managerAvailable ? '✅ Available' : '❌ Not Available';
+- setTimeout(() => this.updateStatus(), 100);
+- // Initial status update
+- window.debugWindow.updateStatus();
+- window.debugWindow.updateStatus();
+- Logger.system('  testHands()           - Check hand tracking status');
+- return { status: 'no_hands', count: 0 };
+- status: 'active',
+- return { status: 'insufficient_hands', count: hands.length };
+- const status = currentFPS >= 55 ? '✅ Good' : '⚠️ Performance Issue';
+- Logger.system(`Status: ${status}`);
+- status: status,
+- // �🚀 REAL-TIME SYSTEM STATUS - Shows what's actually happening right now
+- window.checkLiveStatus = function () {
+- Logger.system('🚀 ═══ LIVE SYSTEM STATUS ═══')
+- Logger.system('🚀 ═══ STATUS CHECK COMPLETE ═══')
+- console.log('CURRENT STATUS:')
+- // Fallback timeout in case event system fails
+- // 📊 MIGRATION STATUS: Report unified configuration
+- getMigrationStatus() {
+- nextPhase: '🔄 Phase 2: DevFeatureFlags integration'
+- { name: 'Event System', lines: '25000-38000', description: 'Orchestrator, initialization' }
+- this.addTest('Event System', async () => {
+- if (!eventReceived) throw new Error('Event system not working');
+- Logger.system(`📈 ACTUAL FPS: ${metrics.actualFPS}fps ${this.getFPSStatus()}`)
+- Logger.system(`⚡ FRAME TIME: ${metrics.avgFrameTime.toFixed(1)}ms ${this.getFrameTimeStatus()}`)
+- Logger.system(`📺 RESOLUTION: ${metrics.actualResolution.width}×${metrics.actualResolution.height} ${this.getResolutionStatus()}`)
+- Logger.system(`🎨 PERFORMANCE: ${this.getOverallPerformanceStatus()}`)
+- * 📈 Helper: Get FPS status
+- getFPSStatus() {
+- * ⚡ Helper: Get frame time status
+- getFrameTimeStatus() {
+- * 📺 Helper: Get resolution status
+- getResolutionStatus() {
+- * 🎨 Helper: Get overall performance status
+- getOverallPerformanceStatus() {
+- // Emit to event system
+- Logger.system('🖐️ 3D Hand Model Status:')
+- * 🚧 PLACEHOLDER STATUS: Hand management components replaced with clean interfaces
+- * STATUS: Not implemented - using placeholder for clean architecture
+- * STATUS: Not implemented - using placeholder for clean architecture
+- return { factor: 1.0, angle: 0, status: 'disabled' }
+- // Status for debug display
+- let status = 'normal'
+- if (angle > 30) status = 'warning'
+- if (angle > 60) status = 'error'
+- return { factor, angle, status }
+- action: 'updateStatus',
+- return { angle: 0, status: 'no-hand' }
+- Logger.system('📊 Module Status: ' + JSON.stringify(this.getModuleStatus()))
+- getModuleStatus() {
+- const status = {}
+- status[name] = {
+- return status
+- // STEP 1: HandId System Status
+- console.log('1️⃣ HANDID SYSTEM STATUS:')
+- // STEP 2: Gesture Module Status
+- console.log('\n2️⃣ GESTURE MODULE STATUS:')
+- // STEP 3: Existing Module Status
+- console.log('\n3️⃣ EXISTING MODULES STATUS:')
+- // STEP 3B: Universal Output Adapter Status
+- console.log('\n3️⃣B UNIVERSAL OUTPUT ADAPTER STATUS:')
+- const mappingStatus = window.zoneKeyMappingModule.getCurrentMappings()
+- console.log('   📊 Current keyboard mappings:', Object.keys(mappingStatus).length, 'zones configured')
+- window.getModuleStatus = () => {
+- return window.moduleSystem.getModuleStatus()
+- // Step 3: Show module status
+- Logger.system('📊 STEP 3: Module status:')
+- console.table(getModuleStatus())
+- Logger.system('✓ Event system ready: ' + (!!window.gcFreeOrchestrator))
+- Logger.system('TEST 1: System Status Check')
+- * 🎯 SYSTEM STATUS CHECKER
+- window.checkSystemStatus = () => {
+- Logger.system('🎯 SYSTEM STATUS CHECK');
+- return 'System status check complete';
+- const statusIndicator = document.getElementById('pianoGenieOverlayStatus')
+- const connectionStatus = document.getElementById('pianoGenieConnectionStatus')
+- if (connectionStatus) connectionStatus.style.display = 'block'
+- // Update status indicator to connecting
+- if (statusIndicator) {
+- statusIndicator.style.background = '#FFB347' // Orange for connecting
+- // Update status to connected
+- if (statusIndicator) {
+- statusIndicator.style.background = '#32D74B' // Green for connected
+- const statusDot = document.getElementById('pianoGenieStatusDot')
+- const statusText = document.getElementById('pianoGenieStatusText')
+- if (statusDot && statusText) {
+- statusDot.style.background = '#32D74B'
+- statusText.textContent = 'Connected'
+- if (statusIndicator) {
+- statusIndicator.style.background = '#FF3B30' // Red for error
+- const statusIndicator = document.getElementById('pianoGenieOverlayStatus')
+- const connectionStatus = document.getElementById('pianoGenieConnectionStatus')
+- // STEP 5: Update status indicator to disconnected
+- if (statusIndicator) {
+- statusIndicator.style.background = '#FF3B30' // Red for disconnected
+- // STEP 6: Hide connection status
+- if (connectionStatus) {
+- connectionStatus.style.display = 'none'
+- const statusIndicator = document.getElementById('pianoModeStatus')
+- const statusText = document.getElementById('pianoModeStatusText')
+- if (statusIndicator) statusIndicator.style.background = '#34C759'
+- if (statusText) statusText.textContent = 'Piano Mode: Enabled'
+- if (statusIndicator) statusIndicator.style.background = '#FF3B30'
+- if (statusText) statusText.textContent = 'Piano Mode: Disabled'
+- const status = value ? '✅ ENABLED' : '❌ DISABLED';
+- Logger.system(`  ${key}: ${status}`);
+- * 🎯 Show current bridge feature status
+- console.group('🎛️ BRIDGE FEATURE FLAGS STATUS');
+- // 🌐 Export Status
+- if (window.universalKeyboardBridge && typeof window.universalKeyboardBridge.getExportStatus === 'function') {
+- const exportStatus = window.universalKeyboardBridge.getExportStatus();
+- console.log('\n🌐 Export Status:');
+- console.log(`   WebSocket: ${exportStatus.websocket.enabled ? '✅ Enabled' : '❌ Disabled'} | Connected: ${exportStatus.websocket.connected ? '✅ Yes' : '❌ No'}`);
+- console.log(`   External API: ${exportStatus.externalAPI.enabled ? '✅ Enabled' : '❌ Disabled'} | Registered: ${exportStatus.externalAPI.registered ? '✅ Yes' : '❌ No'}`);
+- console.log(`   Real-time Streaming: ${exportStatus.realTimeStreaming.enabled ? '✅ Enabled' : '❌ Disabled'}`);
+- console.log(`   Raw Event Mode: ${exportStatus.features.rawEventMode ? '✅ Enabled' : '❌ Disabled'}`);
+- console.log('   showBridgeFeatures()                 // Current status');
+- console.log('   getKeyboardExportStatus()           // Export status');
+- console.log('   • Export issues: Check getKeyboardExportStatus()');
+- // Auto-check current status
+- const exportStatus = window.universalKeyboardBridge.getExportStatus?.();
+- if (exportStatus) {
+- console.log(`🌐 Export ready: WebSocket=${exportStatus.websocket.enabled}, API=${exportStatus.externalAPI.enabled}`);
+- // 📋 Status: Active Production System
+- window.getKeyboardExportStatus = () => this.getExportStatus();
+- // 🎛️ Feature flag status
+- * 🌐 Get Export Status
+- getExportStatus() {
+- const status = {
+- return status;
+- status: 'active',
+- // 1. Event Listener Status
+- // 2. System Status
+- this.logger.system('\n🎛️ SYSTEM STATUS:');
+- // 3. Hand Tracking Status
+- this.logger.system('\n🖐️ HAND TRACKING STATUS:');
+- // Universal Keyboard Bridge Status
+- console.log(`   Status: ✅ Active`);
+- console.log(`   Status: ❌ Not Initialized`);
+- // Event System Status
+- console.log('\n📡 EVENT SYSTEM:');
+- // Hand Tracking Status
+- Object.entries(systems).forEach(([name, status]) => {
+- Logger.system(`${status ? '✅' : '❌'} ${name}: ${status}`);
+- // Check bridge status
+- * 🔍 DIAGNOSTIC: Complete Zone Mapping System Status
+- * Shows detailed status of all zone-related systems
+- const bridgeStatus = {
+- Object.entries(bridgeStatus).forEach(([name, status]) => {
+- const available = status === 'function' || status === true;
+- Logger.system(`${available ? '✅' : '❌'} ${name}: ${status}`);
+- // Event System
+- Logger.system('\n📊 EVENT SYSTEM:');
+- const eventStatus = {
+- Object.entries(eventStatus).forEach(([name, status]) => {
+- Logger.system(`${status ? '✅' : '❌'} ${name}: ${status ? 'Available' : 'NOT Available'}`);
+- console.log('Toggle Manager Status:', ToggleManager._initialized ? '✅ Initialized' : '❌ Not Initialized')
+- const status = value ? '✅ ON' : '❌ OFF'
+- console.log(`${key}: ${status} (Path: ${togglePath})`)
+- const status = value ? '✅ ON' : '❌ OFF'
+- console.log(`${key}: ${status}`)
+- * ✅ FIXED: Update Piano Genie status indicators with CORRECT element IDs
+- function updatePianoGenieStatusIndicators() {
+- mainApp: document.getElementById('mainAppStatus'),
+- handTracking: document.getElementById('handTrackingStatus'),
+- pianoGenie: document.getElementById('pianoGenieStatus'),
+- eventBridge: document.getElementById('eventBridgeStatus')
+- // Main App Status - Always active
+- indicators.mainApp.className = 'status-indicator active'
+- // Hand Tracking Status - Based on camera tracking
+- (document.getElementById('trackingStatus')?.textContent !== 'Stopped')
+- indicators.handTracking.className = `status-indicator ${isTracking ? 'active' : ''}`
+- // Piano Genie Status - Based on CORRECT overlay container
+- indicators.pianoGenie.className = `status-indicator ${isActive ? 'active' : ''}`
+- // Event Bridge Status - Based on actual Piano Genie functionality
+- indicators.eventBridge.className = `status-indicator ${isConnected ? 'active' : ''}`
+- // Save status to persistence
+- const currentStatus = {
+- UnifiedSettingsManager.save('UI', 'pianoGenieStatusLastUpdate', Date.now())
+- UnifiedSettingsManager.save('UI', 'pianoGenieStatusIndicators', currentStatus)
+- Logger.throttle('status-indicators', 5000, () => {
+- Logger.debug(`📊 Status: Main:${currentStatus.mainApp ? '✅' : '❌'} Hand:${currentStatus.handTracking ? '✅' : '❌'} Piano:${currentStatus.pianoGenie ? '✅' : '❌'} Bridge:${currentStatus.eventBridge ? '✅' : '❌'}`)
+- Logger.debug('Could not save Piano Genie status:', error.message)
+- const statusIndicator = document.getElementById('pianoModeStatus')
+- const statusText = document.getElementById('pianoModeStatusText')
+- if (statusIndicator) statusIndicator.style.background = '#FF3B30' // Red
+- if (statusText) statusText.textContent = 'Piano Mode: Disabled'
+- if (statusIndicator) statusIndicator.style.background = '#34C759' // Green
+- if (statusText) statusText.textContent = 'Piano Mode: Enabled'
+- // 🎨 PHASE 2: HandsFree Visual Cleanup System - FULL IMPLEMENTATION
+- * 🎨 PHASE 2: HandsFree Visual Cleanup - ENHANCED IMPLEMENTATION
+- Logger.system('🎨 Phase 2: Cleaning up HandsFree visual spam...')
+- * 🎨 PHASE 2: Initialize Visual Cleanup System
+- // Test event system components
+- Logger.system('✅ Event system active: ' + (!!window.gcFreeOrchestrator))
+- // Check camera/hand tracking status
+- // Final status check
+- Logger.system('📊 Event bridge status: ' + (pianoGenieEventBridge ? 'Connected' : 'Disconnected'))
+- Logger.system('🎹 Piano Genie status: ' + (iframe.contentWindow ? 'Ready' : 'Not ready'))
+- Logger.system('📹 Camera system status:')
+- Logger.system('🖐️ HandsFree system status:')
+- #pianoGenieConnectionStatus {
+- if (event.action === 'updateStatus') {
+- // 📊 REAL-TIME STATUS CONSUMER - ✅ PURE EVENT-DRIVEN
+- if (typeof updateRealTimeStatus === 'function') {
+- updateRealTimeStatus(velocity_mm_s, data.distance || 0)
+- // 🚀 VELOCITY PREDICTION STATUS CONSUMER - ✅ PURE EVENT-DRIVEN
+- if (typeof updateVelocityPredictionStatus === 'function') {
+- updateVelocityPredictionStatus({
+- // 🎨 VISUALIZATION EVENT SYSTEM - Event-driven visualization management
+- // 🔍 MODULE DEBUG EVENT SYSTEM - Standardized Debug Info Access
+- Logger.system('💡 Use debugLogs("all", false) to silence, or debugLogs() to see status')
+- // Test 1: Event system availability
+- Logger.system(`1️⃣ Event System: ${eventSystemWorking ? '✅ Active' : '❌ Broken'}`)
+- * Get comprehensive event system statistics
+- Logger.system('📊 EVENT SYSTEM STATISTICS')
+- // Basic event system stats
+- Logger.system('🏊 Event Pool Status:')
+- // Throttle cache status
+- // Check 1: Event system
+- Logger.system(`✅ Event System: ${eventSystemWorking ? 'Active' : '❌ Broken'}`)
+- Logger.system('   Check the individual status items above')
+- const status = opacity === '1' ? '✅ VISIBLE' : opacity === '0.4' ? '🔒 GRAYED' : '❓ OTHER'
+- Logger.system(`  ${cardId}: ${status} (opacity: ${opacity}, display: ${display})`)
+- action: 'updateStatus',
+- const hasRealtimeFunc = typeof updateRealTimeStatus === 'function'
+- const hasPredictionFunc = typeof updateVelocityPredictionStatus === 'function'
+- Logger.system(`   ✅ updateRealTimeStatus: ${hasRealtimeFunc ? 'AVAILABLE' : '❌ MISSING'}`)
+- Logger.system(`   ✅ updateVelocityPredictionStatus: ${hasPredictionFunc ? 'AVAILABLE' : '❌ MISSING'}`)
+- Logger.system('🔄 SOLUTION: Please refresh the page to reinitialize the event system')
+- Logger.system('\n📊 CONSTANTS VERIFICATION - Quick Status Check')
+- * Manages homography matrix and calibration status
+- * Tracks loading and initialization status
+- // ✅ FIXED: Use event system instead of direct call
+- coordinateDisplay += `Status: <span style="color: #0f0;">Active</span><br>`
+- const statusColor = filterStats.predictionActive ? '#0f0' : '#ff0'
+- coordinateDisplay += `Status: <span style="color: ${statusColor};">${filterStats.predictionActive ? 'ACTIVE' : 'WAITING'}</span><br>`
+- coordinateDisplay += `Status: <span style="color: #666;">Disabled</span>`
+- coordinateDisplay += `Status: <span style="color: #666;">Not initialized</span>`
+- // ⚙️ EVENT-DRIVEN: Use standardized event system instead of direct call
+- updateMIDIStatus('Initializing...', 'ready')
+- updateMIDIStatus('Error', 'error')
+- updateMIDIDeviceStatus('None', 'inactive')
+- updateMIDIStatus('No devices found', 'inactive')
+- updateMIDIStatus('Connected', 'connected')
+- updateMIDIStatus('Ready - Select device', 'ready')
+- updateMIDIDeviceStatus('Disconnected', 'error')
+- updateMIDIDeviceStatus('None', 'inactive')
+- updateMIDIDeviceStatus('Error', 'error')
+- updateMIDIDeviceStatus(device.name, 'active')
+- updateMIDIStatus('Connected', 'connected')
+- * - Apple HIG compliant status indicators
+- const statusIndicator = document.getElementById('mpeStatusIndicator')
+- const statusText = document.getElementById('mpeStatusText')
+- if (statusIndicator) {
+- statusIndicator.className = 'status-indicator active'
+- statusIndicator.className = 'status-indicator'
+- if (statusText) {
+- statusText.textContent = midiState.mpeEnabled ? 'Active' : 'Disabled'
+- * @param {Array} message - MIDI message bytes [status, data1, data2]
+- const [status, data1, data2] = message
+- const channel = (status & 0x0F) + 1
+- const command = status & 0xF0
+- * Update MIDI status indicator and text
+- function updateMIDIStatus(status, state) {
+- const statusText = document.getElementById('midiStatus')
+- indicator.className = `status-indicator ${state}`
+- if (statusText) {
+- statusText.textContent = status
+- * Update MIDI device status indicator and text
+- function updateMIDIDeviceStatus(deviceName, state) {
+- const statusText = document.getElementById('midiDeviceName')
+- indicator.className = `status-indicator ${state}`
+- if (statusText) {
+- statusText.textContent = deviceName
+- * Update MIDI button states based on current status
+- * - Real-time expression status display
+- let statusData = {}
+- // Store for status display
+- statusData[axis] = { mapping, value: smoothedValue, delta: axisDelta, fadeProgress: SpatialAnchorSystem.getFadeInProgress(hand, finger) }
+- // Update UI status display with all active axes
+- this.updateMultiAxisStatusDisplay(hand, finger, delta, statusData)
+- * 📊 Update multi-axis expression status display in UI
+- * @param {object} statusData - Expression data per axis
+- updateMultiAxisStatusDisplay(hand, finger, delta, statusData) {
+- const statusElement = document.getElementById('expressionStatus')
+- if (!statusElement) return
+- if (statusData.x) {
+- const xData = statusData.x
+- if (statusData.z) {
+- const zData = statusData.z
+- if (statusData.y) {
+- const yData = statusData.y
+- statusElement.innerHTML = `
+- * 📊 Update expression status display in UI (Legacy - kept for compatibility)
+- updateExpressionStatusDisplay(hand, finger, delta, expressionValue) {
+- const statusData = {
+- this.updateMultiAxisStatusDisplay(hand, finger, delta, statusData)
+- // Reset expression status display
+- const statusElement = document.getElementById('expressionStatus')
+- if (statusElement) {
+- statusElement.textContent = 'No active anchors - Create anchors by holding pinch for 300ms'
+- updateAnchorStatusDisplay()
+- updateAnchorStatusDisplay()
+- 'UI.STATUS_INDICATORS': false,
+- updateSpatialAnchorStatus()
+- updateAnchorStatusDisplay()
+- updatePinchStatusDisplay()
+- updatePinchStatusDisplay()
+- updatePinchStatusDisplay()
+- // Flash the status indicators
+- const statusIndicator = document.getElementById('pinchStatusIndicator')
+- const flickerIndicator = document.getElementById('flickerStatusIndicator')
+- if (statusIndicator) {
+- statusIndicator.classList.add('active')
+- setTimeout(() => statusIndicator.classList.remove('active'), TIMING_CONSTANTS.FEEDBACK_REMOVE_DELAY)
+- debugInfo.textContent = `Engage: ${engage}% | Release: ${release}% | Strategy: ${strategyNames[strategy]} | Status: Ready`
+- * Update pinch status display indicators
+- function updatePinchStatusDisplay() {
+- const statusIndicator = document.getElementById('pinchStatusIndicator')
+- const statusValue = document.getElementById('pinchStatusValue')
+- const flickerIndicator = document.getElementById('flickerStatusIndicator')
+- const flickerValue = document.getElementById('flickerStatusValue')
+- if (statusIndicator && statusValue) {
+- statusIndicator.className = 'status-indicator ready'
+- statusValue.textContent = 'Ready'
+- flickerIndicator.className = isActive ? 'status-indicator active' : 'status-indicator error'
+- updateAnchorStatusDisplay()
+- updateAnchorStatusDisplay()
+- updateAnchorStatusDisplay()
+- updateAnchorStatusDisplay()
+- * Update anchor status indicators for the spatial anchoring card
+- function updateSpatialAnchorStatus() {
+- anchorIndicator.className = 'status-indicator active'
+- anchorIndicator.className = 'status-indicator'
+- modeIndicator.className = 'status-indicator active'
+- * Update anchor status display (legacy function for existing anchor display)
+- function updateAnchorStatusDisplay() {
+- updateSpatialAnchorStatus() // Update the new card status
+- const display = document.getElementById('anchorStatusDisplay')
+- let statusText = ''
+- statusText += `<span style="color: ${stateColor};">${handNames[hand]} ${fingerNames[finger]}: ${state.toUpperCase()}`
+- statusText += ` (${delta.x.toFixed(3)}, ${delta.y.toFixed(3)}, ${delta.z.toFixed(3)})`
+- statusText += '</span><br>'
+- if (statusText === '') {
+- statusText = 'No active anchors'
+- statusText = `Active: ${activeCount}<br>` + statusText
+- display.innerHTML = statusText
+- // Update anchor status display every 100ms when MIDI config is visible
+- updateAnchorStatusDisplay()
+- Logger.system('🎨 === PHASE 2: VISUALIZATION & UI SETUP ===')
+- updatePinchStatusDisplay()
+- // Phase 2: ✅ OpenCV.js Foundation (COMPLETED)
+- updateCalibrationStatus('Step 1: Displaying chessboard pattern...')
+- updateCalibrationStatus('OpenCV.js not fully loaded - please refresh')
+- updateCalibrationStatus('Step 2: Detecting chessboard corners...')
+- updateCalibrationStatus(`Step 2: Detecting corners... (${attemptCount}/${CALIBRATION_CONFIG.maxAttempts})`)
+- updateCalibrationStatus(`Detection error: ${error.message}`)
+- updateCalibrationStatus('Detection timeout - adjust lighting or camera angle')
+- updateCalibrationStatus('Step 3: Calculating homography matrix...')
+- updateCalibrationStatus('Step 4: Calibration completed successfully!')
+- updateCalibrationStatus(`Calibrated at ${new Date().toLocaleTimeString()}`)
+- updateCalibrationStatus(`Calculation failed: ${error.message}`)
+- * Update calibration status display
+- * @param {string} status - Status message to display
+- function updateCalibrationStatus(status) {
+- document.getElementById('calibStatus').textContent = status
+- updateCalibrationStatus('Not calibrated - using 1:1 mapping')
+- // Show OpenCV calibration status
+- const openCvStatus = openCvState.isReady ? '✅ Ready' : '⏳ Loading'
+- const calibStatus = calibrationState.isCalibrated ? '✅ Calibrated' : '❌ Not calibrated'
+- // Safe audio status check (audioState may not be initialized yet)
+- let audioStatus = '⏳ Loading'
+- audioStatus = audioState.isInitialized ? '✅ Ready' : '❌ Not initialized'
+- let instrumentStatus = '⏳ Loading'
+- instrumentStatus = current.getDisplayName()
+- instrumentStatus = '❌ None'
+- OpenCV: ${openCvStatus} | Calibration: ${calibStatus}<br>
+- Audio: ${audioStatus} | Sounds: ${soundCount}<br>
+- Instrument: ${instrumentStatus}${behaviorInfo}
+- // Update tracking status
+- const trackingStatus = document.getElementById('trackingStatus')
+- if (trackingStatus) {
+- trackingStatus.textContent = 'Active'
+- // Update tracking status
+- const trackingStatus = document.getElementById('trackingStatus')
+- if (trackingStatus) {
+- trackingStatus.textContent = 'Stopped'
+- // Update audio status
+- const audioStatus = document.getElementById('audioStatus')
+- if (audioStatus) {
+- audioStatus.textContent = 'Ready'
+- // Update status
+- updateVelocityPresetStatus(presetName)
+- * Update velocity prediction preset status display
+- function updateVelocityPresetStatus(presetName) {
+- const statusDiv = document.getElementById('velocity-preset-status')
+- if (statusDiv && preset) {
+- statusDiv.innerHTML = `<strong>✓ ${preset.name} preset active</strong> - ${preset.description}`
+- * Update velocity prediction status display with real prediction data
+- function updateVelocityPredictionStatus(predictionData) {
+- const statusDiv = document.getElementById('velocity-prediction-status')
+- if (!statusDiv) return
+- // Color coding based on prediction status
+- statusDiv.style.color = isPredicted ? '#00FF7F' : '#999'
+- statusDiv.innerHTML = lines.join('<br>')
+- // ✅ REMOVED: updatePredictionStatus() - deprecated function replaced by updateVelocityPredictionStatus()
+- // Update tracking status
+- const trackingStatus = document.getElementById('trackingStatus');
+- if (trackingStatus) {
+- trackingStatus.textContent = 'Active';
+- // Update audio status
+- const audioStatus = document.getElementById('audioStatus');
+- if (audioStatus) {
+- audioStatus.textContent = 'Ready';
+- // Update status indicators
+- const trackingStatus = document.getElementById('trackingStatus');
+- if (trackingStatus) {
+- trackingStatus.textContent = 'Stopped';
+- updateStep(stepNumber, status) {
+- // Update step status
+- const statusElement = document.getElementById(`step${stepNumber}-status`)
+- if (!stepElement || !statusElement) return
+- // Update based on status
+- if (status === 'completed') {
+- statusElement.textContent = this.getCompletedText(stepNumber)
+- } else if (status === 'active') {
+- statusElement.textContent = this.getActiveText(stepNumber)
+- this.updateStatusIndicators()
+- updateStatusIndicators() {
+- // Update system status indicators
+- const statusElements = {
+- tracking: document.getElementById('trackingStatus'),
+- audio: document.getElementById('audioStatus'),
+- // Set indicator states based on system status
+- if (indicators.tracking && statusElements.tracking) {
+- const isTracking = statusElements.tracking.textContent !== 'Stopped'
+- indicators.tracking.className = `status-indicator ${isTracking ? 'active' : ''}`
+- if (indicators.audio && statusElements.audio) {
+- const isAudioReady = statusElements.audio.textContent !== 'Not Ready'
+- indicators.audio.className = `status-indicator ${isAudioReady ? 'active' : ''}`
+- if (indicators.instrument && statusElements.instrument) {
+- indicators.instrument.className = 'status-indicator active'
+- statusElements.instrument.textContent = cleanName
+- // ✅ WIRED: Update Piano Genie status indicators too
+- if (typeof updatePianoGenieStatusIndicators === 'function') {
+- updatePianoGenieStatusIndicators()
+- Logger.system(`📊 CARD STATUS: ${visibleCount} visible, ${grayedCount} grayed out`)
+- // ✅ WIRED: Update status indicators after mode change
+- if (typeof updatePianoGenieStatusIndicators === 'function') {
+- updatePianoGenieStatusIndicators()
+- }, 1500) // Update status after Piano Genie potentially launches
+- * Sets up scaling, UI, and status displays
+- updateCalibrationStatus('Not calibrated - using 1:1 mapping')
+- // Initialize onboarding status indicators
+- OnboardingSystem.updateStatusIndicators()
+- }, 1000, 'onboarding status init')
+- * @returns {boolean} Success status
+- // ⚙️ EVENT-DRIVEN: Use standardized event system instead of direct call
+- // Update status indicators to reflect new instrument
+- OnboardingSystem.updateStatusIndicators()
+- // Show loading status
+- const statusId = hand === 0 ? `status-l${finger}` : `status-r${finger}`
+- const statusElement = document.getElementById(statusId)
+- if (statusElement) {
+- statusElement.textContent = 'Loading...'
+- statusElement.className = 'upload-status'
+- // Update status display
+- if (statusElement) {
+- statusElement.textContent = file.name.length > 15 ? file.name.substring(0, 12) + '...' : file.name
+- statusElement.className = 'upload-status uploaded'
+- if (statusElement) {
+- statusElement.textContent = 'Error loading file'
+- statusElement.className = 'upload-status error'
+- if (statusElement) {
+- statusElement.textContent = 'Read error'
+- statusElement.className = 'upload-status error'
+- const statusId = hand === 0 ? `status-l${finger}` : `status-r${finger}`
+- const status = document.getElementById(statusId)
+- if (status) {
+- status.textContent = 'No file'
+- status.className = 'upload-status'
+- 'CARD STATUS', 'settings', 'Configuration', 'Starting', 'completed',
+- `STATUS: TRACKING`
+- * Perfect integration with your gcFreeOrchestrator event system for real-time musical feedback.
+- // Spatial anchor status
+- let anchorStatus = 'DISABLED'
+- anchorStatus = anchors.length > 0 ? `${anchors.length} ANCHORS` : 'ENABLED'
+- // Hook into event system for real-time data
+- anchorStatus,
+- `${pinchState} • ${anchorStatus}`,
+- // Line 3: Status (simple)
+- const status = landmarks.length === 21 ? '✓ Complete' : '⚠ Incomplete'
+- ctx.fillText(status, textX, textY)
+- // Event system integration (follows architecture pattern)
+- * @returns {boolean} Success status
+- // Migration status
+- cacheStatus: Object.keys(this._cache).reduce((acc, cat) => {
+- migrationStatus: this._migrated,
+- * 🎯 Get current status of all flags
+- getStatus() {
+- const status = value ? '✅ ON' : '❌ OFF'
+- console.log(`  ${key}: ${status}`)
+- const status = newValue ? '✅ ON' : '❌ OFF'
+- console.log(`🔄 ${flagName}: ${oldValue ? 'ON' : 'OFF'} → ${status}`)
+- const status = value ? '✅ ON' : '❌ OFF'
+- console.log(`🎯 ${flagName}: ${status}`)
+- console.log('  DevFeatureFlags.getStatus()  - Show all flags')
+- this.getStatus()
+- // 🎯 Initial status on load (just once, no spam)
+- * Get current feature flag status
+- * Update calibration status display in new UI
+- * @param {string} status - Status message to display
+- function updateCalibrationStatus(status) {
+- const element = document.getElementById('calibStatus')
+- element.textContent = status
+- if (!response.ok) throw new Error(`HTTP ${response.status}`)
+- status: 'Fast settings optimized for real-time performance'
+- status: 'Best settings for most users (75% confidence, full model)'
+- status: 'Advanced options opened for manual adjustment'
+- // Update status display
+- const statusElement = document.getElementById('hand-preset-status');
+- statusElement.innerHTML = `<strong>✓ ${preset.name} preset active</strong> - ${preset.status}`;
+- status: 'Clean, minimal display - perfect for performances'
+- status: 'Color-coded finger identification for learning'
+- status: 'Advanced options opened for manual adjustment'
+- // Update status display
+- const statusElement = document.getElementById('visual-preset-status');
+- statusElement.innerHTML = `<strong>✓ ${preset.name} preset active</strong> - ${preset.status}`;
+- // 🚀 EVENT MIGRATION: Assign modules to global window for event system compatibility
+- // Log integration status
+- * │ ✓ Current preset status message                                 │
+- *    - Visual feedback shows current status
+- *    - #[card]-preset-status (current status display)
+- * - Don't forget to update status messages when presets change
+- * PHASE 2: Dynamic Zone Creation (v27.0)
+- * 🎯 CURRENT STATUS: Phase 1 Active (Complete Zone Migration)
+- * ✅ Add preset section HTML with 3 buttons and status display
+- status: 'Easy and forgiving settings for beginners'
+- status: 'Balanced settings for most users'
+- status: 'Advanced options available for fine-tuning'
+- *   3. Update status message display
+- updatePinchPresetStatus('🎛️ Custom preset active', preset.status);
+- updatePinchPresetStatus(`✓ ${preset.name} preset active`, preset.status);
+- * Update preset status message
+- function updatePinchPresetStatus(title, description) {
+- const statusElement = document.getElementById('pinch-preset-status');
+- if (statusElement) {
+- statusElement.innerHTML = `<strong>${title}</strong> - ${description}`;
+- * 📊 Update real-time status displays in the UI
+- function updateRealTimeStatus(velocity_mm_s, distance_mm) {
+- // 🔇 THROTTLED: Debug overlay status with 5-second intervals to prevent spam
+- 'debug-overlay-status',
+- let orientationStatus = 'no-hand'
+- orientationStatus = orientationInfo.status
+- // 🎯 PALM ANGLE STATUS: Enhanced positioning notes with orientation status (like prototype)
+- const orientationNote = orientationStatus === 'normal' ? '✓ Optimal' :
+- orientationStatus === 'warning' ? '⚠ Angled' :
+- orientationStatus === 'error' ? '❌ Poor angle' : '? No data'
+- // 📝 ORIENTATION STATUS TEXT: Counter canvas flip for readable text
+- ctx.fillStyle = orientationStatus === 'normal' ? '#00FF7F' :
+- orientationStatus === 'warning' ? '#FFD700' :
+- orientationStatus === 'error' ? '#FF6B6B' : '#999'
+- if (orientationStatus !== 'no-hand') {
+- // Module status
+- const statusElement = document.getElementById('wristModuleStatus')
+- if (statusElement) {
+- statusElement.textContent = hasData ? 'Tracking' : 'Active (No hands)'
+- statusElement.style.color = hasData ? '#00FF7F' : '#ffa500'
+- statusElement.textContent = 'Not initialized'
+- statusElement.style.color = '#ff6b6b'
+- * - Provides orientation status for debug overlay visualization
+- * - Enhanced 6-DOF correction with status feedback (normal/warning/error)
+- * - Phase 2: Persistent Hand IDs
+- // TODO Phase 2: Create truly isolated per-hand processors
+- return { factor: 1.0, angle: 0, status: 'no-hand' }
+- if (normalMag === 0) return { factor: 1.0, angle: 0, status: 'error' }
+- // Status for UI feedback
+- let status = 'normal'
+- if (angleDegrees > 60) status = 'warning'
+- if (angleDegrees > 75) status = 'error'
+- status: status
+- * No direct calls - everything goes through event system
+- action: 'updateStatus',
+- return { factor: 1.0, angle: 0, status: 'no-hand' }
+- `Module Status: LOADED`
+- return `PrecisionPinchModule: Error in selfReport - ${error.message}. Module Status: LOADED but reporting failed.`
+- const trackingStatus = trackingHands > 0 ?
+- return `WristOrientationModule: ${trackingStatus}. ` +
+- if (typeof updatePredictionStatus === 'function') {
+- updatePredictionStatus(data.hand, data.finger, {
+- // Show current status
+- console.log('📊 Current Logging Status:')
+- * - Phase 2: Gradually route events through orchestrator while keeping globals
+- * 🎵 CURRENT STATUS: Foundation added, existing app functionality unchanged
+- * 🎵 CURRENT STATUS: Complete MediaPipe upgrade, replaces HandsFree.js
+- this.updateStatusDisplay();
+- // Debug helper: Show zone visualization status
+- getZoneVisualizationStatus() {
+- this.updateStatusDisplay();
+- updateStatusDisplay() {
+- const statusElements = {
+- fps: document.getElementById('statusFPS'),
+- hands: document.getElementById('statusHands'),
+- landmarks: document.getElementById('statusLandmarks'),
+- processing: document.getElementById('statusProcessing')
+- if (statusElements.fps) statusElements.fps.textContent = `FPS: ${this.currentFps}`;
+- if (statusElements.hands) statusElements.hands.textContent = `Hands: ${this.handsDetected}`;
+- if (statusElements.landmarks) statusElements.landmarks.textContent = `Landmarks: ${this.landmarksCount}`;
+- if (statusElements.processing) statusElements.processing.textContent = `Processing: ${this.processingTime.toFixed(1)}ms`;
+- getStatus() {
+- Logger.system('📍 Zone visualization: mediaPipeCamera.getZoneVisualizationStatus() to check');
+- * - Phase 2: Route audio events through orchestrator while keeping old functions
+- * 🎵 CURRENT STATUS: Module created, existing audio functionality unchanged
+- getStatus() {
+- console.log("  Status:", audioEngine.getStatus());
+- return audioEngine.getStatus();
+- // │   ├── #QUERIES - getVideoSourceStatus(), getAvailableVideoSources()
+- this.logger.system('🌉 VideoInputEventBridge Status:');
+- const status = result.success ? '✅' : '❌';
+- this.logger.system(`   ${status} ${result.event} - ${result.success ? 'Success' : result.error}`);
+- const status = this.isWebcamHijackingEnabled();
+- console.log('🎯 Hijacking Status:', {
+- enabled: status.enabled ? '✅ YES' : '❌ NO',
+- hasOriginal: status.hasOriginal ? '✅ YES' : '❌ NO',
+- wrapperActive: status.wrapperActive ? '✅ YES' : '❌ NO'
+- return status;
+- console.log('checkWebcamHijacking()      - Check current hijacking status');
+- // #CQRS-QUERY #STATUS-MONITORING #PERFORMANCE-METRICS
+- getVideoSourceStatus() {
+- // Module Status
+- // Legacy Integration Status
+- // Validation & API Gateway Status
+- // Add wrapper status overlay
+- this.createWrapperStatusOverlay();
+- * Create status overlay to show wrapper is active
+- createWrapperStatusOverlay() {
+- const existing = document.getElementById('wrapperStatusOverlay');
+- overlay.id = 'wrapperStatusOverlay';
+- if (!document.getElementById('wrapperStatusStyles')) {
+- style.id = 'wrapperStatusStyles';
+- const overlay = document.getElementById('wrapperStatusOverlay');
+- // Phase 2: Initialize wrapper camera
+- this.logger.system('🧪 [TIMING-TEST] Phase 2: Initializing wrapper camera...');
+- getVideoSourceStatus: this.getVideoSourceStatus.bind(this),
+- status: 'active',
+- status: 'active',
+- status: 'active',
+- // Health status
+- // Integration status
+- return { status: 'No performance data available' };
+- status: this.getHealthStatus(wrapper?.healthScore || 0),
+- static getHealthStatus(score) {
+- // │   ├── #QUERIES - getCurrentHandData(), getProcessingStatus()
+- return this.apiGateway.standardizeHandDataStatus({
+- // #CQRS-QUERY #PROCESSING-STATUS #CAPABILITY-DISCOVERY
+- getProcessingStatus() {
+- status: this.isInitialized ? 'ACTIVE' : 'INITIALIZING',
+- getProcessingStatus: this.getProcessingStatus.bind(this),
+- // Standardize hand data status format
+- standardizeHandDataStatus(statusData) {
+- hands: statusData.hands || [],
+- frameCount: statusData.frameCount || 0,
+- isProcessing: statusData.isProcessing || false
+- lastProcessed: statusData.timestamp,
+- cacheStatus: 'active'
+- // ├── 🔄 EVENT INTEGRATION (Musical Event System)
+- if (!this.apiGateway) score -= 20; // Event system compromised
+- return this.apiGateway.standardizeGestureStateStatus({
+- * Get gesture processing status and capabilities
+- * @returns {Object} Processing status information
+- getGestureProcessingStatus() {
+- status: this.isInitialized ? 'ACTIVE' : 'INITIALIZING',
+- getGestureProcessingStatus: this.getGestureProcessingStatus.bind(this),
+- * Standardize gesture state status format
+- * @param {Object} statusData - Current gesture state data
+- * @returns {Object} Standardized status format
+- standardizeGestureStateStatus(statusData) {
+- activeGestures: statusData.activeGestures || [],
+- handStates: statusData.handStates || {},
+- isProcessing: statusData.isProcessing || false,
+- handsTracked: Object.keys(statusData.handStates || {}).length
+- lastProcessed: statusData.lastProcessed,
+- healthScore: statusData.healthScore || 0,
+- processingStatus: 'active'
+- if (!this.apiGateway) score -= 20; // Event system compromised
+- return this.apiGateway.standardizeOutputStateStatus({
+- * Get output processing status and capabilities
+- * @returns {Object} Processing status information
+- getOutputProcessingStatus() {
+- status: this.isInitialized ? 'ACTIVE' : 'INITIALIZING',
+- getOutputProcessingStatus: this.getOutputProcessingStatus.bind(this),
+- * Standardize output state status format
+- * @param {Object} statusData - Current output state data
+- * @returns {Object} Standardized status format
+- standardizeOutputStateStatus(statusData) {
+- activeNotes: statusData.activeNotes || [],
+- activeMidiMessages: statusData.activeMidiMessages || [],
+- activeKeyboardEvents: statusData.activeKeyboardEvents || [],
+- isProcessing: statusData.isProcessing || false,
+- activeOutputCount: (statusData.activeNotes?.length || 0) +
+- (statusData.activeMidiMessages?.length || 0) +
+- (statusData.activeKeyboardEvents?.length || 0)
+- lastProcessed: statusData.lastProcessed,
+- healthScore: statusData.healthScore || 0,
+- processingStatus: 'active'
+- if (!this.apiGateway) score -= 20; // Event system compromised
+- // Update strategy active status
+- return this.apiGateway.standardizeVisualizationStateStatus({
+- * Get visualization processing status and capabilities
+- * @returns {Object} Processing status information
+- getVisualizationProcessingStatus() {
+- status: this.isInitialized ? 'ACTIVE' : 'INITIALIZING',
+- // CANVAS INTERCEPTION STATUS (Direct Method Access)
+- * Get canvas interception status (direct method for diagnostics)
+- * @returns {Object} Canvas interception status
+- getCanvasInterceptionStatus() {
+- getVisualizationProcessingStatus: this.getVisualizationProcessingStatus.bind(this),
+- getCanvasInterceptionStatus: () => this.canvasInterception || { isActive: false, message: 'not_initialized' }
+- createPayload: (interceptionStatus, interceptedSystems = []) => ({
+- isActive: interceptionStatus.isActive || false,
+- unifiedCanvas: interceptionStatus.unifiedCanvas || null,
+- renderingLayers: interceptionStatus.renderingLayers || [],
+- backgroundVideoIntegrated: !!interceptionStatus.backgroundVideo
+- console.log('🎨 [CQRS] Pipeline Wrappers Status:');
+- wrapperStatus: Object.fromEntries(
+- console.log('Integration Status:', window.prototypeIntegrationStatus);
+- console.log('Clean Slate Status:', {
+- pianoGenieRemoved: window.prototypeIntegrationStatus?.pianoGenieRemoved,
+- console.log('🧹 Status: Boy Scout Cleanup Complete - Single Play Button System')
+- console.log('  status()                    - Quick one-line status')
+- // Initialize prototype integration status
+- window.prototypeIntegrationStatus = {
+- console.group('🧪 Clean Slate Prototype Integration Status');
+- console.log('Integration Status:', window.prototypeIntegrationStatus);
+- console.log('Available Prototypes:', window.prototypeIntegrationStatus.availablePrototypes);
+- console.log('Clean Slate Confirmed:', window.prototypeIntegrationStatus.cleanSlate);
+- overall: { score: 0, status: 'UNKNOWN' },
+- // Event system test
+- report.recommendations.push('Fix event system: GCFreeOrchestrator broken')
+- const healthyCount = Object.values(report.performance).filter(status => status.includes('Active') || status.includes('Available')).length
+- report.overall.status = 'EXCELLENT'
+- report.overall.status = 'GOOD'
+- report.overall.status = 'NEEDS_WORK'
+- Logger.system(`🎯 OVERALL SCORE: ${report.overall.score}% (${report.overall.status})`)
+- // Test event system throughput
+- * 🎯 QUICK STATUS CHECK
+- * One-line status for rapid checking
+- window.status = function () {
+- Logger.throttle('status-check', () => {
+- Logger.system(`🎯 STATUS: Tracking${handTracking} Audio${audio} MIDI${midi} Events${events}`)
+- console.log('🎯 status()                    - Quick one-line status')
+- return { status: 'video_not_ready' };
+- status: 'unified',
+- // Test 2: Update status indicators with new logic
+- Logger.system('🔍 Testing Status Indicator Update...')
+- updatePianoGenieStatusIndicators()
+- const bridgeIndicator = document.getElementById('eventBridgeStatus')
+- Logger.system(`❌ Status indicator update failed: ${error.message}`)
+- // Test status indicator update
+- updatePianoGenieStatusIndicators()
+- const bridgeIndicator = document.getElementById('eventBridgeStatus')
+- Logger.system(`  🚦 Status Indicator Color: ${isGreen ? '✅ GREEN' : '❌ RED'}`)
+- Logger.system(`  ❌ Status indicator test failed: ${error.message}`)
+- * Tests accordion panels, status indicators, standardization compliance
+- statusIndicators: {},
+- Logger.system('🧪 Testing Status Indicators...')
+- testStatusIndicators(results)
+- * Test all status indicators in the UI
+- function testStatusIndicators(results) {
+- 'mainAppStatus',
+- 'handTrackingStatus',
+- 'pianoGenieStatus',
+- 'eventBridgeStatus'
+- results.statusIndicators[id] = {
+- results.statusIndicators[id] = { exists: false, error: 'Element not found' }
+- results.errors.push(`Status indicator ${id} not found`)
+- if (typeof updatePianoGenieStatusIndicators === 'function') {
+- updatePianoGenieStatusIndicators()
+- results.statusIndicators.updateFunction = 'working'
+- results.statusIndicators.updateFunction = `error: ${error.message}`
+- results.errors.push(`updatePianoGenieStatusIndicators failed: ${error.message}`)
+- results.statusIndicators.updateFunction = 'not found'
+- results.errors.push('updatePianoGenieStatusIndicators function not found')
+- const testFunctions = ['updatePianoGenieStatusIndicators', 'togglePianoMode', 'launchPianoGenieOverlay']
+- // Status Indicators Report
+- Logger.system('🚦 STATUS INDICATORS:')
+- Object.entries(results.statusIndicators).forEach(([key, value]) => {
+- const status = value.color === 'green' ? '✅' : value.color === 'red' ? '🔴' : '⚪'
+- Logger.system(`  ${status} ${key}: ${value.color} (${value.dimensions})`)
+- Logger.system('  🔧 Problem settings status:')
+- Object.entries(results.settingsManager.problemSettings).forEach(([key, status]) => {
+- Logger.system(`    ${status === 'working' ? '✅' : '❌'} ${key}: ${status}`)
+- * Quick status check - lightweight version
+- window.quickStatusCheck = function () {
+- Logger.system('⚡ Quick Status Check...')
+- const statusElements = ['mainAppStatus', 'handTrackingStatus', 'pianoGenieStatus', 'eventBridgeStatus']
+- const found = statusElements.filter(id => document.getElementById(id)).length
+- Logger.system(`🚦 Status indicators: ${found}/${statusElements.length}`)
+- const keyFunctions = ['updatePianoGenieStatusIndicators', 'testKeyActivityIndicators', 'togglePianoMode']
+- checkSystemStatus: typeof checkSystemStatus === 'function',
+- // Update UI status (same as startEverything)
+- const trackingStatus = document.getElementById('trackingStatus')
+- if (trackingStatus) trackingStatus.textContent = 'Active'
+- // Update audio status (same as startEverything)
+- const audioStatus = document.getElementById('audioStatus')
+- if (audioStatus) audioStatus.textContent = 'Ready'
+- // Phase 2: Visual Cleanup System
+- Logger.system('🎨 Phase 2: Visual cleanup system initialized!')
+- // ✅ WIRED: Set up automatic status indicator updates
+- if (typeof updatePianoGenieStatusIndicators === 'function') {
+- updatePianoGenieStatusIndicators()
+- if (typeof OnboardingSystem !== 'undefined' && OnboardingSystem.updateStatusIndicators) {
+- OnboardingSystem.updateStatusIndicators()
+- // Silent fail for status updates
+- Logger.system('✅ Status indicator auto-updates enabled (3s interval)')
+- // ✅ FOLLOW EXISTING PATTERN: Logger.system for module status
+- // ✅ FOLLOW EXISTING PATTERN: Logger.system for module status
+- locations: ['header', 'navigation', 'changelog', 'status'],
+- this.validationRules.set('statusIndicators', {
+- validation: 'actual-status-match',
+- requirement: 'Status indicators must match actual implementation state'
+- this.validationRules.set('moduleStatus', {
+- status: () => this.status(),
+- getFeatureStatus: () => this.getFeatureStatus(),
+- docSync.status()         - Current sync status and health
+- docSync.getSystemHealth()      - Current system status
+- docSync.getFeatureStatus()     - Working vs documented features
+- docSync.getDebuggingSession()  - Current debug session status
+- docSync.status()         # View results
+- * Get current sync status and health
+- status() {
+- const status = {
+- this.logger.system('🤖 Documentation Sync Status:', status);
+- console.log('🤖 Documentation Sync Status:', status);
+- return status;
+- statusUpdated: 0,
+- // Update status indicators
+- const statusResults = await this.updateStatusIndicators();
+- syncResults.statusUpdated = statusResults.updated;
+- statusIssues: [],
+- // Validate status indicators
+- validationResults.statusIssues = await this.validateStatusIndicators();
+- validationResults.statusIssues.length;
+- * Validate status indicators
+- async validateStatusIndicators() {
+- * Update status indicators
+- async updateStatusIndicators() {
+- // Implementation would update status indicators based on actual system state
+- * Get system health status
+- * Get feature status
+- getFeatureStatus() {
+- * Get current debugging session status
+- status: 'Zone detection WORKS ✅ | Data flow investigation ACTIVE 🔍'
+- statusMismatches: []
+- this.updateFeatureStatus(feature, 'implemented');
+- this.updateModuleStatus(module, 'added');
+- * Update feature status in documentation
+- updateFeatureStatus(feature, status) {
+- this.logger.system(`📄 Updated feature status: ${feature} → ${status}`);
+- * Update module status in documentation
+- updateModuleStatus(module, status) {
+- this.logger.system(`📄 Updated module status: ${module} → ${status}`);
+- // STATUS: Temporarily disabled to isolate zone data flow issues
+- // Show current status
+- window.skeletonStatus = function() {
+- console.log(`🎨 Hand Skeleton Status:
+- // Get current text mirroring status
+- window.getTextMirroringStatus = function() {
+- Commands: skeletonOn(), skeletonOff(), skeletonStatus(), useRainbow(), toggleTextMirroring(), getTextMirroringStatus()`)
+- // 🧭 TAG-BASED NAVIGATION HELPER
+- * Test the tag-based navigation system
+- console.log(`🧭 TAG-BASED NAVIGATION SYSTEM (v25.7.24.1600)
+- console.log('\n📊 2. HAND TRACKING STATUS:');
+- // 🚨 BRIDGE DECONFLICTION CONTROL - Phase 2: Feature Flags
+- // Check current bridge status
+- window.getBridgeStatus = function() {
+- const status = {
+- console.log('🎛️ BRIDGE STATUS:');
+- console.log(`   Universal Bridge: ${status.universal ? '✅ ENABLED' : '🚫 DISABLED'}`);
+- console.log(`   Legacy Bridge: ${status.legacy ? '⚠️ ENABLED' : '✅ DISABLED'}`);
+- console.log(`   Deduplication: ${status.deduplication ? '✅ ENABLED' : '🚫 DISABLED'}`);
+- console.log(`   Hand ID Isolation: ${status.handIdIsolation ? '✅ ENABLED' : '🔄 PENDING'}`);
+- console.log(`   Cross-Contamination Fix: ${status.crossContaminationFix ? '✅ ENABLED' : '🚫 DISABLED'}`);
+- if (status.universal && status.legacy) {
+- if (!status.deduplication && (status.universal || status.legacy)) {
+- return status;
+- console.log(`🎛️ TOGGLE STATUS: ${category}`);
+- return getBridgeStatus();
+- console.log(`   getBridgeStatus() - Check current bridge state`);
+- window.getBridgeFacadeStatus = () => this.getStatus();
+- * 📊 Get facade status and statistics
+- getStatus() {
+- const status = {
+- this.logger.system('🚧 BRIDGE FACADE STATUS:');
+- this.logger.system(`   Active: ${status.active ? '✅ YES' : '🚫 NO'}`);
+- this.logger.system(`   Runtime: ${status.runtime}`);
+- this.logger.system(`   Events Intercepted: ${status.stats.eventsIntercepted}`);
+- this.logger.system(`   → Universal Bridge: ${status.stats.universalBridgeEvents}`);
+- this.logger.system(`   → Legacy Bridge: ${status.stats.legacyBridgeEvents}`);
+- this.logger.system(`   → Blocked: ${status.stats.eventsBlocked}`);
+- this.logger.system(`   Events/sec: ${status.stats.eventsPerSecond.toFixed(1)}`);
+- return status;
+- console.log(`   getBridgeFacadeStatus() - Check facade status`);
+
+Notes
+- Use this as a seed to re-name ports and isolate adapters in current repo.

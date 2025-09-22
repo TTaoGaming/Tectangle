@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Tectangle — Pinch Piano (Two‑Hand, Palm‑Gated, MP4‑Capable)</title>
+  <style>
+    :root {
+      --bg: #0b0d10; --fg: #e7edf3; --muted: #9fb3c8; --accent: #82d4ff; --ok:#20c997; --warn:#ffb020; --bad:#ff6b6b;
+      --key-bg:#0e1420; --key-on:#2a87ff; --key-left:#93d977; --key-right:#82d4ff;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--fg); }
+    header { padding: 16px 20px; border-bottom: 1px solid #1a222c; background: #0f141a; position: sticky; top: 0; z-index: 5; }
+    header h1 { margin:0; font-size: 18px; letter-spacing: .3px; }
+    .row { display:flex; gap:16px; padding: 16px 20px; flex-wrap: wrap; }
+    .col { flex: 1 1 460px; min-width: 320px; }
+    video, canvas { width: 100%; max-width: 100%; border: 1px solid #1a222c; border-radius: 12px; background: #0c1117; display:block; }
+    .panel { border: 1px solid #1a222c; border-radius: 12px; padding: 12px; background: #0c1117; }
+    .panel h3 { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 8px; }
+    .control { display:flex; align-items:center; gap: 10px; background:#0f141a; border:1px solid #1a222c; padding:8px 10px; border-radius: 10px; }
+    .control .lbl { width: 150px; color: var(--muted); font-size: 12px; }
+    .control input[type="range"] { width: 100%; }
+    .control .val { min-width: 54px; text-align: right; font-variant-numeric: tabular-nums; color: var(--fg); font-size: 12px; }
+    .btn { cursor:pointer; background:#11202b; color: var(--fg); border:1px solid #1a222c; padding:8px 12px; border-radius:10px; display:inline-flex; align-items:center; gap:8px; }
+    .btn:hover { background:#122636; }
+    .badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #1a222c; background:#0f141a; color: var(--muted); }
+    .kv { display:grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; }
+    .kv div:nth-child(2n) { color: var(--muted); text-align:right; }
+    footer { padding: 16px 20px; border-top:1px solid #1a222c; color: var(--muted); }
+    .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; margin-right: 4px; }
+    .ok{ background:#0d1e17; color:#7be1bf; }
+    .warn{ background:#1d1a0c; color:#ffd47a; }
+    .bad{ background:#2a1414; color:#ff9a9a; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .mini { font-size: 12px; color: var(--muted); }
+
+    /* Virtual keyboard */
+    .kbd { display:flex; gap: 10px; }
+    .key { position: relative; width: 96px; height: 110px; background: var(--key-bg); border:1px solid #1a222c; border-radius: 12px; display:flex; align-items:center; justify-content:center; font-size: 30px; color: var(--muted); transition: transform .05s ease, box-shadow .05s ease; }
+    .key .note { position:absolute; bottom:6px; font-size: 12px; color: var(--muted); }
+    .key.right { outline: 2px solid var(--key-right); }
+    .key.left  { outline: 2px solid var(--key-left); }
+    .key.down  { background: #071325; color: #d9eeff; transform: translateY(2px); box-shadow: inset 0 0 0 2px var(--key-on); }
+    .key.hold  { box-shadow: inset 0 0 0 2px var(--ok); }
+
+    .hint { border-bottom: 1px dotted #5a7086; cursor: help; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Tectangle — Pinch Piano (Palm‑Gated, MP4/Camera) <span class="badge" id="status">ready</span></h1>
+</header>
+
+<div class="row">
+  <div class="col">
+    <video id="cam" playsinline muted autoplay></video>
+  </div>
+  <div class="col">
+    <canvas id="overlay" width="960" height="540"></canvas>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col panel">
+    <h3>Controls</h3>
+    <div class="controls">
+      <div class="control" title="Switch between live camera and an MP4 file as the video source">
+        <span class="lbl">Source</span>
+        <select id="sourceSelect">
+          <option value="camera" selected>Camera</option>
+          <option value="mp4">MP4 file</option>
+        </select>
+        <input type="file" id="mp4File" accept="video/mp4,video/webm" style="display:none">
+        <label class="lbl"><input type="checkbox" id="autoTelemetry"> Auto‑download telemetry on end</label>
+      </div>
+
+      <div class="control" title="Start/stop the selected source and pipeline">
+        <label class="lbl"><input type="checkbox" id="startStop"> Start</label>
+        <span class="val"> </span>
+      </div>
+
+      <div class="control" title="Only process the right hand (simplifies single‑pinch games like Clumsy Bird)">
+        <label class="lbl"><input type="checkbox" id="oneHand" checked> One‑hand mode (Right)</label>
+        <span class="val"> </span>
+      </div>
+
+      <div class="control" title="Show or hide 21 landmarks and the pinch line">
+        <label class="lbl"><input type="checkbox" id="drawLandmarks" checked> Draw landmarks</label>
+        <span class="val"> </span>
+      </div>
+
+      <div class="control" title="Require palm normal to face camera within this cone">
+        <label class="lbl"><input type="checkbox" id="palmGate" checked> Palm gate</label>
+        <input type="range" id="cone" min="10" max="60" step="1" value="30">
+        <output class="val" id="coneOut">30°</output>
+      </div>
+
+      <div class="control" title="Emit early speculative pinch:down based on time‑to‑impact estimate; cancelled if not confirmed soon">
+        <label class="lbl"><input type="checkbox" id="speculative"> Predictive (speculative)</label>
+        <span class="val"> </span>
+      </div>
+
+      <div class="control" title="Threshold to ENTER pinch (normalized distance). Lower = more sensitive">
+        <span class="lbl">Enter threshold</span>
+        <input type="range" id="enter" min="0.05" max="1.00" step="0.01" value="0.50">
+        <output class="val" id="enterOut">0.50</output>
+      </div>
+      <div class="control" title="Threshold to EXIT pinch (normalized distance). Higher = stickier holds">
+        <span class="lbl">Exit threshold</span>
+        <input type="range" id="exit"  min="0.10" max="1.00" step="0.01" value="0.80">
+        <output class="val" id="exitOut">0.80</output>
+      </div>
+
+      <div class="control" title="OneEuro filter: lowers jitter while adapting cutoff by motion speed">
+        <span class="lbl">MinCutoff</span>
+        <input type="range" id="minCutoff" min="0.1" max="3.0" step="0.1" value="1.0">
+        <output class="val" id="minCutoffOut">1.0</output>
+      </div>
+      <div class="control" title="OneEuro beta: responsiveness to speed (higher = snappier but noisier)">
+        <span class="lbl">Beta</span>
+        <input type="range" id="beta" min="0.00" max="0.10" step="0.005" value="0.01">
+        <output class="val" id="betaOut">0.01</output>
+      </div>
+      <div class="control" title="OneEuro derivative cutoff">
+        <span class="lbl">dCutoff</span>
+        <input type="range" id="dCutoff" min="0.1" max="3.0" step="0.1" value="1.0">
+        <output class="val" id="dCutoffOut">1.0</output>
+      </div>
+
+      <div class="control" title="Play a short sine tone on pinch for instant feedback">
+        <label class="lbl"><input type="checkbox" id="beep" checked> Audio beep</label>
+        <span class="val"> </span>
+      </div>
+      <div class="control" title="Send MIDI NoteOn/Off to the first output device (Chrome)">
+        <label class="lbl"><input type="checkbox" id="midi"> WebMIDI</label>
+        <span class="val"> </span>
+      </div>
+
+      <div class="control" title="Run a quick open/close to estimate knuckle span (per hand)">
+        <button class="btn" id="calibrate">Calibration wizard</button>
+        <span class="mini">Saves span per hand</span>
+      </div>
+      <div class="control" title="Record telemetry/goldens and download as JSONL for CI replay">
+        <button class="btn" id="download">Download golden JSONL</button>
+        <span class="mini">First line has meta</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col panel">
+    <h3>Telemetry</h3>
+    <div class="kv" id="kv">
+      <div>FPS</div><div id="fps">–</div>
+      <div>Right state</div><div id="fsmR">–</div>
+      <div>Left state</div><div id="fsmL">–</div>
+      <div>NormDist</div><div id="norm">–</div>
+      <div>Palm angle</div><div id="pg">–</div>
+      <div>SpecCancel%</div><div id="specCancel">–</div>
+      <div>Down Latency</div><div id="lat">–</div>
+      <div>Downs</div><div id="downs">0</div>
+      <div>Ups</div><div id="ups">0</div>
+    </div>
+    <p class="mini">URL flags: <code>?autostart</code> <code>?disableSpec</code> <code>?disablePalm</code> <code>?fixedSpan=0.08</code></p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col panel">
+    <h3>Virtual keyboard</h3>
+    <div class="kbd" id="kbd">
+      <div class="key right" data-key="Z" title="Right hand → key Z (MIDI C4)">Z <span class="note">C4</span></div>
+      <div class="key left"  data-key="X" title="Left hand → key X (MIDI D4)">X <span class="note">D4</span></div>
+    </div>
+    <p class="mini">Tiles light up on <span class="hint" title="pinch:down">down</span>, stay lit during <span class="hint" title="pinch:hold">hold</span>, and release on <span class="hint" title="pinch:up">up</span>. KeyboardEvents are in‑page only; use WebMIDI for sound.</p>
+  </div>
+</div>
+
+<footer>
+  <span class="pill ok">Hex‑ready ports</span> <span class="pill warn">Demo‑only KeyEvents</span> <span class="pill bad">Allow camera</span>
+  <div class="mini">Modular monolith with clean seams → split into hexagonal adapters later. Golden JSONL supports CI parity. MP4 source enables offline telemetry.
+  </div>
+</footer>
+
+<script type="module">
+// =========================
+// QUERY & HELPERS
+// =========================
+const Q = new URLSearchParams(location.search);
+const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+const median = arr => { const a=[...arr].sort((x,y)=>x-y); const m=a.length>>1; return a.length? (a.length%2?a[m]:(a[m-1]+a[m])/2):0; };
+const fmt = (n, p=2)=> (typeof n==='number' ? n.toFixed(p) : '–');
+
+class RollingMedian { constructor(n){ this.n=n; this.buf=[]; } push(x){ this.buf.push(x); if(this.buf.length>this.n) this.buf.shift(); return median(this.buf); } get med(){ return median(this.buf); } }
+
+// OneEuro filter
+class OneEuro {
+  constructor({minCutoff=1.0, beta=0.01, dCutoff=1.0}={}){ this.minCutoff=minCutoff; this.beta=beta; this.dCutoff=dCutoff; this.xPrev=null; this.dxPrev=0; this.tPrev=null; }
+  static alpha(cutoff, dt){ const r=2*Math.PI*cutoff*dt; return r/(r+1); }
+  filter(x, t){ if(this.tPrev==null){ this.tPrev=t; this.xPrev=x; return x; } const dt=Math.max(1e-3,(t-this.tPrev)/1000); const dx=(x-this.xPrev)/dt; const aD=OneEuro.alpha(this.dCutoff,dt); const dxHat=aD*dx+(1-aD)*this.dxPrev; const cutoff=this.minCutoff+this.beta*Math.abs(dxHat); const aX=OneEuro.alpha(cutoff,dt); const xHat=aX*x+(1-aX)*this.xPrev; this.tPrev=t; this.xPrev=xHat; this.dxPrev=dxHat; return xHat; }
+}
+
+// PubSub
+class Emitter { constructor(){ this.s=new Set(); } on(h){ this.s.add(h); return ()=>this.s.delete(h); } emit(e){ this.s.forEach(h=>h(e)); } }
+
+// Persisted spans per hand
+function saveSpan(hand, span){ try{ localStorage.setItem('tectangle.span.'+hand, String(span)); }catch{} }
+function loadSpan(hand){ try{ const v=localStorage.getItem('tectangle.span.'+hand); return v? +v : null; }catch{ return null; } }
+
+function percentile(arr, p){ if(!arr.length) return 0; const a=[...arr].sort((x,y)=>x-y); const i=Math.min(a.length-1, Math.max(0, Math.round(p/100*(a.length-1)))); return Math.round(a[i]); }
+
+// =========================
+// TELEMETRY
+// =========================
+const Telemetry = (()=>{
+  const rec = { downs:0, ups:0, spec:0, specCancel:0, downLatency:[], holdDuration:[], frames:0 };
+  let lastDownT=null, lastEnterCandidateT=null;
+  return {
+    noteFrame(){ rec.frames++; },
+    noteEnterCandidate(t){ if (lastEnterCandidateT==null) lastEnterCandidateT = t; },
+    noteDown(t, speculative){ if(speculative) rec.spec++; rec.downs++; lastDownT=t; if (lastEnterCandidateT!=null) { const dl = t - lastEnterCandidateT; if (dl >= -200 && dl <= 2000) rec.downLatency.push(dl); lastEnterCandidateT = null; } },
+    noteUp(t){ rec.ups++; if(lastDownT!=null){ const d=t-lastDownT; if(d>=0 && d<20000) rec.holdDuration.push(d); } },
+    noteSpecCancel(){ rec.specCancel++; },
+    snapshot(){ return { downs: rec.downs, ups: rec.ups, specCancelRate: rec.spec? (rec.specCancel/Math.max(1,rec.spec)) : 0, meanDownLatency: rec.downLatency.length? Math.round(rec.downLatency.reduce((a,b)=>a+b,0)/rec.downLatency.length) : 0, p50DownLatency: percentile(rec.downLatency, 50), p90DownLatency: percentile(rec.downLatency, 90), frames: rec.frames }; }
+  };
+})();
+
+// =========================
+// MIDI & AUDIO
+// =========================
+class MidiOut { constructor(){ this.out=null; } async init(){ try{ const access=await navigator.requestMIDIAccess(); this.out=[...access.outputs.values()][0]||null; }catch{} } send(status,data1,data2){ if(this.out) this.out.send([status,data1,data2]); } }
+class Beeper { constructor(){ this.ctx=null; this.osc=null; this.gain=null; } ensure(){ if(!this.ctx){ this.ctx=new (window.AudioContext||window.webkitAudioContext)(); } } down(){ this.ensure(); if(this.osc) return; this.osc=this.ctx.createOscillator(); this.gain=this.ctx.createGain(); this.osc.frequency.value=440; this.gain.gain.value=0.1; this.osc.connect(this.gain).connect(this.ctx.destination); this.osc.start(); } up(){ if(this.osc){ this.osc.stop(); this.osc.disconnect(); this.gain.disconnect(); this.osc=null; this.gain=null; } } }
+
+// =========================
+// GOLDEN TRACE
+// =========================
+class GoldenRecorder { constructor(){ this.lines=[]; this.started=false; } start(meta){ if(this.started) return; this.started=true; this.lines.push(JSON.stringify({meta})); } frame(obj){ if(!this.started) return; this.lines.push(JSON.stringify(obj)); } download(){ const blob=new Blob([this.lines.join('
+')+'
+'],{type:'application/jsonl'}); const url=URL.createObjectURL(blob); const a=Object.assign(document.createElement('a'),{href:url,download:`pinch_golden_${new Date().toISOString().replace(/[:.]/g,'-')}.jsonl`}); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); } }
+
+// =========================
+// PINCH CORE
+// =========================
+function createPinchFeature(cfg={}){
+  const dom = { cone: byId('cone'), enter: byId('enter'), exit: byId('exit'), minCutoff: byId('minCutoff'), beta: byId('beta'), dCutoff: byId('dCutoff'), palmGate: byId('palmGate'), speculative: byId('speculative') };
+  const C = Object.assign({
+    palmConeDeg: +dom.cone.value || 30,
+    enterThresh: +dom.enter.value || 0.50,
+    exitThresh:  +dom.exit.value  || 0.80,
+    enterDebounceMs: 40, exitDebounceMs: 40,
+    holdTimeoutMs: 500, autoReleaseMs: 5000,
+    enableTOI: !Q.has('disableTOI'), enableSpeculative: !Q.has('disableSpec') && dom.speculative.checked,
+    palmGate: !Q.has('disablePalm') && dom.palmGate.checked,
+    oneEuro: { minCutoff:+dom.minCutoff.value, beta:+dom.beta.value, dCutoff:+dom.dCutoff.value }
+  }, cfg);
+
+  const emitter = new Emitter();
+  let state='Idle', lastDown=0, speculative=false, holdTimer=0;
+  const filt = { ix:new OneEuro(C.oneEuro), iy:new OneEuro(C.oneEuro), iz:new OneEuro(C.oneEuro), tx:new OneEuro(C.oneEuro), ty:new OneEuro(C.oneEuro), tz:new OneEuro(C.oneEuro) };
+  const medV = new RollingMedian(30), medA = new RollingMedian(30);
+  let lastNorm=null, lastT=null, vRel=0, aRel=0;
+
+  function palmOk(wrist, indexMCP, pinkyMCP){
+    if(!C.palmGate) return true;
+    if(!wrist || !indexMCP || !pinkyMCP) return true; // forgive missing
+    const vx=indexMCP[0]-wrist[0], vy=indexMCP[1]-wrist[1], vz=(indexMCP[2]??0)-(wrist[2]??0);
+    const ux=pinkyMCP[0]-wrist[0], uy=pinkyMCP[1]-wrist[1], uz=(pinkyMCP[2]??0)-(wrist[2]??0);
+    const nx=vy*uz - vz*uy, ny=vz*ux - vx*uz, nz=vx*uy - vy*ux; // normal = v x u
+    const nzNorm=Math.hypot(nx,ny,nz)||1; const cos=(-nz)/nzNorm; // favor facing camera
+    const ang=Math.acos(clamp(cos,-1,1))*180/Math.PI; HUD.setPalmAngle?.(ang); return ang <= C.palmConeDeg;
+  }
+
+  function update(frame){
+    const t=frame.t;
+    const ix=filt.ix.filter(frame.indexTip[0],t), iy=filt.iy.filter(frame.indexTip[1],t), iz=filt.iz.filter(frame.indexTip[2]||0,t);
+    const tx=filt.tx.filter(frame.thumbTip[0],t), ty=filt.ty.filter(frame.thumbTip[1],t), tz=filt.tz.filter(frame.thumbTip[2]||0,t);
+
+    let kn = Q.get('fixedSpan')? +Q.get('fixedSpan') : loadSpan(frame.hand);
+    if(!kn && frame.indexMCP && frame.pinkyMCP){ kn = Math.hypot(frame.indexMCP[0]-frame.pinkyMCP[0], frame.indexMCP[1]-frame.pinkyMCP[1]); }
+    if(!kn) kn=0.08; // normalized fallback
+
+    const raw=Math.hypot(ix-tx, iy-ty); const norm=raw/kn;
+    if(lastNorm!=null){ const dt=Math.max(1,(t-lastT)); vRel=(norm-lastNorm)/(dt/1000); medV.push(Math.abs(vRel)); }
+    if(lastT!=null){ const dt=Math.max(1,(t-lastT)); const vPrev=vRel; aRel=(vRel - vPrev)/(dt/1000); medA.push(Math.abs(aRel)); }
+    lastNorm=norm; lastT=t;
+
+    const kinOk = Math.abs(vRel) < 3*(medV.med||1)+3 && Math.abs(aRel) < 5*(medA.med||1)+5;
+    const gate  = palmOk(frame.wrist, frame.indexMCP, frame.pinkyMCP) && kinOk;
+
+    const TOI = vRel<0 ? (norm/Math.abs(vRel))*1000 : Infinity; // ms
+    const allowSpec = C.enableSpeculative && gate && TOI<120 && TOI>-40;
+
+    switch(state){
+      case 'Idle':
+        if(gate && norm < C.enterThresh){
+          Telemetry.noteEnterCandidate(t);
+          if(allowSpec){ speculative=true; emitter.emit({type:'pinch:down', t, speculative:true}); Telemetry.noteDown(t, true); }
+          state='PrePinch'; lastDown=t; holdTimer=t;
+        }
+        break;
+      case 'PrePinch':
+        if(!gate){ if(speculative){ Telemetry.noteSpecCancel(); } speculative=false; state='Idle'; break; }
+        if(norm < C.enterThresh){ if(!speculative){ emitter.emit({type:'pinch:down', t}); Telemetry.noteDown(t, false);} speculative=false; state='Pinched'; }
+        else if(t - lastDown > 120){ if(speculative){ Telemetry.noteSpecCancel(); } speculative=false; state='Idle'; }
+        break;
+      case 'Pinched':
+        if (t - holdTimer > 200){ emitter.emit({ type:'pinch:hold', t, dur: t - lastDown }); holdTimer = t; }
+        if(norm > C.exitThresh){ state='ReleasePending'; }
+        if(t - lastDown > C.autoReleaseMs){ emitter.emit({type:'pinch:up', t}); Telemetry.noteUp(t); state='Idle'; }
+        break;
+      case 'ReleasePending':
+        if(norm > C.exitThresh){ emitter.emit({type:'pinch:up', t}); Telemetry.noteUp(t); state='Idle'; }
+        else state='Pinched';
+        break;
+    }
+
+    HUD.updateRuntime({ norm, fps: FPS.tick(t) });
+    Golden.frame({ t, norm: +norm.toFixed(4), state, gate });
+  }
+
+  return { update, on: h=>emitter.on(h) };
+}
+
+// =========================
+// HUD & FPS
+// =========================
+function byId(id){ return document.getElementById(id); }
+const HUD = (()=>{
+  const el = { fps: byId('fps'), fsmR: byId('fsmR'), fsmL: byId('fsmL'), norm: byId('norm'), pg: byId('pg'), lat: byId('lat'), downs: byId('downs'), ups: byId('ups'), specCancel: byId('specCancel'), status: byId('status'), enterOut: byId('enterOut'), exitOut: byId('exitOut'), coneOut: byId('coneOut'), minCutoffOut: byId('minCutoffOut'), betaOut: byId('betaOut'), dCutoffOut: byId('dCutoffOut') };
+  return {
+    status(msg){ el.status.textContent = msg; },
+    setPalmAngle(ang){ el.pg.textContent = (ang|0)+'°'; },
+    updateRuntime({norm, fps}){
+      el.norm.textContent = typeof norm==='number' ? norm.toFixed(3) : '–';
+      el.fps.textContent  = fps? fps.toFixed(1):'–';
+      const s = Telemetry.snapshot();
+      el.lat.textContent  = s.meanDownLatency ? `${s.meanDownLatency} ms (p50 ${s.p50DownLatency} / p90 ${s.p90DownLatency})` : '–';
+      el.downs.textContent=s.downs; el.ups.textContent=s.ups; el.specCancel.textContent=(s.specCancelRate*100).toFixed(1)+'%';
+    },
+    setState(hand, state){ if(hand==='Right') el.fsmR.textContent = state; else el.fsmL.textContent = state; },
+    syncOutputs(){ el.enterOut.textContent = (+byId('enter').value).toFixed(2); el.exitOut.textContent = (+byId('exit').value).toFixed(2); el.coneOut.textContent = (+byId('cone').value).toFixed(0)+'°'; el.minCutoffOut.textContent = (+byId('minCutoff').value).toFixed(1); el.betaOut.textContent = (+byId('beta').value).toFixed(3); el.dCutoffOut.textContent = (+byId('dCutoff').value).toFixed(1); }
+  };
+})();
+const FPS = (()=>{ let lastT=null, fps=null; return { tick(t){ if(lastT!=null){ const dt=(t-lastT)/1000; fps = clamp(1/dt,0,240); } lastT=t; return fps; } };})();
+
+// =========================
+// OVERLAY
+// =========================
+const Overlay = (()=>{
+  const canvas = byId('overlay'); const g = canvas.getContext('2d');
+  function clear(){ g.clearRect(0,0,canvas.width,canvas.height); }
+  function drawHands(hands){ if(!byId('drawLandmarks').checked) return; if(!hands||!hands.length) return; g.save(); g.lineWidth=2; hands.forEach((lm, idx)=>{ const colorStroke = idx===0 ? '#2a87ff' : '#93d977'; const colorFill = idx===0 ? '#82d4ff' : '#b7f5a1'; g.strokeStyle=colorStroke; g.fillStyle=colorFill; for(const p of lm){ g.beginPath(); g.arc(p[0]*canvas.width, p[1]*canvas.height, 3,0,Math.PI*2); g.fill(); } const it=lm[8], tt=lm[4]; if(it && tt){ g.beginPath(); g.moveTo(it[0]*canvas.width, it[1]*canvas.height); g.lineTo(tt[0]*canvas.width, tt[1]*canvas.height); g.stroke(); } }); g.restore(); }
+  function annotate(text){ g.save(); g.fillStyle='rgba(0,0,0,.4)'; g.fillRect(8,8,340,68); g.fillStyle='#e7edf3'; g.font='12px system-ui'; const lines=text.split('
+'); lines.forEach((ln,i)=> g.fillText(ln, 16, 28+i*16)); g.restore(); }
+  return { clear, drawHands, annotate };
+})();
+
+// =========================
+// MEDIAPIPE ADAPTER
+// =========================
+function createMediaPipeSource(video, onFrame){
+  let landmarker=null; let rafId=null; let running=false; let lastHands=null; let useRVFC=false;
+  async function init(){
+    const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.19/vision_bundle.mjs');
+    const { FilesetResolver, HandLandmarker } = vision;
+    const fileset = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.19/wasm');
+    landmarker = await HandLandmarker.createFromOptions(fileset, { baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task' }, runningMode: 'VIDEO', numHands: 2 });
+    useRVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
+  }
+  const toArr = lm => [lm.x, lm.y, lm.z ?? 0];
+  function step(){ if(!running) return; const t=performance.now(); try { const res = landmarker.detectForVideo(video, t); const L = res?.landmarks || []; lastHands = L.length ? L.map(hand => hand.map(toArr)) : null; for (let i=0;i<L.length;i++){ const h=L[i]; if(!h || h.length<21) continue; let handTag='Right'; const hs=res?.handednesses?.[i]?.[0]; if(hs && hs.categoryName) handTag = hs.categoryName; onFrame({ t, hand:(handTag==='Left'?'Left':'Right'), indexTip:toArr(h[8]), thumbTip:toArr(h[4]), wrist:toArr(h[0]), indexMCP:toArr(h[5]), pinkyMCP:toArr(h[17]) }); } } catch(e){} }
+  function loopRAF(){ if(!running) return; step(); rafId=requestAnimationFrame(loopRAF); }
+  function loopRVFC(){ if(!running) return; step(); video.requestVideoFrameCallback(()=> loopRVFC()); }
+  return { async start(){ if(running) return; await init(); running=true; useRVFC ? loopRVFC() : loopRAF(); }, stop(){ running=false; if(rafId) cancelAnimationFrame(rafId); }, getLastLandmarks(){ return lastHands; } };
+}
+
+// =========================
+// CALIBRATION
+// =========================
+function runCalibration(getHands){ return new Promise(async (resolve)=>{ alert('Calibration: Hold one hand, open/close slowly for ~3 seconds.'); const samples=[]; const start=performance.now(); while(performance.now()-start < 3200){ const hands=getHands?.(); const lm = hands && hands[0]; if(lm && lm.length>=21){ const kn=Math.hypot(lm[5][0]-lm[17][0], lm[5][1]-lm[17][1]); samples.push(kn); } await new Promise(r=>requestAnimationFrame(r)); } const span=median(samples)||0.08; alert('Knuckle span = '+span.toFixed(4)); resolve(span); }); }
+
+// =========================
+// ORCHESTRATOR (Camera/MP4)
+// =========================
+const video = byId('cam'); const status = byId('status'); const startStop = byId('startStop'); const sourceSelect = byId('sourceSelect'); const mp4File = byId('mp4File'); const autoTelemetry = byId('autoTelemetry'); const btnCalib = byId('calibrate'); const btnDownload = byId('download');
+const Golden = new GoldenRecorder(); const midi = new MidiOut(); const beeper = new Beeper();
+let mp=null, cores=new Map(); let objectUrl=null; // hand -> { core, unsub }
+
+window.addEventListener('unhandledrejection', e=>{ console.error('Unhandled rejection', e.reason); HUD.status('error (recovered)'); });
+
+function handMapping(hand){ return hand==='Right' ? { key:'Z', note:60 } : { key:'X', note:62 }; }
+function oneHandEnabled(hand){ return !byId('oneHand').checked ? true : (hand==='Right'); }
+
+function highlightKey(key, mode){ const el=document.querySelector(`.key[data-key="${key}"]`); if(!el) return; el.classList.toggle('down', mode==='down' || mode==='hold'); el.classList.toggle('hold', mode==='hold'); }
+
+function handlePinchEvent(hand, e){ if(!oneHandEnabled(hand)) return; const map=handMapping(hand); const useMidi = byId('midi').checked; if(e.type==='pinch:down'){ document.dispatchEvent(new KeyboardEvent('keydown',{ key:map.key, bubbles:true })); if(byId('beep').checked) beeper.down(); if(useMidi) midi.send(0x90, map.note, 100); highlightKey(map.key,'down'); Golden.frame({ t:e.t, event:'down', hand, spec:!!e.speculative }); } else if(e.type==='pinch:hold'){ highlightKey(map.key,'hold'); } else if(e.type==='pinch:up'){ document.dispatchEvent(new KeyboardEvent('keyup',{ key:map.key, bubbles:true })); if(byId('beep').checked) beeper.up(); if(useMidi) midi.send(0x80, map.note, 0); highlightKey(map.key,'up'); Golden.frame({ t:e.t, event:'up', hand }); } }
+
+async function start(){ const source=sourceSelect.value; if(source==='camera'){ await startCamera(); } else { await startMp4(); } }
+
+async function startCamera(){ try{ const stream=await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' }, audio:false }); video.srcObject=stream; await video.play(); }catch(e){ alert('Camera permission required.'); throw e; } await startPipeline(); }
+
+async function startMp4(){ if(!mp4File.files.length){ alert('Choose an MP4/WebM file first.'); startStop.checked=false; return; } if(objectUrl){ URL.revokeObjectURL(objectUrl); objectUrl=null; } const file=mp4File.files[0]; objectUrl=URL.createObjectURL(file); video.srcObject=null; video.src=objectUrl; await video.play(); video.onended = ()=>{ if(autoTelemetry.checked){ Golden.download(); } HUD.status('ended'); startStop.checked=false; stop(); }; await startPipeline(); }
+
+async function startPipeline(){ mp = createMediaPipeSource(video, f=>{ if(!oneHandEnabled(f.hand)) return; Telemetry.noteFrame(); if(!cores.has(f.hand)){ const c=createPinchFeature(); const unsub=c.on(e=>{ handlePinchEvent(f.hand, e); HUD.setState(f.hand, e.type.replace('pinch:','')); }); cores.set(f.hand,{ core:c, unsub }); } const entry=cores.get(f.hand); entry.core.update(f); Overlay.clear(); Overlay.drawHands(mp.getLastLandmarks()); Overlay.annotate(`enter: ${(+byId('enter').value).toFixed(2)}  exit: ${(+byId('exit').value).toFixed(2)}  cone: ${(+byId('cone').value).toFixed(0)}°`); }); await mp.start(); await midi.init(); HUD.status('running'); Golden.start({ sha:'demo-local', device:navigator.userAgent, fps:'video', cfg:{ enter:+byId('enter').value, exit:+byId('exit').value, cone:+byId('cone').value } }); }
+
+function stop(){ if(mp){ mp.stop(); mp=null; } for(const [hand,obj] of cores){ if(obj.unsub) obj.unsub(); } cores.clear(); if(video.srcObject){ video.srcObject.getTracks().forEach(t=>t.stop()); video.srcObject=null; } if(objectUrl){ URL.revokeObjectURL(objectUrl); objectUrl=null; } beeper.up(); HUD.status('stopped'); }
+
+startStop.addEventListener('change', ()=>{ startStop.checked ? start() : stop(); });
+sourceSelect.addEventListener('change', ()=>{ mp4File.style.display = sourceSelect.value==='mp4' ? 'inline-block' : 'none'; });
+btnCalib.addEventListener('click', async ()=>{ if(!mp){ alert('Start source first.'); return; } const span = await runCalibration(()=> mp.getLastLandmarks()); const url = new URL(location.href); url.searchParams.set('fixedSpan', String(span)); history.replaceState(null,'',url); saveSpan('Right', span); });
+btnDownload.addEventListener('click', ()=> Golden.download());
+
+function bindRange(id){ byId(id).addEventListener('input', ()=>{ HUD.syncOutputs(); rebuildCores(); }); }
+function rebuildCores(){ for(const [hand,obj] of cores){ if(obj.unsub) obj.unsub(); const c=createPinchFeature(); const unsub=c.on(e=>{ handlePinchEvent(hand, e); HUD.setState(hand, e.type.replace('pinch:','')); }); cores.set(hand,{ core:c, unsub }); } }
+['enter','exit','cone','minCutoff','beta','dCutoff'].forEach(bindRange); HUD.syncOutputs();
+
+// Auto-start if ?autostart
+if(Q.has('autostart')){ byId('startStop').checked=true; start(); }
+
+HUD.status('ready');
+
+// --- Headless CI replay hook ---
+window.__replayGolden = async function(frames){ if(!cores.has('Right')){ const c=createPinchFeature(); const unsub = c.on(e=>handlePinchEvent('Right',e)); cores.set('Right',{ core:c, unsub }); } const c=cores.get('Right').core; for(const f of frames){ if(f && typeof f.t==='number' && typeof f.norm==='number'){ const ix = 0.5 + f.norm/2, tx = 0.5 - f.norm/2; c.update({ t:f.t, hand:'Right', indexTip:[ix,0.5,0], thumbTip:[tx,0.5,0], indexMCP:[0.4,0.6,0], pinkyMCP:[0.6,0.6,0], wrist:[0.5,0.7,0] }); } await new Promise(r=>setTimeout(r, 16)); } };
+Object.defineProperties(window,{ __pinch:{ get(){ return { cores, start, stop }; } } });
+</script>
+</body>
+</html>
